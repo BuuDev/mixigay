@@ -33,7 +33,7 @@ export function ScreenFlags({ flags }: { flags: (keyof typeof FLAG_LABEL)[] }) {
   return (
     <span className="ml-1 inline-flex gap-1">
       {flags.map((f) => (
-        <span key={f} className="rounded bg-live/15 px-1.5 text-xs font-semibold text-live">
+        <span key={f} className="rounded bg-live/15 px-1.5 text-xs font-semibold text-live-text">
           ⚠ {FLAG_LABEL[f]}
         </span>
       ))}

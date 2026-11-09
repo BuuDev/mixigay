@@ -2,14 +2,12 @@ import { getGames } from "@/features/videos/server/queries";
 import { DAY_NAMES } from "../lib/schedule";
 import { serverClient } from "@/server/supabase/server";
 import { addSlot, deleteSlot } from "./actions";
+import { OverrideAdmin } from "./override-admin";
 import { button, GameSelect, input, primary, Section } from "@/features/admin/ui";
 
 export async function ScheduleAdmin() {
   const supabase = await serverClient();
-  const [{ data: slots }, games] = await Promise.all([
-    supabase.from("schedule_slots").select("*").order("day_of_week").order("time_vn"),
-    getGames(),
-  ]);
+  const [{ data: slots }, games] = await Promise.all([supabase.from("schedule_slots").select("*").order("day_of_week").order("time_vn"), getGames()]);
   return (
     <div className="space-y-4">
       <Section title="Thêm khung giờ (giờ Việt Nam)">
@@ -35,7 +33,10 @@ export async function ScheduleAdmin() {
               <span className="w-16">{DAY_NAMES[s.day_of_week as number]}</span>
               <span className="w-12 font-mono">{(s.time_vn as string).slice(0, 5)}</span>
               <span className="flex-1">
-                {s.title as string} <span className="text-muted">{(s.game_slug as string) ?? ""} {(s.note as string) ?? ""}</span>
+                {s.title as string}{" "}
+                <span className="text-muted">
+                  {(s.game_slug as string) ?? ""} {(s.note as string) ?? ""}
+                </span>
               </span>
               <form action={deleteSlot.bind(null, s.id as string)}>
                 <button className={button}>Xóa</button>
@@ -44,6 +45,7 @@ export async function ScheduleAdmin() {
           ))}
         </ul>
       </Section>
+      <OverrideAdmin />
     </div>
   );
 }

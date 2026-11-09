@@ -10,7 +10,7 @@ import { hudDigits, hypeStars } from "../lib/hud";
  * open-world-game HUD look; no game art or fonts are used.
  */
 export function LiveHud({ viewers }: { viewers: number }) {
-  const now = useNow();
+  const now = useNow("minute");
   const stars = hypeStars(viewers);
   return (
     <div className="absolute right-2 bottom-2 flex flex-col items-end gap-0.5 font-mono text-sm font-black drop-shadow-[0_2px_0_rgb(0_0_0/0.8)]">

@@ -1,0 +1,54 @@
+/*
+ * Route view transitions (React <ViewTransition> + next/link `transitionTypes`).
+ * Hierarchical navigation only: list → detail is "nav-forward", the back link is
+ * "nav-back". Page wrappers map those types to the classes below with
+ * `default: "none"`, so lateral navigation and browser back/forward do not slide.
+ * Shared covers reuse `.td-morph` from motion.css. Reduced motion: the global rule
+ * in motion.css zeroes every ::view-transition-* duration with !important; the
+ * block at the end repeats it for these classes so this file stands on its own.
+ */
+::view-transition-old(.td-nav-forward) {
+  --td-vt-slide: -48px;
+  animation:
+    var(--td-dur-fast) var(--td-ease-in-out) both td-vt-fade-out,
+    var(--td-dur-slow) var(--td-ease-out) both td-vt-slide-out;
+}
+::view-transition-new(.td-nav-forward) {
+  --td-vt-slide: 48px;
+  animation:
+    var(--td-dur-base) var(--td-ease-out) var(--td-dur-fast) both td-vt-fade-in,
+    var(--td-dur-slow) var(--td-ease-out) both td-vt-slide-in;
+}
+::view-transition-old(.td-nav-back) {
+  --td-vt-slide: 48px;
+  animation:
+    var(--td-dur-fast) var(--td-ease-in-out) both td-vt-fade-out,
+    var(--td-dur-slow) var(--td-ease-out) both td-vt-slide-out;
+}
+::view-transition-new(.td-nav-back) {
+  --td-vt-slide: -48px;
+  animation:
+    var(--td-dur-base) var(--td-ease-out) var(--td-dur-fast) both td-vt-fade-in,
+    var(--td-dur-slow) var(--td-ease-out) both td-vt-slide-in;
+}
+
+@keyframes td-vt-slide-in {
+  from {
+    translate: var(--td-vt-slide) 0;
+  }
+}
+@keyframes td-vt-slide-out {
+  to {
+    translate: var(--td-vt-slide) 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(.td-nav-forward),
+  ::view-transition-new(.td-nav-forward),
+  ::view-transition-old(.td-nav-back),
+  ::view-transition-new(.td-nav-back) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}

@@ -64,7 +64,7 @@ Giai đoạn 7  Góc Bộ Tộc v2 (docs/design)        nền xong – các kh�
 - [ ] Playwright E2E: xem lịch, lọc video theo game, đăng nhập giả lập → gửi đề xuất → vote
 - [x] Trang "Giới thiệu" ghi rõ không chính thức, cách liên hệ để gỡ nội dung
 - [x] `sitemap.ts`, `robots.ts`, `metadataBase`
-- [ ] OG image
+- [x] OG image
 - [ ] **(cần bạn)** Gắn domain, bật Vercel Analytics
 
 **Hoàn thành khi:** checklist trên xong, E2E xanh, mời 10–20 fan dùng thử và không có lỗi chặn.
@@ -72,8 +72,9 @@ Giai đoạn 7  Góc Bộ Tộc v2 (docs/design)        nền xong – các kh�
 ## Giai đoạn 4 – Thông báo + PWA (P1)
 
 - [x] Bot Telegram channel + Discord webhook, chống gửi trùng bằng `notifications_log`
-- [ ] PWA: `app/manifest.ts`, icon riêng (không dùng logo MixiGaming), service worker
-- [ ] Dark mode (Tailwind `dark:` + `prefers-color-scheme`, có nút chuyển)
+- [x] PWA: `app/manifest.ts`, icon riêng 192/512/apple (lửa trại, không dùng logo MixiGaming)
+- [ ] PWA: service worker (đi cùng Web Push)
+- [x] ~~Dark mode~~ — bỏ: brand chỉ có nền tối ([ADR-009](08-decisions.md#adr-009))
 - [ ] Web Push: đăng ký/hủy, gửi khi live
 - [ ] `schedule_overrides` (nghỉ / đổi giờ một ngày) + UI admin
 - [ ] WebSub cho phát hiện video mới nhanh hơn
@@ -89,8 +90,8 @@ Giai đoạn 7  Góc Bộ Tộc v2 (docs/design)        nền xong – các kh�
 
 - [ ] Kho quote: chọn video, nhập giây (hoặc dán link có `?t=`), duyệt trước. Link `youtube.com/watch?v=…&t=<s>s`.
 - [ ] Fan art: Supabase Storage bucket `fan-art`, giới hạn 5 MB, chỉ ảnh, duyệt trước, ghi tên/credit tác giả
-- [ ] Hàng đợi duyệt chung trong `/admin`
-- [ ] Báo cáo nội dung (nút "báo cáo" → admin)
+- [x] Hàng đợi duyệt chung trong `/admin` (đề xuất, nhạc, báo cáo; fan art do bên làm fan art nối thêm)
+- [x] Báo cáo nội dung (nút "báo cáo" → admin) — bảng `reports`, hàng đợi ở `/admin`
 
 ## Giai đoạn 7 – Góc Bộ Tộc v2 (`docs/design/COMPONENTS.md`)
 
@@ -110,24 +111,29 @@ Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mas
 - [ ] §5 Bức tường Bộ tộc (lưu bút ≤140 ký tự, duyệt trước, 3 tin/ngày)
 - [x] Đổi tên trang thành **Góc Bộ Tộc** (ADR-011); bìa thiệp khung vòm có ảnh anh Độ, album polaroid + lightbox, ảnh hiện lên từ đống lửa ở màn mở đầu
 - [ ] Ghi tên tác giả cho từng ảnh trong album khi tìm được nguồn gốc
+- [x] Chuẩn UI 2026 (ADR-012): thanh tab điện thoại + menu popover, chuyển cảnh polaroid → lightbox (ViewTransition), WCAG 2.2 AA (a11y 100 trên 9 trang), sửa LCP ảnh bìa, đồng hồ theo phút
+- [x] Giảm JS cho điện thoại: Supabase client (~70 KB gzip) chỉ tải khi trình duyệt rảnh, một kênh Realtime dùng chung cho cả trang
+- [x] Chuyển cảnh giữa các trang (thẻ series → trang series) bằng `transitionTypes` trên `<Link>`
 - [x] §6 Hộp ủng hộ (nhún, gợi ý chạm, bật nắp + confetti, sheet link chính chủ: donate ZyPage/Streamlabs, YouTube, shop, fanpage, Discord — xác minh từ kênh YouTube chính chủ 2026-11-09, có test chặn host lạ)
 - [ ] §7 Timeline buổi stream (từ chapters trong mô tả video)
 - [ ] §8 Gallery fan art + lightbox (gộp với GĐ6)
 - [ ] §9 Skin theo dịp: admin bật theo khoảng ngày → `data-theme` trên `<html>`
 - [ ] §11 Nút chuông thông báo (gộp với GĐ4 Web Push)
-- [ ] OG image theo brand (dòng "không liên kết chính thức")
+- [x] OG image theo brand (dòng "không liên kết chính thức")
 
 ## Giai đoạn 8 – Content theo trend (khảo sát: `docs/research/2026-11-09-trends.md`)
 
 - [x] Lịch mẫu/seed theo lịch chính chủ (22:22, nghỉ T4 & CN, T7 23:00); dữ liệu mẫu là ảnh chụp video thật của kênh
 - [x] Danh mục game theo hiện tại: Delta Force, GTA V, giả lập kinh doanh, The Isle, game nhóm, game Bộ tộc làm, An Liễng, Tâm sự (59/60 video tự phân loại được)
 - [x] Series tự động từ tiêu đề “(Tên #n)” — `/series`, `/series/[slug]`, rail trên trang chủ
-- [x] Góc nhạc `/nhac`: Phòng Trà An Liễng + bảng nhạc nịnh fan gửi (bảng `fan_songs`, duyệt ở `/admin/nhac`)
+- [x] Góc nhạc `/nhac`: Phòng Trà An Liễng + bảng nhạc nịnh fan gửi (bảng `fan_songs`, duyệt ở `/admin/nhac`), nghe trực tiếp bài SoundCloud ngay tại chỗ + trình phát nhạc nền Bộ Tộc nổi (`BgMusicPlayer`)
 - [x] Bộ tộc `/bo-toc`: phong trào 30 ngày (đếm từ tiêu đề), góc tự trào “Chuyện thường ngày ở Bộ tộc” (`TribeVibe`), game Bộ tộc làm, từ điển có nguồn, link group/Discord chính chủ
+- [x] Đố vui Bộ Tộc & đóng góp câu hỏi (`QuizArena`, bảng `quiz_questions`, duyệt ở `/admin/quiz`) + Phòng tranh Fan Art qua link Google Drive cá nhân không tốn dung lượng server (`FanArtGallery`, `FanArtForm` có xem trước ảnh trực tiếp, bảng `fan_art`, duyệt ở `/admin/fan-art`)
 - [x] Hồ sơ “Dự án ma” tháng 10–11 (`GhostProjectsBoard`), Máy tạo văn mẫu hối lỗi xin unban (`UnbanCourt`), Hành trình “Góp gạch xây trường” + đếm ngược 01/12 (`CharityMilestoneCard`), Radar sự kiện & Bộ thẻ Đa nhân cách (`EventRadar`, `PersonaDeck`)
 - [x] P0 chống phá hoại: đề xuất duyệt trước khi hiện; giới hạn tài khoản mới, toàn site, vote; lọc chữ tiếng Việt (cờ bạc, tục tĩu, ký tự ẩn, teencode); link chỉ tới cửa hàng game/YouTube; lọc tên hiển thị; cấm và cấm ngầm trong admin
-- [ ] P1 chống phá hoại: nút báo cáo cho fan, cảnh báo admin khi hàng chờ tăng đột biến, Turnstile khi gửi, giới hạn route Steam theo người
-- [ ] Vote cho nhạc nịnh (dùng lại mẫu `suggestion_votes`)
+- [x] P1 chống phá hoại: nút báo cáo cho fan, giới hạn route Steam theo người (20 / 10 phút)
+- [ ] P1 còn lại: cảnh báo admin (Telegram/Discord) khi hàng chờ tăng đột biến; **(cần bạn)** Turnstile khi gửi (cần site key + secret của Cloudflare)
+- [x] Vote cho nhạc nịnh (`fan_song_votes`, xếp theo lượt vote)
 - [ ] Giải Ao Làng / Moi Xoang / Tetris: trang giải đấu do admin nhập kết quả
 - [ ] Shorts (The Isle, Đômakase): nhận diện shorts theo thời lượng khi sync và làm rail riêng
 - [ ] Từ điển Bộ tộc do fan đóng góp (duyệt trước), thay cho danh sách cố định trong code

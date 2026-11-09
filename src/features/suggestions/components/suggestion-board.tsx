@@ -31,7 +31,10 @@ export function SuggestionBoard({ initial, votedIds, pending = [], mode, signedI
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
-      <section>
+      <section aria-labelledby="ds-de-xuat">
+        <h2 id="ds-de-xuat" className="sr-only">
+          Danh sách đề xuất
+        </h2>
         <div className="flex flex-wrap gap-2">
           {FILTERS.map((f) => (
             <Chip key={f} active={filter === f} onClick={() => setFilter(f)}>

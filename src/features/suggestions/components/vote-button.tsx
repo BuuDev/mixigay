@@ -12,13 +12,13 @@ export function VoteButton({ name, count, voted, onVote }: { name: string; count
       onClick={onVote}
       {...press}
       aria-pressed={voted}
-      aria-label={`Upvote ${name}`}
       className={cn(
         "flex w-14 shrink-0 flex-col items-center self-start rounded-md border py-1.5 text-sm transition-colors",
         voted ? "border-accent bg-accent/10 text-accent" : "border-border text-muted hover:text-foreground",
       )}
     >
       <IconUpvote size={18} />
+      <span className="sr-only">Upvote {name}:</span>
       <span className="relative h-5 overflow-hidden font-semibold tabular-nums">
         <AnimatePresence mode="popLayout" initial={false}>
           <m.span

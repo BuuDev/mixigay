@@ -131,7 +131,7 @@ export function SuggestionForm() {
           {pending ? "Đang gửi…" : "Gửi đề xuất"}
         </Button>
         {result && (
-          <p role="status" className={cn("text-sm", result.ok ? "text-cleared" : "text-live")}>
+          <p role="status" className={cn("text-sm", result.ok ? "text-cleared" : "text-live-text")}>
             {result.message}
           </p>
         )}

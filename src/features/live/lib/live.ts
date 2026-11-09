@@ -1,6 +1,6 @@
-import { nextOccurrence } from "@/features/schedule/lib/schedule";
+import { nextSlot } from "@/features/schedule/lib/schedule";
 import type { LiveState } from "../types";
-import type { ScheduleSlot } from "@/features/schedule/types";
+import type { ScheduleOverride, ScheduleSlot } from "@/features/schedule/types";
 import type { YtVideo } from "@/server/youtube/client";
 
 export interface DerivedLive {
@@ -21,9 +21,7 @@ const STALE_UPCOMING_MS = 6 * 3_600_000;
  * viewers wins, otherwise the soonest upcoming one within 24 h, else offline.
  */
 export function deriveLiveStatus(videos: YtVideo[], now: Date): DerivedLive {
-  const live = videos
-    .filter((v) => v.snippet.liveBroadcastContent === "live")
-    .sort((a, b) => viewers(b) - viewers(a))[0];
+  const live = videos.filter((v) => v.snippet.liveBroadcastContent === "live").sort((a, b) => viewers(b) - viewers(a))[0];
   if (live) {
     return {
       state: "live",
@@ -60,19 +58,16 @@ const SPARSE_INTERVAL_MS = 5 * 60_000;
 /**
  * The cron fires every minute; poll every minute while live/upcoming or within
  * ±2 h of a scheduled slot, every 5 minutes otherwise. Keeps quota well under budget.
+ * One-day overrides count: a moved or extra stream gets the dense window, a cancelled
+ * day does not (saves quota).
  */
-export function shouldPoll(opts: {
-  now: Date;
-  state: LiveState;
-  lastCheckedAt?: string;
-  schedule: ScheduleSlot[];
-}): boolean {
-  const { now, state, lastCheckedAt, schedule } = opts;
+export function shouldPoll(opts: { now: Date; state: LiveState; lastCheckedAt?: string; schedule: ScheduleSlot[]; overrides?: ScheduleOverride[] }): boolean {
+  const { now, state, lastCheckedAt, schedule, overrides } = opts;
   if (state !== "offline" || !lastCheckedAt) return true;
   if (now.getTime() - Date.parse(lastCheckedAt) >= SPARSE_INTERVAL_MS - 5_000) return true;
-  // nextOccurrence is strictly after `from`, so look from 2 h ago to also catch a slot that just passed.
-  const from = new Date(now.getTime() - DENSE_WINDOW_MS);
-  return schedule.some((slot) => nextOccurrence(slot, from).getTime() - now.getTime() <= DENSE_WINDOW_MS);
+  // nextSlot is strictly after `from`, so look from 2 h ago to also catch a stream that just started.
+  const next = nextSlot(schedule, new Date(now.getTime() - DENSE_WINDOW_MS), overrides);
+  return next !== null && next.at.getTime() - now.getTime() <= DENSE_WINDOW_MS;
 }
 
 export function becameLive(previous: LiveState, next: DerivedLive, previousVideoId?: string): boolean {

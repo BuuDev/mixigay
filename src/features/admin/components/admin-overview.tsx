@@ -9,7 +9,7 @@ export async function AdminOverview() {
     supabase.from("api_usage").select("endpoint, units").eq("day", today),
     supabase.from("live_status").select("*").single(),
     supabase.from("videos").select("video_id", { count: "exact", head: true }).is("manual_game_slug", null).is("auto_game_slug", null),
-    supabase.from("suggestions").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("suggestions").select("id", { count: "exact", head: true }).eq("status", "pending").eq("approved", true).eq("hidden", false),
   ]);
   const units = (usage.data ?? []).reduce((sum, r) => sum + (r.units as number), 0);
 
@@ -35,7 +35,7 @@ export async function AdminOverview() {
       </Section>
       <Section title="Cần xử lý">
         <p>{unclassified.count ?? 0} video chưa phân loại</p>
-        <p>{pending.count ?? 0} đề xuất đang chờ</p>
+        <p>{pending.count ?? 0} đề xuất đã hiện, chờ anh Độ chơi</p>
       </Section>
     </div>
   );

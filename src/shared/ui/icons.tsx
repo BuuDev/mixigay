@@ -29,6 +29,7 @@ import { UsersFourIcon } from "@phosphor-icons/react/dist/ssr/UsersFour";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/ssr/UsersThree";
 import { VideoCameraIcon } from "@phosphor-icons/react/dist/ssr/VideoCamera";
 import { ImagesIcon } from "@phosphor-icons/react/dist/ssr/Images";
+import { DotsThreeOutlineIcon } from "@phosphor-icons/react/dist/ssr/DotsThreeOutline";
 import { XIcon } from "@phosphor-icons/react/dist/ssr/X";
 
 // Phosphor Icons (MIT), duotone weight (ADR-010). The SSR build has no React
@@ -44,15 +45,7 @@ export interface IconProps extends Omit<SVGProps<SVGSVGElement>, "children" | "r
 function icon(name: string, Glyph: PhosphorIcon) {
   function Icon({ size = 20, title, ...props }: IconProps) {
     return (
-      <Glyph
-        weight="duotone"
-        size={size}
-        alt={title}
-        role={title ? "img" : undefined}
-        aria-hidden={title ? undefined : true}
-        data-icon={name}
-        {...props}
-      />
+      <Glyph weight="duotone" size={size} alt={title} role={title ? "img" : undefined} aria-hidden={title ? undefined : true} data-icon={name} {...props} />
     );
   }
   Icon.displayName = `Icon(${name})`;
@@ -119,3 +112,5 @@ export const IconExpand = icon("expand", ArrowsOutIcon);
 export const IconClose = icon("close", XIcon);
 /** Album ảnh */
 export const IconAlbum = icon("album", ImagesIcon);
+/** Thêm (menu) */
+export const IconMore = icon("more", DotsThreeOutlineIcon);

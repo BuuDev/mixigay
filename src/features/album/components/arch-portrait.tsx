@@ -11,15 +11,7 @@ import type { AlbumPhoto } from "../lib/photos";
  * push-in, a light sweep and a gentle parallax while the page scrolls. All ambient
  * motion stops for reduced-motion users.
  */
-export function ArchPortrait({
-  photo,
-  className,
-  priority = false,
-}: {
-  photo: AlbumPhoto;
-  className?: string;
-  priority?: boolean;
-}) {
+export function ArchPortrait({ photo, className, priority = false }: { photo: AlbumPhoto; className?: string; priority?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({
@@ -32,10 +24,7 @@ export function ArchPortrait({
     <figure className={cn("relative mx-auto w-full max-w-[18rem]", className)}>
       <div className="relative">
         {/* Outer ring: a thin ember line that follows the arch. */}
-        <div
-          aria-hidden
-          className="absolute -inset-2 rounded-t-full border border-accent/40"
-        />
+        <div aria-hidden className="absolute -inset-2 rounded-t-full border border-accent/40" />
         <div
           ref={ref}
           className="relative aspect-[3/4] overflow-hidden rounded-t-full border-2 border-accent/70 bg-surface shadow-[0_0_40px_-8px_var(--td-ember)]"
@@ -46,7 +35,7 @@ export function ArchPortrait({
               alt={photo.alt}
               fill
               sizes="(min-width: 640px) 18rem, 80vw"
-              priority={priority}
+              preload={priority}
               className="object-cover object-top motion-safe:animate-td-kenburns"
             />
           </m.div>
@@ -54,15 +43,12 @@ export function ArchPortrait({
             aria-hidden
             className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent motion-safe:animate-td-sheen"
           />
-          <div
-            aria-hidden
-            className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background/90 to-transparent"
-          />
+          <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background/90 to-transparent" />
         </div>
       </div>
       <figcaption className="mt-3 text-center text-xs text-muted">
         {photo.caption}
-        <span className="block text-[10px] opacity-70">{photo.credit}</span>
+        <span className="block text-[11px]">{photo.credit}</span>
       </figcaption>
     </figure>
   );

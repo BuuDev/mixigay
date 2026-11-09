@@ -7,7 +7,7 @@ export function VideoRail({ videos, games }: { videos: ClassifiedVideo[]; games:
   return (
     <ul className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]" aria-label="Video mới nhất">
       {videos.map((v) => (
-        <li key={v.videoId} className="w-[78%] shrink-0 snap-start sm:w-[45%] lg:w-[31%]">
+        <li key={v.videoId} className="flex w-[78%] shrink-0 snap-start sm:w-[45%] lg:w-[31%] [&>*]:w-full">
           <VideoCard video={v} game={bySlug.get(v.gameSlug)} />
         </li>
       ))}

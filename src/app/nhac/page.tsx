@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { getViewer } from "@/features/auth/server/viewer";
-import { SongCard } from "@/features/music/components/song-card";
+import { SongBoard } from "@/features/music/components/song-board";
 import { SongForm } from "@/features/music/components/song-form";
-import { getFanSongs } from "@/features/music/server/queries";
+import { getFanSongs, getMySongVoteIds } from "@/features/music/server/queries";
 import { EpisodeList } from "@/features/series/components/episode-list";
 import { getSeriesBySlug } from "@/features/series/server/queries";
 import { isSupabaseConfigured } from "@/shared/lib/env";
@@ -23,7 +23,9 @@ export default async function MusicPage() {
     <div className="space-y-16 py-6">
       <header className="text-center">
         <NeonText className="text-4xl sm:text-5xl">GÓC NHẠC</NeonText>
-        <p className="mx-auto mt-3 max-w-xl text-muted">Phòng Trà An Liễng trên kênh và những bài “nhạc nịnh” Bộ Tộc tự làm. Mọi bài đều mở ở nền tảng gốc.</p>
+        <p className="mx-auto mt-3 max-w-xl text-muted">
+          Phòng Trà An Liễng trên kênh và những bài “nhạc nịnh” Bộ Tộc tự làm. Bài trên SoundCloud có thể bấm nghe trực tiếp tại chỗ hoặc mở ở nền tảng gốc.
+        </p>
       </header>
 
       <ScrollReveal as="section">
@@ -35,7 +37,13 @@ export default async function MusicPage() {
         <SectionHeader eyebrow="Fan làm" title="Nhạc nịnh Bộ Tộc" icon={<IconEvent size={26} className="text-accent" />} />
         <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
           <div className="space-y-3">
-            {songs.length ? songs.map((s) => <SongCard key={s.id} song={s} />) : <EmptyState art="empty-suggestions" title="Chưa có bài nào được duyệt" />}
+            {songs.length ? (
+              <Suspense fallback={<SongBoard songs={songs} votedIds={[]} signedIn={false} live={isSupabaseConfigured} />}>
+                <SongList songs={songs} />
+              </Suspense>
+            ) : (
+              <EmptyState art="empty-suggestions" title="Chưa có bài nào được duyệt" />
+            )}
           </div>
           <Suspense fallback={null}>
             <SubmitBox />
@@ -44,6 +52,13 @@ export default async function MusicPage() {
       </ScrollReveal>
     </div>
   );
+}
+
+/** Dynamic part: the visitor's own votes. */
+async function SongList({ songs }: { songs: Awaited<ReturnType<typeof getFanSongs>> }) {
+  const viewer = isSupabaseConfigured ? await getViewer() : null;
+  const votedIds = viewer ? await getMySongVoteIds(viewer.id) : [];
+  return <SongBoard songs={songs} votedIds={votedIds} signedIn={Boolean(viewer)} live={isSupabaseConfigured} />;
 }
 
 /** Dynamic part: whether the visitor can submit. */
@@ -61,7 +76,13 @@ async function SubmitBox() {
     return (
       <Card className="p-4 text-sm">
         <p className="font-bold">Gửi bài nhạc nịnh</p>
-        <p className="mt-2 text-muted">Đăng nhập Google (góc trên bên phải) để gửi link bài của bạn. Có thể xem thêm ở trang <Link href="/bo-toc" className="text-accent hover:underline">Bộ Tộc</Link>.</p>
+        <p className="mt-2 text-muted">
+          Đăng nhập Google (góc trên bên phải) để gửi link bài của bạn. Có thể xem thêm ở trang{" "}
+          <Link href="/bo-toc" className="text-accent underline underline-offset-2">
+            Bộ Tộc
+          </Link>
+          .
+        </p>
       </Card>
     );
   }

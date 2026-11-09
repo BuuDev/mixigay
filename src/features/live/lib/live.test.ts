@@ -66,6 +66,24 @@ describe("shouldPoll", () => {
     expect(shouldPoll({ now: quiet, state: "offline", lastCheckedAt: "2026-11-09T02:55:00Z", schedule: slots })).toBe(true);
   });
 
+  it("follows one-day overrides: moved, cancelled and extra streams", () => {
+    const checked = "2026-11-09T11:59:00Z";
+    // Monday 20:00 VN moved to 23:00 VN (16:00Z): at 19:00 VN the stream is 4 h away.
+    const moved = [{ dateVn: "2026-11-09", cancelled: false, time: "23:00" }];
+    expect(shouldPoll({ now, state: "offline", lastCheckedAt: checked, schedule: slots, overrides: moved })).toBe(false);
+    expect(
+      shouldPoll({ now: new Date("2026-11-09T15:00:00Z"), state: "offline", lastCheckedAt: "2026-11-09T14:59:00Z", schedule: slots, overrides: moved }),
+    ).toBe(true);
+    // Monday cancelled: no dense window.
+    const cancelled = [{ dateVn: "2026-11-09", cancelled: true }];
+    expect(shouldPoll({ now, state: "offline", lastCheckedAt: checked, schedule: slots, overrides: cancelled })).toBe(false);
+    // Extra stream on Tuesday 10:00 VN (03:00Z), a day with no weekly slot.
+    const extra = [{ dateVn: "2026-11-10", cancelled: false, time: "10:00", title: "Live thêm" }];
+    expect(
+      shouldPoll({ now: new Date("2026-11-10T02:00:00Z"), state: "offline", lastCheckedAt: "2026-11-10T01:59:00Z", schedule: slots, overrides: extra }),
+    ).toBe(true);
+  });
+
   it("polls when there is no previous check", () => {
     expect(shouldPoll({ now, state: "offline", schedule: [] })).toBe(true);
   });

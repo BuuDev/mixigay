@@ -1,7 +1,8 @@
 "use client";
 
 import { isOffDay, nextSlot } from "@/features/schedule/lib/schedule";
-import type { ScheduleSlot } from "@/features/schedule/types";
+import { overrideFor, vnDateKey } from "@/features/schedule/lib/overrides";
+import type { ScheduleOverride, ScheduleSlot } from "@/features/schedule/types";
 import { useNow } from "@/shared/hooks/use-now";
 import { AnimatePresence, m, rise } from "@/shared/motion";
 import { Embers } from "@/shared/motion/embers";
@@ -14,11 +15,11 @@ import { UpcomingStream } from "./upcoming-stream";
 
 type View = "live" | "upcoming" | "next" | "offday" | "loading";
 
-function pickView(status: LiveStatus, schedule: ScheduleSlot[], now: Date | null): View {
+function pickView(status: LiveStatus, schedule: ScheduleSlot[], now: Date | null, overrides?: ScheduleOverride[]): View {
   if (status.state === "live" && status.videoId) return "live";
   if (status.state === "upcoming" && status.videoId && status.startTime) return "upcoming";
   if (!now) return "loading";
-  return isOffDay(schedule, now) ? "offday" : "next";
+  return isOffDay(schedule, now, overrides) ? "offday" : "next";
 }
 
 /**
@@ -27,11 +28,22 @@ function pickView(status: LiveStatus, schedule: ScheduleSlot[], now: Date | null
  * Realtime; each change cross-fades (AnimatePresence) instead of jumping.
  * `embers` adds the background particles (home page only, spec §10).
  */
-export function LiveHero({ status: initial, schedule, embers = false }: { status: LiveStatus; schedule: ScheduleSlot[]; embers?: boolean }) {
+export function LiveHero({
+  status: initial,
+  schedule,
+  overrides,
+  embers = false,
+}: {
+  status: LiveStatus;
+  schedule: ScheduleSlot[];
+  overrides?: ScheduleOverride[];
+  embers?: boolean;
+}) {
   const now = useNow();
   const status = useLiveStatus(initial);
-  const view = pickView(status, schedule, now);
-  const next = now ? nextSlot(schedule, now) : null;
+  const view = pickView(status, schedule, now, overrides);
+  const next = now ? nextSlot(schedule, now, overrides) : null;
+  const today = now ? overrideFor(overrides, vnDateKey(now)) : undefined;
 
   return (
     <>
@@ -41,8 +53,8 @@ export function LiveHero({ status: initial, schedule, embers = false }: { status
           <m.div key={view} variants={rise} initial="hidden" animate="visible" exit="exit">
             {view === "live" && <LiveNow status={status} now={now} />}
             {view === "upcoming" && <UpcomingStream status={status} now={now} />}
-            {view === "next" && next && now && <NextStream slot={next.slot} at={next.at} now={now} />}
-            {view === "offday" && <OffDay next={next} />}
+            {view === "next" && next && now && <NextStream slot={next.slot} at={next.at} now={now} override={next.override} />}
+            {view === "offday" && <OffDay next={next} today={today} />}
             {view === "loading" && <div className="h-32" />}
           </m.div>
         </AnimatePresence>

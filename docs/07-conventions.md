@@ -69,6 +69,43 @@ Tính năng hiện có: `live`, `schedule`, `videos` (gồm game và vlog), `pla
 - Chỉ có nền tối (theo brand). Không thêm `dark:` variant.
 - Icon: `Icon*` từ `@/shared/ui/icons` (Phosphor duotone, `currentColor` + lớp nền `--td-icon-tint`, [ADR-010](08-decisions.md#adr-010)). Cần icon mới thì thêm vào file đó (import từ `@phosphor-icons/react/dist/ssr/<Tên>`), không vẽ tay, không import Phosphor trực tiếp trong component. Mascot/minh họa: `<Mascot pose>` / `<Illustration name>` / `<EmptyState art>` (file SVG tĩnh, không tốn JS).
 
+## Chuẩn UI 2026 (mobile + desktop)
+
+Nguồn: skill `frontend-design` (Anthropic), `web-quality-audit`/`accessibility`/`core-web-vitals` (Addy Osmani), `vercel-react-view-transitions` (Vercel), danh sách ở `.claude/skills/THIRD_PARTY.md`. Đo bằng Lighthouse trên bản build production (`next start`), cả `--preset=desktop` lẫn mobile mặc định.
+
+- **Khả năng tiếp cận: WCAG 2.2 AA, Lighthouse a11y = 100 trên mọi trang công khai.**
+  - Chữ thường ≥ 4.5:1. `--td-muted` (#a39cb3) đạt trên mọi nền tới `--td-line`; không làm mờ chữ bằng `opacity-*`.
+  - `live` làm nền dưới chữ trắng dùng `bg-live-fill`; `live` làm chữ trên nền tối/tô màu dùng `text-live-text`.
+  - Link nằm giữa đoạn chữ phải gạch chân (`underline underline-offset-2`), không chỉ đổi màu.
+  - Tên đọc của nút phải chứa chữ hiển thị trên nút: dùng `<span className="sr-only">`, không dùng `aria-label` thay thế. Ví dụ nút vote: "Upvote X: 12".
+  - Heading không nhảy cấp. Danh sách thẻ `h3` cần một `h2` phía trên (được phép `sr-only`).
+  - Vùng bấm ≥ 24px (WCAG 2.5.8), ≥ 44px cho nút chính trên điện thoại.
+- **Tốc độ (Core Web Vitals):** LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1.
+  - Phần tử LCP (ảnh bìa trang chủ) không bao giờ nằm trong `ScrollReveal` hay bất cứ thứ gì có `opacity: 0` ban đầu, và luôn có `priority`.
+  - `useNow("minute")` cho mọi thứ không hiện giây; `useNow()` (theo giây) chỉ dành cho đồng hồ đếm ngược.
+- **Bố cục:** mobile-first. Mốc chuyển là `lg` (1024px):
+  - dưới `lg` dùng thanh tab dưới đáy (`src/shared/layout/bottom-nav.tsx`);
+  - từ `lg` dùng header đầy đủ;
+  - danh sách link chung ở `src/shared/layout/nav.ts`;
+  - nội dung chừa `pb-28` cho thanh tab, phần tử cố định ở đáy cộng `env(safe-area-inset-bottom)`;
+  - kiểm tra ở 390 / 768 / 1366px, không được cuộn ngang.
+- **Tính năng trình duyệt:** ưu tiên tính năng gốc thay cho JS tự viết:
+  - `popover` cho menu nhỏ;
+  - `<ViewTransition>` của React cho chuyển cảnh (album polaroid → lightbox);
+  - `@starting-style` cho hiệu ứng xuất hiện;
+  - đơn vị `svh`/`dvh` cho khối cao bằng màn hình.
+
+  Trình duyệt không hỗ trợ thì vẫn chạy, chỉ không có hiệu ứng.
+- **View Transitions:**
+  - Mở và đóng chạy trong `startTransition`. Mỗi `name` chỉ gắn cho một phần tử tại một thời điểm.
+  - Overlay có phần tử được đặt tên thì không bọc trong `AnimatePresence`, vì hiệu ứng exit giữ phần tử lại và làm hỏng chuyển cảnh lúc đóng.
+  - Class CSS đặt ở `motion.css`, có nhánh `prefers-reduced-motion`.
+- **Tránh "dấu hiệu AI làm"** (theo `frontend-design`):
+  - không đặt dòng chữ HOA giãn chữ phía trên mọi tiêu đề; dòng chữ nhỏ phía trên tiêu đề dùng `font-script` (Dancing Script) như lời viết tay trên thiệp;
+  - không gắn "→" vào cuối link;
+  - chỉ một khoảnh khắc chuyển động lớn cho mỗi màn hình.
+- **Định dạng code:** Prettier với `printWidth: 160` (`.prettierrc.json`). Chỉ định dạng file mình sửa.
+
 ## Đặt tên
 
 - File: `kebab-case.ts(x)`. Component export: `PascalCase` (named export, không default, trừ `page.tsx` / `layout.tsx` / `route.ts`).

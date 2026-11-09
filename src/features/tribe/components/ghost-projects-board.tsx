@@ -12,7 +12,7 @@ import { daysSince, GHOST_PROJECTS } from "../lib/ghost-projects";
  * days have elapsed since the broadcast and linking to the exact restream.
  */
 export function GhostProjectsBoard() {
-  const now = useNow();
+  const now = useNow("minute");
 
   return (
     <ul className="grid gap-3 sm:grid-cols-2">
@@ -26,9 +26,7 @@ export function GhostProjectsBoard() {
                   {p.doneVideoId ? (
                     <Badge tone="cleared">Đã làm thật</Badge>
                   ) : (
-                    <Badge tone="accent">
-                      {elapsed === null ? "Đang đếm ngày…" : `${p.approx ? "~" : ""}${elapsed} ngày kể từ lúc hứa`}
-                    </Badge>
+                    <Badge tone="accent">{elapsed === null ? "Đang đếm ngày…" : `${p.approx ? "~" : ""}${elapsed} ngày kể từ lúc hứa`}</Badge>
                   )}
                   <span className="font-mono text-xs text-muted">
                     {p.approx ? "~" : ""}
@@ -40,21 +38,11 @@ export function GhostProjectsBoard() {
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border pt-2.5 text-xs">
-                <a
-                  href={youtubeUrl(p.videoId)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-accent hover:underline"
-                >
+                <a href={youtubeUrl(p.videoId)} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent hover:underline">
                   Buổi stream vẽ dự án ↗
                 </a>
                 {p.doneVideoId && (
-                  <a
-                    href={youtubeUrl(p.doneVideoId)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-cleared hover:underline"
-                  >
+                  <a href={youtubeUrl(p.doneVideoId)} target="_blank" rel="noopener noreferrer" className="font-semibold text-cleared hover:underline">
                     Video làm thật ↗
                   </a>
                 )}

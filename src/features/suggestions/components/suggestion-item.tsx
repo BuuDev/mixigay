@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { ReportButton } from "@/features/reports/components/report-button";
 import { formatDate } from "@/shared/lib/format";
 import { Badge } from "@/shared/ui/badge";
 import { allowedSuggestionUrl } from "../lib/url-policy";
@@ -37,9 +38,12 @@ export function SuggestionItem({ suggestion: s, voted, onVote }: { suggestion: S
             {s.steam.price} · {s.steam.genres.join(", ")}
           </p>
         )}
-        <p className="mt-1 text-xs text-muted">
-          {s.author} · {formatDate(s.createdAt)}
-        </p>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+          <span>
+            {s.author} · {formatDate(s.createdAt)}
+          </span>
+          <ReportButton kind="suggestion" targetId={s.id} authorId={s.authorId} demo={!s.authorId} />
+        </div>
       </div>
     </div>
   );

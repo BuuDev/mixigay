@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { formatCountdown } from "@/features/schedule/lib/countdown";
 import { nextSlot } from "@/features/schedule/lib/schedule";
-import type { ScheduleSlot } from "@/features/schedule/types";
+import type { ScheduleOverride, ScheduleSlot } from "@/features/schedule/types";
 import { useNow } from "@/shared/hooks/use-now";
 import { formatViews } from "@/shared/lib/format";
 import { youtubeUrl } from "@/shared/lib/links";
@@ -29,26 +29,31 @@ function Equalizer() {
  * opens the stream on YouTube. Idle: short countdown, scrolls to the countdown
  * block. Hidden while the intro ritual is open (.td-dock in motion.css).
  */
-export function LiveDock({ status: initial, schedule }: { status: LiveStatus; schedule: ScheduleSlot[] }) {
+export function LiveDock({ status: initial, schedule, overrides }: { status: LiveStatus; schedule: ScheduleSlot[]; overrides?: ScheduleOverride[] }) {
   const status = useLiveStatus(initial);
   const now = useNow();
   if (!now) return null;
 
   if (status.state === "live" && status.videoId) {
     return (
-      <m.div variants={pop} initial="hidden" animate="visible" className="td-dock fixed right-4 bottom-4 z-40">
+      <m.div
+        variants={pop}
+        initial="hidden"
+        animate="visible"
+        className="td-dock fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 lg:bottom-4"
+      >
         <span aria-hidden className="absolute inset-0 rounded-pill bg-live motion-safe:animate-td-ping" />
         <m.a
           {...press}
           href={youtubeUrl(status.videoId)}
           target="_blank"
           rel="noopener noreferrer"
-          className="relative flex items-center gap-2 rounded-pill bg-live px-4 py-2.5 text-sm font-bold text-white shadow-card"
+          className="relative flex items-center gap-2 rounded-pill bg-live-fill px-4 py-2.5 text-sm font-bold text-white shadow-card"
         >
           <Equalizer />
           ĐANG LIVE
           {status.concurrentViewers ? (
-            <span className="font-mono tabular-nums opacity-90">
+            <span className="font-mono tabular-nums">
               · <CountUp value={status.concurrentViewers} format={(n) => formatViews(n)} />
             </span>
           ) : null}
@@ -58,11 +63,11 @@ export function LiveDock({ status: initial, schedule }: { status: LiveStatus; sc
     );
   }
 
-  const target = status.state === "upcoming" && status.startTime ? Date.parse(status.startTime) : nextSlot(schedule, now)?.at.getTime();
+  const target = status.state === "upcoming" && status.startTime ? Date.parse(status.startTime) : nextSlot(schedule, now, overrides)?.at.getTime();
   if (!target) return null;
   const left = formatCountdown(target - now.getTime());
   return (
-    <m.div variants={pop} initial="hidden" animate="visible" className="td-dock fixed right-4 bottom-4 z-40">
+    <m.div variants={pop} initial="hidden" animate="visible" className="td-dock fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 lg:bottom-4">
       <Link
         href="/#dem-nguoc"
         className="flex items-center gap-2 rounded-pill border border-border bg-surface-raised/95 px-4 py-2.5 text-sm font-semibold shadow-card backdrop-blur transition-transform hover:-translate-y-0.5"

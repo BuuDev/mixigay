@@ -14,14 +14,14 @@ const container = stagger(0.07);
  * timeline of sourced milestones. Honour roll only — no donations, no account numbers.
  */
 export function CharityCard() {
-  const now = useNow();
+  const now = useNow("minute");
   const inMonth = now ? isCharityMonth(now) : false;
   const days = now ? daysUntilAnnual(12, 1, now).days : null;
 
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-border bg-accent/10 p-5 text-center">
-        <p className="text-xs font-semibold tracking-[0.25em] text-accent uppercase">Truyền thống tháng 12</p>
+        <p className="font-script text-xl font-semibold text-accent-glow">Truyền thống tháng 12</p>
         {inMonth ? (
           <p className="mt-2 text-2xl font-black">Đang là tháng Góp Gạch Xây Trường 🧱</p>
         ) : (
@@ -31,7 +31,7 @@ export function CharityCard() {
         )}
         <p className="mx-auto mt-2 max-w-xl text-sm text-muted">
           Cộng đồng Bộ Tộc cùng Đoàn Thanh niên trường ĐH Kinh tế Quốc dân xây điểm trường, nhà công vụ cho trẻ em vùng cao — theo dõi trên{" "}
-          <a href={OFFICIAL_CHANNEL_URL} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+          <a href={OFFICIAL_CHANNEL_URL} target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2">
             kênh chính chủ
           </a>
           .
@@ -46,7 +46,7 @@ export function CharityCard() {
             <p className="font-bold">{ms.title}</p>
             <p className="text-sm text-muted">
               {ms.detail}{" "}
-              <a href={ms.source.href} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+              <a href={ms.source.href} target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2">
                 {ms.source.label} ↗
               </a>
             </p>

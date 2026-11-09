@@ -1,5 +1,6 @@
-import type { ScheduleSlot } from "../types";
-import { nextOccurrence } from "./schedule";
+import type { ScheduleOverride, ScheduleSlot } from "../types";
+import { dayKey, effectiveSlots, overrideFor } from "./overrides";
+import { nextOccurrence, nextSlot, prevSlot } from "./schedule";
 
 const VN_MS = 7 * 3_600_000;
 const DAY_MS = 86_400_000;
@@ -15,12 +16,14 @@ export interface DayCell {
   date: Date;
   inMonth: boolean;
   isToday: boolean;
-  /** Regular slots that day (Vietnam time). */
+  /** Slots that actually happen that day (Vietnam time): regular ones with overrides applied. */
   slots: ScheduleSlot[];
+  /** The one-day exception for this date, if any. */
+  override?: ScheduleOverride;
 }
 
 /** Monday-first weeks covering a month in the Vietnam calendar. */
-export function monthGrid(year: number, month: number, slots: ScheduleSlot[], now: Date): DayCell[][] {
+export function monthGrid(year: number, month: number, slots: ScheduleSlot[], now: Date, overrides?: readonly ScheduleOverride[]): DayCell[][] {
   const today = vnDate(now);
   const first = Date.UTC(year, month, 1);
   const lead = (new Date(first).getUTCDay() + 6) % 7; // Monday = 0
@@ -34,7 +37,8 @@ export function monthGrid(year: number, month: number, slots: ScheduleSlot[], no
         date,
         inMonth: date.getUTCMonth() === month,
         isToday: date.getUTCFullYear() === today.y && date.getUTCMonth() === today.m && date.getUTCDate() === today.d,
-        slots: slots.filter((s) => s.dayOfWeek === date.getUTCDay()),
+        slots: effectiveSlots(slots, date, overrides),
+        override: overrideFor(overrides, dayKey(date)),
       });
     }
     if (w >= 4 && week.every((c) => !c.inMonth)) break;
@@ -53,7 +57,13 @@ export function slotInstant(day: Date, slot: ScheduleSlot): Date {
  * 0→1 progress of the wait between the previous scheduled start and the next one,
  * for the countdown ring. 0 right after a stream started, 1 when the next begins.
  */
-export function countdownProgress(slots: ScheduleSlot[], now: Date): number {
+export function countdownProgress(slots: ScheduleSlot[], now: Date, overrides?: readonly ScheduleOverride[]): number {
+  if (overrides?.length) {
+    const next = nextSlot(slots, now, overrides);
+    const prev = prevSlot(slots, now, overrides);
+    if (!next || !prev) return 0;
+    return Math.min(1, Math.max(0, (now.getTime() - prev.at.getTime()) / (next.at.getTime() - prev.at.getTime())));
+  }
   if (!slots.length) return 0;
   const nexts = slots.map((s) => nextOccurrence(s, now).getTime());
   const next = Math.min(...nexts);
@@ -61,7 +71,11 @@ export function countdownProgress(slots: ScheduleSlot[], now: Date): number {
   return Math.min(1, Math.max(0, (now.getTime() - prev) / (next - prev)));
 }
 
-const gcalTime = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+const gcalTime = (d: Date) =>
+  d
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}/, "");
 
 /** "Add to Google Calendar" link (no OAuth, opens Google's own form). */
 export function googleCalendarLink({ title, start, minutes = 180, details }: { title: string; start: Date; minutes?: number; details?: string }): string {

@@ -234,11 +234,64 @@
 }
 
 /* Floating UI (live dock) hides while an overlay is open — intro ritual (spec §3), sheets. */
-html[data-overlay] .td-dock {
+html[data-overlay] .td-dock,
+html[data-overlay] .td-bottom-nav {
   display: none;
+}
+/* "Thêm" menu of the phone tab bar rises from the bar (native popover). */
+.td-nav-more {
+  position: fixed;
+  opacity: 0;
+  translate: 0 8px;
+  transition:
+    opacity var(--td-dur-fast) var(--td-ease-out),
+    translate var(--td-dur-fast) var(--td-ease-out),
+    display var(--td-dur-fast) allow-discrete,
+    overlay var(--td-dur-fast) allow-discrete;
+}
+.td-nav-more:popover-open {
+  opacity: 1;
+  translate: 0 0;
+}
+@starting-style {
+  .td-nav-more:popover-open {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+/* React <ViewTransition> classes (album polaroid → lightbox). Durations mirror tokens. */
+::view-transition-group(.td-morph) {
+  animation-duration: var(--td-dur-slow);
+  animation-timing-function: var(--td-ease-out);
+}
+::view-transition-image-pair(.td-morph) {
+  isolation: isolate;
+}
+::view-transition-new(.td-fade-in) {
+  animation: var(--td-dur-base) var(--td-ease-out) both td-vt-fade-in;
+}
+::view-transition-old(.td-fade-out) {
+  animation: var(--td-dur-fast) var(--td-ease-in-out) both td-vt-fade-out;
+}
+@keyframes td-vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes td-vt-fade-out {
+  to {
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
   .td-embers,
   .td-burst {
     display: none;

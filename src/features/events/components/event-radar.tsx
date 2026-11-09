@@ -9,14 +9,15 @@ import { ANNUAL_EVENTS, daysUntilAnnual, OPEN_EVENTS } from "../lib/events";
  * plans shown only with their status (no invented dates).
  */
 export function EventRadar() {
-  const now = useNow();
+  const now = useNow("minute");
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <div className="space-y-3">
+      {/* Side by side, the dated cards stretch to the height of the open-plans card. */}
+      <div className="flex flex-col gap-3">
         {ANNUAL_EVENTS.map((e) => {
           const next = now ? daysUntilAnnual(e.month, e.day, now) : null;
           return (
-            <Card key={e.id} className="flex items-center gap-4 p-4">
+            <Card key={e.id} className="flex flex-1 items-center gap-4 p-4">
               <div className="w-20 shrink-0 text-center">
                 <span className="block font-mono text-4xl leading-none font-black text-transparent [-webkit-text-stroke:1.5px_var(--td-ember)]">
                   {next === null ? "--" : next.days}
@@ -37,7 +38,7 @@ export function EventRadar() {
         })}
       </div>
       <Card className="p-4">
-        <p className="text-xs font-semibold tracking-[0.2em] text-accent uppercase">Radar hóng kèo — chưa có ngày</p>
+        <p className="font-script text-xl font-semibold text-accent-glow">Radar hóng kèo — chưa có ngày</p>
         <ul className="mt-3 space-y-3">
           {OPEN_EVENTS.map((e) => (
             <li key={e.id} className="flex items-start gap-3">
@@ -46,7 +47,7 @@ export function EventRadar() {
                 <p className="font-semibold">{e.label}</p>
                 <p className="text-muted">
                   {e.status}{" "}
-                  <a href={e.source.href} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+                  <a href={e.source.href} target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2">
                     {e.source.label} ↗
                   </a>
                 </p>

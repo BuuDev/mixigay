@@ -8,4 +8,5 @@ export interface FanSong {
   platform: SongPlatform;
   note?: string;
   createdAt: string;
+  upvotes: number;
 }

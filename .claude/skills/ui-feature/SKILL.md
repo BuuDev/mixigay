@@ -33,7 +33,8 @@ description: Build or change a public page or component in mixi-fan-hub — live
 
 ## Interaction and motion
 
-- Mobile-first, one column; test at 375 px and desktop.
+- Follow "Chuẩn UI 2026" in `docs/07-conventions.md` (WCAG 2.2 AA, Core Web Vitals budget, `lg` breakpoint with the phone tab bar, native popover/ViewTransition, no AI-default tells). For a new visual direction or a redesign, also load the `frontend-design` skill; for transitions between states or routes, `vercel-react-view-transitions`.
+- Mobile-first, one column; test at 390 / 768 / 1366 px with no horizontal scroll.
 - Respect `prefers-reduced-motion` (Tailwind `motion-safe:` / `motion-reduce:`): no particles, no pulse, jump to final states.
 - Ask for permissions (notifications, calendar) only after a tap.
 - `localStorage` only for per-device conveniences (intro shown today, guest RSVP), always in try/catch, and the page must work if it throws.
@@ -44,5 +45,6 @@ description: Build or change a public page or component in mixi-fan-hub — live
 - `npm test` for any new pure logic (countdown math, calendar links: put it in the feature's `lib/` with a test).
 - `npm run smoke` (add the page to the page list and a stub-data marker).
 - A screenshot at phone and desktop width if a browser tool is available; otherwise say it was not visually checked.
+- Lighthouse on the production build (`npm run build && npx next start`), mobile and `--preset=desktop`: accessibility must stay 100 on the pages you touched (`web-quality-audit` skill). Kill any old `next start` first, or you measure a stale build.
 
 Finish with `done-check`; run `fan-site-guard` and `next16-reviewer` on the diff.

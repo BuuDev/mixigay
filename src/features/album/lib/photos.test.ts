@@ -14,10 +14,7 @@ describe("album", () => {
   });
 
   it("never names an official logo as an album photo (pixels are reviewed by a person, see photos.ts)", () => {
-    for (const p of ALBUM)
-      expect(`${p.src} ${p.alt} ${p.caption}`.toLowerCase()).not.toMatch(
-        /logo|refund/,
-      );
+    for (const p of ALBUM) expect(`${p.src} ${p.alt} ${p.caption}`.toLowerCase()).not.toMatch(/logo|refund/);
   });
 
   it("has ids, alt text, captions and credits", () => {

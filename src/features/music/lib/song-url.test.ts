@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { songPlatform } from "./song-url";
+import { songPlatform, soundcloudEmbedUrl } from "./song-url";
 
 describe("songPlatform", () => {
   it.each([
@@ -16,4 +16,19 @@ describe("songPlatform", () => {
     "rejects %s",
     (url) => expect(songPlatform(url)).toBeNull(),
   );
+});
+
+describe("soundcloudEmbedUrl", () => {
+  it("builds official w.soundcloud.com player URL for a valid track link", () => {
+    const embed = soundcloudEmbedUrl("https://soundcloud.com/brother-br-h/cam-on-anh-do-mixi-shibidi", true);
+    expect(embed).toContain("https://w.soundcloud.com/player/?");
+    expect(embed).toContain("auto_play=true");
+    expect(embed).toContain(encodeURIComponent("https://soundcloud.com/brother-br-h/cam-on-anh-do-mixi-shibidi"));
+  });
+
+  it("returns null for non-soundcloud or profile-only URLs", () => {
+    expect(soundcloudEmbedUrl("https://www.youtube.com/watch?v=abc")).toBeNull();
+    expect(soundcloudEmbedUrl("https://soundcloud.com/only-user")).toBeNull();
+    expect(soundcloudEmbedUrl("https://on.soundcloud.com/short")).toBeNull();
+  });
 });

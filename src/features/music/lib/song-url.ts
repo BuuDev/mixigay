@@ -36,3 +36,33 @@ export function songPlatform(raw: string): SongPlatform | null {
   const host = url.hostname.replace(/^(www|m)\./, "");
   return HOSTS[host] ?? null;
 }
+
+/**
+ * Official SoundCloud Widget iframe URL for a full `soundcloud.com/<user>/<track>` link.
+ * Returns null for non-SoundCloud links or short links (`on.soundcloud.com`) that lack a `<user>/<track>` path.
+ */
+export function soundcloudEmbedUrl(raw: string, autoPlay = false): string | null {
+  let url: URL;
+  try {
+    url = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:") return null;
+  const host = url.hostname.replace(/^(www|m)\./, "");
+  if (host !== "soundcloud.com") return null;
+  const segments = url.pathname.split("/").filter(Boolean);
+  if (segments.length < 2) return null;
+  const cleanTrackUrl = `https://soundcloud.com/${segments[0]}/${segments[1]}`;
+  const params = new URLSearchParams({
+    url: cleanTrackUrl,
+    color: "#f97316",
+    auto_play: autoPlay ? "true" : "false",
+    hide_related: "true",
+    show_comments: "false",
+    show_user: "true",
+    show_reposts: "false",
+    show_teaser: "false",
+  });
+  return `https://w.soundcloud.com/player/?${params.toString()}`;
+}

@@ -367,5 +367,112 @@ await as(adm.id, () => q(`select public.moderate_user($1, 'unban')`, [late.id]))
 eq("unban restores trust 0", (await q(`select trust from public.profiles where id = $1`, [late.id]))[0].trust, 0);
 await denied("fan reads banned_terms", () => as(fan.id, () => q(`select * from public.banned_terms`)));
 
+// ----- Fan art (Google Drive share links) -----
+console.log("Fan art");
+const art = (title, fileId, url = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`) =>
+  q(`insert into public.fan_art (title, artist, drive_url, drive_file_id) values ($1, 'Họa sĩ Bộ Tộc', $2, $3) returning id`, [title, url, fileId]);
+const [a1] = await as(fan.id, () => art("Tranh Tộc Trưởng 1", "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"));
+await allowed("fan submits fan art via Google Drive link (pending)", async () => a1.id);
+eq("pending fan art invisible to others", await as(fan2.id, () => q(`select id from public.fan_art where id = $1`, [a1.id])), []);
+eq("pending fan art invisible to anon", await as(null, () => q(`select id from public.fan_art where id = $1`, [a1.id])), []);
+eq("author sees own pending fan art", (await as(fan.id, () => q(`select id from public.fan_art where id = $1`, [a1.id]))).length, 1);
+await denied("fan self-approves fan art on insert", () =>
+  as(fan.id, () => q(`insert into public.fan_art (title, artist, drive_url, drive_file_id, approved) values ('X tranh', 'Fan', 'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz999999/view', '1AbCdEfGhIjKlMnOpQrStUvWxYz999999', true)`)),
+);
+await denied("fan approves own fan art", () => as(fan.id, () => q(`update public.fan_art set approved = true where id = $1 returning id`, [a1.id])));
+await denied("anon submits fan art", () => as(null, () => art("Anon tranh", "1AbCdEfGhIjKlMnOpQrStUvWxYz888888")));
+await denied("non-Drive host rejected", () => as(fan.id, () => art("Link ngoài", "1AbCdEfGhIjKlMnOpQrStUvWxYz777777", "https://imgur.com/1AbCdEfGhIjKlMnOpQrStUvWxYz777777")));
+await denied("invalid drive_file_id rejected", () => as(fan.id, () => art("ID ngắn", "short")));
+await denied("author deletes own fan art", () => as(fan.id, () => q(`delete from public.fan_art where id = $1 returning id`, [a1.id])));
+await allowed("admin approves fan art", async () => {
+  const rows = await as(adm.id, () => q(`update public.fan_art set approved = true where id = $1 returning id`, [a1.id]));
+  if (!rows.length) throw new Error("0 rows");
+});
+eq("approved fan art visible to anon", (await as(null, () => q(`select id from public.fan_art where id = $1`, [a1.id]))).length, 1);
+const [dupArt] = await as(fan2.id, () => art("Bản sao tranh", "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"));
+await allowed("pending duplicate drive_file_id allowed", async () => dupArt.id);
+await denied("admin publishes duplicate drive_file_id", () => as(adm.id, () => q(`update public.fan_art set approved = true where id = $1 returning id`, [dupArt.id])));
+
+// ----- Quiz questions (fan-contributed) -----
+console.log("Quiz questions");
+const quizInsert = (question, correctIndex = 1) =>
+  q(
+    `insert into public.quiz_questions (question, option_a, option_b, option_c, option_d, correct_index, explanation) values ($1, 'Đáp án A', 'Đáp án B', 'Đáp án C', 'Đáp án D', $2, 'Giải thích rõ ràng') returning id`,
+    [question, correctIndex],
+  );
+const [q1] = await as(fan.id, () => quizInsert("Khung giờ lên sóng quen thuộc của anh Độ Mixi là mấy giờ?"));
+await allowed("fan submits a quiz question (pending)", async () => q1.id);
+eq("pending quiz question invisible to others", await as(fan2.id, () => q(`select id from public.quiz_questions where id = $1`, [q1.id])), []);
+eq("pending quiz question invisible to anon", await as(null, () => q(`select id from public.quiz_questions where id = $1`, [q1.id])), []);
+eq("author sees own pending quiz question", (await as(fan.id, () => q(`select id from public.quiz_questions where id = $1`, [q1.id]))).length, 1);
+await denied("fan self-approves quiz question", () =>
+  as(fan.id, () =>
+    q(
+      `insert into public.quiz_questions (question, option_a, option_b, option_c, option_d, correct_index, approved) values ('Câu hỏi tự duyệt dài hơn 10 ký tự?', 'A', 'B', 'C', 'D', 0, true)`,
+    ),
+  ),
+);
+await denied("correct_index out of range rejected", () => as(fan.id, () => quizInsert("Câu hỏi có đáp án ngoài phạm vi 0..3?", 5)));
+await denied("question too short rejected", () => as(fan.id, () => quizInsert("Ngắn?")));
+await allowed("admin approves quiz question", async () => {
+  const rows = await as(adm.id, () => q(`update public.quiz_questions set approved = true where id = $1 returning id`, [q1.id]));
+  if (!rows.length) throw new Error("0 rows");
+});
+eq("approved quiz question visible to anon", (await as(null, () => q(`select id from public.quiz_questions where id = $1`, [q1.id]))).length, 1);
+
+// ----- Reports, fan song votes, Steam budget (20261110110000) -----
+console.log("Reports");
+// No RETURNING: reporters may not read reports back, so RETURNING would trip RLS.
+const report = (uid, kind, id, reason = "spam") => as(uid, () => q(`insert into public.reports (target_kind, target_id, reason) values ($1, $2, $3)`, [kind, id, reason]));
+await allowed("fan reports a published suggestion", () => report(fan.id, "suggestion", lc.id));
+await denied("same fan reports it twice", () => report(fan.id, "suggestion", lc.id, "gambling"));
+await allowed("fan reports a published song", () => report(fan.id, "fan_song", s1row.id, "offensive"));
+await allowed("fan reports a display name", () => report(fan.id, "profile", fan2.id, "impersonation"));
+await denied("report on a target that does not exist", () => report(fan.id, "suggestion", "00000000-0000-0000-0000-000000000000"));
+await denied("report with an unknown reason", () => report(fan2.id, "suggestion", lc.id, "boring"));
+await denied("anon reports", () => report(null, "suggestion", lc.id));
+await denied("banned fan reports", async () => {
+  await as(adm.id, () => q(`select public.moderate_user($1, 'ban')`, [late.id]));
+  try {
+    return await report(late.id, "suggestion", lc.id);
+  } finally {
+    await as(adm.id, () => q(`select public.moderate_user($1, 'unban')`, [late.id]));
+  }
+});
+eq("reporter cannot read reports back", await as(fan.id, () => q(`select id from public.reports`)), []);
+eq("admin sees reports", (await as(adm.id, () => q(`select id from public.reports`))).length, 3);
+await denied("fan resolves a report", () => as(fan.id, () => q(`update public.reports set resolved = true returning id`)));
+await allowed("admin resolves a report", async () => {
+  const rows = await as(adm.id, () => q(`update public.reports set resolved = true where target_kind = 'profile' returning id`));
+  if (!rows.length) throw new Error("0 rows");
+});
+
+console.log("Fan song votes");
+const songVote = (uid, id) => as(uid, () => q(`insert into public.fan_song_votes (song_id) values ($1)`, [id]));
+await allowed("aged fan votes for a published song", () => songVote(fan.id, s1row.id));
+await denied("same fan votes twice", () => songVote(fan.id, s1row.id));
+await denied("vote for a pending song", () => songVote(fan.id, dup.id));
+eq("song vote is counted", (await q(`select upvotes from public.fan_songs where id = $1`, [s1row.id]))[0].upvotes, 1);
+await as(fan.id, () => q(`delete from public.fan_song_votes where song_id = $1`, [s1row.id]));
+eq("song unvote is counted", (await q(`select upvotes from public.fan_songs where id = $1`, [s1row.id]))[0].upvotes, 0);
+await denied("fan forges song upvotes", () => as(fan.id, () => q(`update public.fan_songs set upvotes = 999 where id = $1 returning id`, [s1row.id])));
+await allowed("shadow-banned song vote reports success…", () => songVote(newbie.id, s1row.id));
+eq("…but is not stored", (await q(`select count(*)::int n from public.fan_song_votes where user_id = $1`, [newbie.id]))[0].n, 0);
+const [freshFan] = await q(`insert into auth.users (email) values ('fresh@example.com') returning id`);
+await denied("account under 24h cannot vote for songs", () => songVote(freshFan.id, s1row.id));
+
+console.log("Steam lookup budget");
+const steamTake = (uid) => as(uid, () => q(`select public.take_steam_lookup() ok`)).then((r) => r[0].ok);
+const takes = [];
+for (let i = 0; i < 21; i++) takes.push(await steamTake(fan2.id));
+eq("20 Steam lookups per 10 minutes, the 21st is refused", [takes.slice(0, 20).every(Boolean), takes[20]], [true, false]);
+eq("another fan has their own budget", await steamTake(fan.id), true);
+await denied("anon cannot take a Steam lookup", () => as(null, () => q(`select public.take_steam_lookup()`)));
+await denied("fan reads steam_lookups", async () => {
+  const rows = await as(fan.id, () => q(`select * from public.steam_lookups`));
+  if (rows.length) return rows;
+  throw new Error("no access");
+});
+
 console.log(failures ? `\nDB_CHECK=fail (${failures})` : "\nDB_CHECK=pass");
 process.exit(failures ? 1 : 0);

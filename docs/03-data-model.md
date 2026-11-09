@@ -206,9 +206,26 @@ create table quotes (
 create table fan_art (
   id uuid primary key default gen_random_uuid(),
   author_id uuid not null references profiles on delete cascade,
-  storage_path text not null,            -- bucket 'fan-art'
-  title text,
-  credit_url text,
+  title text not null check (char_length(btrim(title)) between 2 and 120),
+  artist text not null check (char_length(btrim(artist)) between 1 and 80),
+  drive_url text not null,               -- link Google Drive công khai ("Anyone with the link")
+  drive_file_id text not null,           -- ID file Google Drive (10–80 ký tự)
+  note text,
+  approved boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create table quiz_questions (
+  id uuid primary key default gen_random_uuid(),
+  author_id uuid not null references profiles on delete cascade,
+  question text not null check (char_length(btrim(question)) between 10 and 240),
+  option_a text not null,
+  option_b text not null,
+  option_c text not null,
+  option_d text not null,
+  correct_index smallint not null check (correct_index between 0 and 3),
+  explanation text,
+  author_name text not null default 'Bộ Tộc',
   approved boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -223,7 +240,8 @@ create table fan_art (
 | suggestion_votes | chỉ phiếu của mình | `user_id = auth.uid()`, tài khoản ≥ 24 giờ (hoặc `trust ≥ 1`), không bị cấm, đề xuất đã duyệt và không bị ẩn, ≤ 60 phiếu/giờ | – | `user_id = auth.uid()` |
 | profiles | mọi người | trigger khi tạo user | chủ sở hữu, chỉ cột `display_name` (trigger làm sạch, cắt 50 ký tự) | – |
 | banned_terms | admin | admin | admin | admin |
-| quotes, fan_art | mọi người (`approved = true`), tác giả thấy của mình, admin thấy hết | đăng nhập, `author_id = auth.uid()`, `approved = false` | admin | admin, tác giả |
+| quotes | mọi người (`approved = true`), tác giả thấy của mình, admin thấy hết | đăng nhập, `author_id = auth.uid()`, `approved = false` | admin | admin, tác giả |
+| fan_songs, fan_art, quiz_questions | `approved`, hoặc tác giả, hoặc admin | đăng nhập, không bị cấm, `author_id = auth.uid()`, `approved = false`, giới hạn ở trigger | admin | **chỉ admin** |
 | push_subscriptions | chủ sở hữu | đăng nhập | – | chủ sở hữu |
 | api_usage | admin | – (service role qua `add_api_usage`) | – | – |
 | admins | chính mình | – | – | – |
@@ -276,3 +294,33 @@ Migration `supabase/migrations/20261109120000_fan_songs.sql`.
 | select | insert | update | delete |
 |---|---|---|---|
 | `approved`, hoặc tác giả, hoặc admin | đăng nhập, không bị cấm, `author_id = auth.uid()`, giới hạn ở trigger (xem "Chống phá hoại") | admin | **chỉ admin** (nếu tác giả xóa được thì vòng gửi→xóa sẽ lách giới hạn/ngày) |
+
+## fan_art (Tranh vẽ Bộ Tộc qua link Google Drive cá nhân — 0 MB lưu trữ server)
+
+Migration `supabase/migrations/20261110100000_fan_art_and_quiz.sql`.
+
+| Cột | Ghi chú |
+|---|---|
+| `title` (2–120), `artist` (1–80), `drive_url` (≤500), `drive_file_id` (10–80), `note` (≤300) | Fan chỉ được insert 5 cột này (column grant). Ảnh lưu trên Google Drive cá nhân của fan (chế độ "Bất kỳ ai có đường liên kết đều xem được"), server không tốn dung lượng lưu file |
+| `drive_file_id` | Chỉ chấp nhận `[A-Za-z0-9_-]{10,80}`, unique trong các tranh `approved` |
+| `approved` | Mặc định `false`; admin xem trước ảnh trực tiếp trong `/admin/fan-art` rồi mới duyệt |
+
+## quiz_questions (Đố vui Bộ Tộc — fan đóng góp câu hỏi)
+
+Migration `supabase/migrations/20261110100000_fan_art_and_quiz.sql`.
+
+| Cột | Ghi chú |
+|---|---|
+| `question` (10–240), `option_a..d` (1–120), `correct_index` (0..3), `explanation` (≤300), `author_name` (1–60) | Fan chỉ được insert các cột nội dung này; `approved` mặc định `false` |
+| Giới hạn | Tối đa 3 câu/ngày (1 câu/ngày cho tài khoản < 24h, 20 câu/giờ toàn site); chặn duyệt nếu tác giả bị cấm (`block_banned_approval`) |
+
+## Báo cáo nội dung, vote nhạc nịnh, giới hạn Steam
+
+Migration `supabase/migrations/20261110110000_reports_song_votes_steam.sql`. Các quy tắc đều có assert trong `npm run db:check` (các mục "Reports", "Fan song votes", "Steam lookup budget").
+
+| Bảng / hàm | Quy tắc |
+|---|---|
+| `reports(target_kind, target_id, reason, note, resolved)` | Fan đã đăng nhập, không bị cấm, chỉ được ghi 4 cột. Mỗi fan chỉ báo cáo một lần cho mỗi mục (unique). Tối đa 20 báo cáo mỗi ngày. Mục bị báo cáo phải đang hiển thị: đề xuất đã duyệt, bài nhạc đã duyệt, hoặc hồ sơ. **Người báo cáo không đọc lại được** báo cáo, kể cả của mình, nên insert từ app không được `.select()`/`RETURNING`. Chỉ admin xem và xử lý. Báo cáo không tự ẩn nội dung, để tránh bị hội đồng báo cáo; admin quyết định ở `/admin` (mục "Hàng đợi duyệt"). |
+| `fan_song_votes(song_id, user_id)` + `fan_songs.upvotes` | Giống `suggestion_votes`: tài khoản ≥ 24 giờ, chỉ vote bài đã duyệt, 60 phiếu/giờ. Phiếu của người bị cấm ngầm "thành công" nhưng không được lưu. `moderate_user` gỡ luôn các phiếu này. |
+| `steam_lookups` + `take_steam_lookup()` | Route `/api/steam/[appId]` gọi trước mỗi lần tra cứu: mỗi fan 20 lần / 10 phút, quá thì trả 429. API không đọc được bảng này. |
+

@@ -104,3 +104,32 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 
 **Hệ quả:** Mỗi ảnh có chú thích, alt và dòng nguồn; trang Giới thiệu là kênh xin gỡ. Ảnh chụp thật có bản quyền của người chụp: khi biết tác giả, thêm tên vào `credit`. Mọi chuyển động nền tắt khi người xem bật giảm chuyển động.
 
+## ADR-012 – Chuẩn UI 2026: thanh tab trên điện thoại, View Transitions, WCAG 2.2 AA {#adr-012}
+
+**Trạng thái:** Chấp nhận, 2026-11-09
+
+**Bối cảnh:** Đo bằng Lighthouse, desktop đạt 99–100 điểm, nhưng trang chủ trên điện thoại chỉ 54 điểm hiệu năng:
+- ảnh bìa nằm trong `ScrollReveal`, nên chờ JS mới vẽ; 89% thời gian LCP là chờ render;
+- mười component render lại mỗi giây;
+- a11y còn lỗi tương phản, link không gạch chân, tên nút không khớp chữ hiển thị;
+- header 8 link bị cắt chữ trên điện thoại và tablet.
+
+**Quyết định:**
+- Ghi bộ chuẩn "Chuẩn UI 2026" vào `docs/07-conventions.md`.
+- Thêm thanh tab dưới đáy cho màn < 1024px, mục "Thêm" mở bằng `popover` gốc của trình duyệt.
+- Chuyển cảnh album polaroid → lightbox bằng React `<ViewTransition>`.
+- Thêm `useNow("minute")`.
+- Sửa token màu `--td-muted`, thêm `--td-live-fill` và `--td-live-text`.
+- Dòng chữ nhỏ trên tiêu đề dùng font viết tay Dancing Script.
+- Cài skill `frontend-design` (plugin chính thức của Anthropic). Chép hai bộ skill MIT sau khi đã đọc: `vercel-react-view-transitions` và `web-quality-skills`; không chạy `npx skills`.
+
+**Phương án loại:**
+- *UI UX Pro Max / Taste Skill:* thư viện style đại trà, dễ kéo web về giao diện chung chung.
+- *Header cuộn ngang trên điện thoại:* chữ bị cắt, khó bấm.
+- *Hamburger menu:* các mục chính bị giấu đi, xa vùng ngón cái.
+
+**Hệ quả:**
+- Trang chủ trên điện thoại: thời gian chặn luồng chính giảm 1.630 → 50 ms; a11y 100 trên 9 trang công khai.
+- LCP mô phỏng trên mạng chậm vẫn khoảng 5 s, chủ yếu do lượng JS; LCP đo thật trên máy là 0,15 s.
+- Giảm JS (Motion, các chunk chưa dùng) để lại cho đợt sau.
+

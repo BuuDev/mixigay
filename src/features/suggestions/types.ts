@@ -16,6 +16,8 @@ export interface Suggestion {
   reason: string;
   author: string;
   authorAvatar?: string;
+  /** For reporting an offensive display name; absent in demo data. */
+  authorId?: string;
   createdAt: string;
   upvotes: number;
   status: SuggestionStatus;

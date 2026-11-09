@@ -41,7 +41,7 @@ export function SongForm() {
           {pending ? "Đang gửi…" : "Gửi bài"}
         </Button>
         {result && (
-          <p role="status" className={cn("text-sm", result.ok ? "text-cleared" : "text-live")}>
+          <p role="status" className={cn("text-sm", result.ok ? "text-cleared" : "text-live-text")}>
             {result.message}
           </p>
         )}

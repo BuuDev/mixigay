@@ -19,11 +19,11 @@ export function LoreList() {
     <div>
       <div className="mb-4 flex flex-wrap justify-center gap-2">
         <Chip active={group === "all"} onClick={() => setGroup("all")}>
-          Tất cả <span className="opacity-70">{LORE.length}</span>
+          Tất cả <span className="font-normal">{LORE.length}</span>
         </Chip>
         {LORE_GROUPS.map((g) => (
           <Chip key={g.id} active={group === g.id} onClick={() => setGroup(g.id)}>
-            {g.label} <span className="opacity-70">{count(g.id)}</span>
+            {g.label} <span className="font-normal">{count(g.id)}</span>
           </Chip>
         ))}
       </div>

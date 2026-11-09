@@ -25,3 +25,39 @@ export async function deleteSlot(id: string) {
   fail("deleteSlot", (await supabase.from("schedule_slots").delete().eq("id", z.uuid().parse(id))).error);
   updateTag(TAGS.schedule);
 }
+
+const dateVn = z.iso.date(); // "YYYY-MM-DD", calendar-valid
+
+/** Add or replace the one-day exception for a Vietnam date (date_vn is the key). */
+export async function saveOverride(fd: FormData) {
+  const input = z
+    .object({
+      date_vn: dateVn,
+      cancelled: z.boolean(),
+      time_vn: z
+        .string()
+        .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+        .nullable(),
+      title: z.string().max(120).nullable(),
+      note: z.string().max(200).nullable(),
+    })
+    .refine((o) => o.cancelled || o.time_vn || o.title || o.note, "Chọn nghỉ, hoặc nhập giờ / tiêu đề / ghi chú")
+    .parse({
+      date_vn: str(fd, "date"),
+      cancelled: fd.get("cancelled") === "on",
+      time_vn: optional(fd, "time"),
+      title: optional(fd, "title"),
+      note: optional(fd, "note"),
+    });
+  // A cancelled day has no stream: drop time/title so the row cannot read as "moved".
+  const row = input.cancelled ? { ...input, time_vn: null, title: null } : input;
+  const supabase = await adminDb();
+  fail("saveOverride", (await supabase.from("schedule_overrides").upsert(row, { onConflict: "date_vn" })).error);
+  updateTag(TAGS.schedule);
+}
+
+export async function deleteOverride(date: string) {
+  const supabase = await adminDb();
+  fail("deleteOverride", (await supabase.from("schedule_overrides").delete().eq("date_vn", dateVn.parse(date))).error);
+  updateTag(TAGS.schedule);
+}

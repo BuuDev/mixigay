@@ -6,13 +6,13 @@ export type BadgeTone = "accent" | "live" | "cleared" | "steam" | "viewer" | "mi
 
 const tones: Record<BadgeTone, string> = {
   accent: "bg-accent/15 text-accent",
-  live: "bg-live text-white",
+  live: "bg-live-fill text-white",
   cleared: "bg-cleared/15 text-cleared",
   steam: "bg-steam/15 text-steam",
   viewer: "bg-viewer/15 text-viewer",
   misc: "bg-misc/15 text-misc",
   muted: "bg-surface-raised text-muted",
-  danger: "bg-live/15 text-live",
+  danger: "bg-live/15 text-live-text",
 };
 
 export function Badge({ tone = "muted", icon, className, children }: { tone?: BadgeTone; icon?: ReactNode; className?: string; children: ReactNode }) {

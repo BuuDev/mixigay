@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 export function SectionHeader({ eyebrow, title, icon, id }: { eyebrow?: string; title: string; icon?: ReactNode; id?: string }) {
   return (
     <header className="mb-5 text-center">
-      {eyebrow && <p className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">{eyebrow}</p>}
+      {eyebrow && <p className="font-script text-xl font-semibold text-accent-glow">{eyebrow}</p>}
       <h2 id={id} className="mt-1 flex items-center justify-center gap-2 text-2xl font-black tracking-tight sm:text-3xl">
         {icon}
         {title}

@@ -2,6 +2,7 @@ import type { Suggestion } from "../types";
 
 export interface SuggestionRow {
   id: string;
+  author_id?: string;
   name: string;
   source: "steam" | "viewer-made" | "other";
   url: string | null;
@@ -17,7 +18,7 @@ export interface SuggestionRow {
 }
 
 export const SUGGESTION_SELECT =
-  "id,name,source,url,reason,status,linked_game_slug,steam_app_id,steam_data,upvotes,hidden,created_at,profiles(display_name,avatar_url)";
+  "id,author_id,name,source,url,reason,status,linked_game_slug,steam_app_id,steam_data,upvotes,hidden,created_at,profiles(display_name,avatar_url)";
 
 /** steam_data is jsonb: accept it only in the expected shape so one bad row cannot crash the page. */
 function steamInfo(appId: number, data: unknown): Suggestion["steam"] {
@@ -37,6 +38,7 @@ export function mapSuggestion(r: SuggestionRow): Suggestion {
     reason: r.reason,
     author: r.profiles?.display_name ?? "fan",
     authorAvatar: r.profiles?.avatar_url ?? undefined,
+    authorId: r.author_id,
     createdAt: r.created_at,
     upvotes: r.upvotes,
     status: r.status,

@@ -1,6 +1,8 @@
-// "Tòa Án Bộ Tộc – Máy Tạo Văn Mẫu Hối Lỗi Xin Unban": a purely recreational
-// community meme generator inspired by the channel's famous "unban court"
-// segments where fans submit dramatic apology essays to return from "the island".
+// "Tòa Án Bộ Tộc – Máy Tạo Văn Mẫu Hối Lỗi Xin Unban": a purely recreational meme
+// generator. "Ra đảo" is common Vietnamese chat slang for being banned; the letters
+// are fan jokes, not a segment of the channel. Titles used for anh Độ must come from
+// the sourced glossary (lore.ts) or a real video title, e.g. "Họa sĩ Yên Lãng",
+// "thầy hiệu trưởng DF" (video OGHnhs5joQY).
 
 export interface UnbanOffense {
   id: string;
@@ -51,7 +53,7 @@ export const UNBAN_OFFENSES: readonly UnbanOffense[] = [
     label: "Cho thằng bạn cùng phòng mượn điện thoại 5 phút",
     badge: "Lý do tâm linh",
     confession:
-      "vừa đi lấy cốc nước có 5 phút, để thằng bạn cùng phòng mượn máy mà lúc quay lại đã thấy tài khoản của mình đang lênh đênh giữa quần đảo Trường Sa",
+      "vừa đi lấy cốc nước có 5 phút, để thằng bạn cùng phòng mượn máy mà lúc quay lại đã thấy tài khoản của mình đang lênh đênh giữa một hòn đảo hoang ngoài khơi",
     lesson: "khóa mật khẩu 3 lớp mỗi khi rời máy và tuyệt giao luôn với thằng bạn hay mượn điện thoại",
   },
   {
@@ -72,20 +74,17 @@ export const UNBAN_STYLES: readonly UnbanStyle[] = [
     salutation: "Kính gửi Hội đồng xét xử Bộ tộc cùng các Mod giữ chìa khóa đất liền,",
     opening:
       "Từ ngày nhận án phạt ra đảo xa, đêm nào đúng 22:22 ngoài khơi gió thổi lạnh buốt em cũng ngồi bó gối nhìn về đất liền, cô đơn chẳng khác nào chú khủng long T-Rex lạc đàn trong The Isle.",
-    closing:
-      "Mong Hội đồng rủ lòng thương ném cho em một chiếc phao cứu sinh để em được về lại bờ, thoát cảnh người tối cổ chỉ biết nhìn kênh chat từ xa.",
+    closing: "Mong Hội đồng rủ lòng thương ném cho em một chiếc phao cứu sinh để em được về lại bờ, thoát cảnh người tối cổ chỉ biết nhìn kênh chat từ xa.",
     baseMercy: 78,
   },
   {
     id: "flattery-master",
     label: "Hệ Nịnh Thần Chưởng (Dát vàng lỗ tai)",
     badge: "Nịnh mượt",
-    salutation:
-      "Kính gửi Thầy hiệu trưởng Delta Force, Ông chủ NeNe Shop túi mù số 1 Yên Lãng, Giọng ca vàng Phòng Trà An Liễng, Danh họa PicasĐộ,",
+    salutation: "Kính gửi Thầy hiệu trưởng Delta Force, Ông chủ NeNe Shop túi mù số 1 Yên Lãng, Giọng ca vàng Phòng Trà An Liễng, Họa sĩ Yên Lãng,",
     opening:
       "Trong lúc ngoài đảo chỉ có tiếng sóng vỗ, thứ duy nhất giúp em vượt qua nỗi buồn là mở đi mở lại đêm nhạc Phòng Trà An Liễng #4 dát vàng lỗ tai và chiêm ngưỡng những đường vẽ Siêu dự án ma đầy tính nghệ thuật.",
-    closing:
-      "Với tấm lòng ngưỡng mộ giọng hát Moi Xoang đỉnh cao, kính mong nhận được lệnh ân xá để em kịp về bờ vỗ tay cho Phòng Trà An Liễng số tiếp theo!",
+    closing: "Với tấm lòng ngưỡng mộ giọng hát Moi Xoang đỉnh cao, kính mong nhận được lệnh ân xá để em kịp về bờ vỗ tay cho Phòng Trà An Liễng số tiếp theo!",
     baseMercy: 92,
   },
   {
@@ -95,8 +94,7 @@ export const UNBAN_STYLES: readonly UnbanStyle[] = [
     salutation: "Kính thưa các vị Bao Công giữ cửa group và kênh chat Bộ tộc,",
     opening:
       "Sự việc hôm ấy thực sự là một tai nạn hy hữu của vũ trụ: đúng lúc mạng nhà em bị lag thì con mèo nhảy lên bàn phím dẫm trúng phím Enter, chứ bản thân em là một tộc nhân gương mẫu suốt bao năm qua.",
-    closing:
-      "Em đã nghiêm khắc kiểm điểm con mèo và thay luôn bàn phím mới, kính mong Hội đồng xem xét giảm án cho em về đất liền làm lại từ đầu.",
+    closing: "Em đã nghiêm khắc kiểm điểm con mèo và thay luôn bàn phím mới, kính mong Hội đồng xem xét giảm án cho em về đất liền làm lại từ đầu.",
     baseMercy: 45,
   },
   {
@@ -104,10 +102,8 @@ export const UNBAN_STYLES: readonly UnbanStyle[] = [
     label: "Hệ Thề Non Hẹn Biển (Quyết tâm cải tạo)",
     badge: "Nghiêm túc",
     salutation: "Kính gửi Ban Quản Trị Bộ tộc MixiGaming,",
-    opening:
-      "Sau những ngày tháng lênh đênh ngoài đảo xa tự suy ngẫm, em đã thấm thía sâu sắc nội quy sinh hoạt của Bộ tộc và nhận ra lỗi lầm của mình.",
-    closing:
-      "Em xin hứa nếu được duyệt đơn về bờ sẽ chỉ ngoan ngoãn thả tim, nghe nhạc nịnh và chấp hành nghiêm chỉnh mọi quy định của cộng đồng!",
+    opening: "Sau những ngày tháng lênh đênh ngoài đảo xa tự suy ngẫm, em đã thấm thía sâu sắc nội quy sinh hoạt của Bộ tộc và nhận ra lỗi lầm của mình.",
+    closing: "Em xin hứa nếu được duyệt đơn về bờ sẽ chỉ ngoan ngoãn thả tim, nghe nhạc nịnh và chấp hành nghiêm chỉnh mọi quy định của cộng đồng!",
     baseMercy: 84,
   },
 ];
@@ -135,12 +131,7 @@ function hashSeed(input: string): number {
   return Math.abs(h);
 }
 
-export function composeUnbanPlea(params: {
-  applicantName?: string;
-  offenseId: string;
-  styleId: string;
-  roll?: number;
-}): ComposedUnbanPlea {
+export function composeUnbanPlea(params: { applicantName?: string; offenseId: string; styleId: string; roll?: number }): ComposedUnbanPlea {
   const offense = UNBAN_OFFENSES.find((o) => o.id === params.offenseId) ?? UNBAN_OFFENSES[0];
   const style = UNBAN_STYLES.find((s) => s.id === params.styleId) ?? UNBAN_STYLES[0];
   const cleanName = (params.applicantName ?? "").trim() || "Tộc nhân đang lạnh cóng ngoài khơi";
@@ -174,8 +165,8 @@ export function composeUnbanPlea(params: {
         stampLabel: "DUYỆT VỀ BỜ · NÉM PHAO CỨU SINH",
         judgeNote:
           style.id === "flattery-master"
-            ? "Đoạn khen giọng ca Phòng Trà An Liễng và tranh vẽ PicasĐộ nghe rất lọt tai — duyệt cấp phao bơi về đất liền!"
-            : "Thái độ biết lỗi khá thành khẩn, tạm tha cho về bờ nhưng tái phạm hỏi lịch live là ra thẳng Trường Sa nhé!",
+            ? "Đoạn khen giọng ca Phòng Trà An Liễng và tranh của Họa sĩ Yên Lãng nghe rất lọt tai — duyệt cấp phao bơi về đất liền!"
+            : "Thái độ biết lỗi khá thành khẩn, tạm tha cho về bờ nhưng tái phạm hỏi lịch live là ra thẳng đảo hoang nhé!",
       }
     : {
         approved: false,

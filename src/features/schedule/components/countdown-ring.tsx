@@ -6,7 +6,7 @@ import { buttonClass } from "@/shared/ui/button";
 import { countdownProgress, googleCalendarLink } from "../lib/calendar";
 import { formatCountdown } from "../lib/countdown";
 import { DAY_NAMES, nextSlot } from "../lib/schedule";
-import type { ScheduleSlot } from "../types";
+import type { ScheduleOverride, ScheduleSlot } from "../types";
 
 const R = 88;
 const C = 2 * Math.PI * R;
@@ -15,10 +15,10 @@ const C = 2 * Math.PI * R;
  * Spec §2 — the home page's core block: a ring that fills as the next stream
  * approaches, big H:M:S, a poster-style date block, and "Thêm vào lịch".
  */
-export function CountdownRing({ schedule }: { schedule: ScheduleSlot[] }) {
+export function CountdownRing({ schedule, overrides }: { schedule: ScheduleSlot[]; overrides?: ScheduleOverride[] }) {
   const now = useNow();
-  const next = now ? nextSlot(schedule, now) : null;
-  const progress = now ? countdownProgress(schedule, now) : 0;
+  const next = now ? nextSlot(schedule, now, overrides) : null;
+  const progress = now ? countdownProgress(schedule, now, overrides) : 0;
   const text = now && next ? formatCountdown(next.at.getTime() - now.getTime()) : "--:--:--";
 
   return (
@@ -57,8 +57,13 @@ export function CountdownRing({ schedule }: { schedule: ScheduleSlot[] }) {
         <>
           <DateBlock day={DAY_NAMES[next.slot.dayOfWeek]} date={next.at} time={next.slot.time} />
           <p className="max-w-xs text-center font-semibold">{next.slot.title}</p>
+          {next.override?.note && <p className="-mt-4 max-w-xs text-center text-sm text-muted">{next.override.note}</p>}
           <a
-            href={googleCalendarLink({ title: `Anh Độ Mixi live: ${next.slot.title}`, start: next.at, details: "Nhắc từ Góc Bộ Tộc (web fan). Xem trên Kênh MixiGaming (YouTube)." })}
+            href={googleCalendarLink({
+              title: `Anh Độ Mixi live: ${next.slot.title}`,
+              start: next.at,
+              details: "Nhắc từ Góc Bộ Tộc (web fan). Xem trên Kênh MixiGaming (YouTube).",
+            })}
             target="_blank"
             rel="noopener noreferrer"
             className={buttonClass("secondary")}

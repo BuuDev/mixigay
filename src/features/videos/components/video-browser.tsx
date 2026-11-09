@@ -28,7 +28,7 @@ export function VideoBrowser({ videos, games }: { videos: ClassifiedVideo[]; gam
       <div className="flex flex-wrap items-center gap-2">
         {tabs.map((t) => (
           <Chip key={t.slug} active={filter === t.slug} onClick={() => setFilter(t.slug)}>
-            {t.label} <span className="opacity-70">{t.count}</span>
+            {t.label} <span className="font-normal">{t.count}</span>
           </Chip>
         ))}
         <select
@@ -41,6 +41,7 @@ export function VideoBrowser({ videos, games }: { videos: ClassifiedVideo[]; gam
           <option value="newest">Mới nhất</option>
         </select>
       </div>
+      <h2 className="sr-only">Danh sách video</h2>
       <div className="mt-4">
         <VideoGrid videos={shown} games={games} animationKey={`${filter}-${sort}`} />
       </div>

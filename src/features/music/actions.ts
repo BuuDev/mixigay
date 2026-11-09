@@ -1,8 +1,10 @@
 "use server";
 
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import { getViewer } from "@/features/auth/server/viewer";
 import { serverClient } from "@/server/supabase/server";
+import { TAGS } from "@/shared/lib/cache-tags";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { songPlatform } from "./lib/song-url";
 
@@ -40,4 +42,23 @@ export async function submitSong(_prev: SongResult, formData: FormData): Promise
     return { ok: false, message: "Có lỗi, thử lại sau." };
   }
   return { ok: true, message: `Đã gửi “${title}”. Bài sẽ hiện sau khi được duyệt.` };
+}
+
+/** Upvote / un-upvote a published song (aged accounts only, 60/hour — enforced in Postgres). */
+export async function toggleSongVote(songId: string): Promise<{ ok: boolean; message?: string }> {
+  if (!z.uuid().safeParse(songId).success) return { ok: false };
+  const viewer = await getViewer();
+  if (!viewer) return { ok: false, message: "Đăng nhập Google để upvote." };
+  const supabase = await serverClient();
+  const match = { song_id: songId, user_id: viewer.id };
+  const { data: existing } = await supabase.from("fan_song_votes").select("song_id").match(match).maybeSingle();
+  const { error } = existing ? await supabase.from("fan_song_votes").delete().match(match) : await supabase.from("fan_song_votes").insert({ song_id: songId });
+  if (error) {
+    if (error.message.includes("rate_limited")) return { ok: false, message: "Bạn upvote nhanh quá, nghỉ tay một lát nhé." };
+    if (error.code === "42501") return { ok: false, message: "Tài khoản mới cần 24 giờ trước khi upvote (chống clone)." };
+    return { ok: false, message: "Có lỗi, thử lại sau." };
+  }
+  // Stale-while-revalidate: vote spam must not keep emptying the shared cache.
+  revalidateTag(TAGS.songs, "max");
+  return { ok: true };
 }

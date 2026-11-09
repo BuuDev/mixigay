@@ -5,31 +5,20 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Logo } from "../ui/brand-art";
 import { cn } from "../ui/cn";
-
-const NAV = [
-  { href: "/", label: "Trang chủ" },
-  { href: "/lich", label: "Lịch stream" },
-  { href: "/video", label: "Video theo game" },
-  { href: "/series", label: "Series" },
-  { href: "/nhac", label: "Góc nhạc" },
-  { href: "/bo-toc", label: "Bộ Tộc" },
-  { href: "/da-choi", label: "Đã chơi" },
-  { href: "/de-xuat", label: "Đề xuất game" },
-];
+import { isActive, NAV } from "./nav";
 
 /** App chrome. `account` is a slot so this client component never imports server code. */
 export function SiteHeader({ account }: { account?: ReactNode }) {
   const pathname = usePathname();
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-2.5">
+      <div className="mx-auto flex max-w-6xl items-center gap-4 px-safe py-2.5">
         <Link href="/" className="shrink-0" aria-label="Góc Bộ Tộc – trang chủ">
-          <Logo height={28} className="hidden sm:flex" />
-          <Logo variant="mark" height={28} className="sm:hidden" />
+          <Logo height={28} />
         </Link>
-        <nav className="-mx-1 flex min-w-0 flex-1 gap-1 overflow-x-auto px-1 text-sm [scrollbar-width:none]">
+        <nav aria-label="Điều hướng chính" className="-mx-1 hidden min-w-0 flex-1 gap-1 overflow-x-auto px-1 text-sm [scrollbar-width:none] lg:flex">
           {NAV.map((item) => {
-            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            const active = isActive(item.href, pathname);
             return (
               <Link
                 key={item.href}
@@ -45,7 +34,7 @@ export function SiteHeader({ account }: { account?: ReactNode }) {
             );
           })}
         </nav>
-        <div className="shrink-0">{account}</div>
+        <div className="ml-auto shrink-0">{account}</div>
       </div>
     </header>
   );

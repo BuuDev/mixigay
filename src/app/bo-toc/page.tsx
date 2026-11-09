@@ -1,23 +1,36 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Suspense } from "react";
+import { getViewer } from "@/features/auth/server/viewer";
 import { CharityCard } from "@/features/charity/components/charity-card";
+import { FanArtForm, FanArtGallery } from "@/features/fan-art/components/fan-art-section";
+import { getFanArt } from "@/features/fan-art/server/queries";
+import { QuizArena, QuizQuestionForm } from "@/features/quiz/components/quiz-arena";
+import { getQuizQuestions } from "@/features/quiz/server/queries";
 import { CommunityLinks } from "@/features/tribe/components/community-links";
 import { GhostProjectsBoard } from "@/features/tribe/components/ghost-projects-board";
 import { LoreList } from "@/features/tribe/components/lore-list";
 import { TrendBoard } from "@/features/tribe/components/trend-board";
 import { TribeVibe } from "@/features/tribe/components/tribe-vibe";
-import { UnbanCourt } from "@/features/tribe/components/unban-court";
 import { newestPublishedAt, trendingTopics } from "@/features/tribe/lib/trends";
 import { VideoRail } from "@/features/videos/components/video-rail";
 import { getGames, getVideos } from "@/features/videos/server/queries";
+import { isSupabaseConfigured } from "@/shared/lib/env";
 import { ScrollReveal } from "@/shared/motion/scroll-reveal";
-import { IconCampfire, IconFanart, IconGameViewer, IconQuote, IconSuggest, IconTribe, IconWall } from "@/shared/ui/icons";
+import { Card } from "@/shared/ui/card";
+import { IconAlbum, IconCampfire, IconCleared, IconFanart, IconGameViewer, IconQuote, IconSuggest, IconTribe, IconWall } from "@/shared/ui/icons";
 import { NeonText } from "@/shared/ui/neon-text";
 import { SectionHeader } from "@/shared/ui/section-header";
 
 export const metadata: Metadata = { title: "Bộ Tộc – Góc Bộ Tộc" };
 
 export default async function TribePage() {
-  const [videos, games] = await Promise.all([getVideos(), getGames()]);
+  const [videos, games, fanArt, quizQuestions] = await Promise.all([
+    getVideos(),
+    getGames(),
+    getFanArt(),
+    getQuizQuestions(),
+  ]);
   const topics = trendingTopics(videos, newestPublishedAt(videos)).slice(0, 8);
   const fanGames = videos.filter((v) => v.gameSlug === "viewer-made").slice(0, 8);
 
@@ -26,7 +39,7 @@ export default async function TribePage() {
       <header className="text-center">
         <NeonText className="text-4xl sm:text-5xl">BỘ TỘC</NeonText>
         <p className="mx-auto mt-3 max-w-xl text-muted">
-          Cộng đồng fan của Kênh MixiGaming. Trang này tổng hợp những gì Bộ Tộc đang bàn tán, từ điển “tiếng lóng” và chỗ sinh hoạt chính chủ.
+          Cộng đồng fan của Kênh MixiGaming. Trang này tổng hợp những gì Bộ Tộc đang bàn tán, đố vui kiểm tra trí nhớ, phòng tranh fan vẽ, từ điển “tiếng lóng” và chỗ sinh hoạt chính chủ.
         </p>
       </header>
 
@@ -36,6 +49,26 @@ export default async function TribePage() {
           <TribeVibe />
         </div>
         <TrendBoard topics={topics} />
+      </ScrollReveal>
+
+      <ScrollReveal as="section">
+        <SectionHeader eyebrow="Kiểm tra trí nhớ fan cứng" title="Đố vui Bộ Tộc · Đóng góp câu hỏi" icon={<IconCleared size={26} className="text-accent" />} />
+        <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+          <QuizArena questions={quizQuestions} />
+          <Suspense fallback={null}>
+            <QuizSubmitBox />
+          </Suspense>
+        </div>
+      </ScrollReveal>
+
+      <ScrollReveal as="section">
+        <SectionHeader eyebrow="Lưu trên Google Drive cá nhân · Xem trực tiếp" title="Phòng tranh Fan Art Bộ Tộc" icon={<IconAlbum size={26} className="text-accent" />} />
+        <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+          <FanArtGallery items={fanArt} />
+          <Suspense fallback={null}>
+            <FanArtSubmitBox />
+          </Suspense>
+        </div>
       </ScrollReveal>
 
       <ScrollReveal as="section">
@@ -54,8 +87,21 @@ export default async function TribePage() {
       )}
 
       <ScrollReveal as="section">
-        <SectionHeader eyebrow="Đặc sản văn mẫu ngoài khơi" title="Tòa án Bộ Tộc · Đơn hối lỗi xin về bờ" icon={<IconWall size={26} className="text-accent" />} />
-        <UnbanCourt />
+        <SectionHeader eyebrow="Đặc sản văn mẫu ngoài khơi" title="Tòa án Ân xá · Đơn hối lỗi xin về bờ" icon={<IconWall size={26} className="text-accent" />} />
+        <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
+          <div className="max-w-xl space-y-1">
+            <h3 className="font-bold">Bị tiễn ra đảo vì lỡ tay spam hoặc chỉ bài?</h3>
+            <p className="text-sm text-muted">
+              Mục Tòa án Ân xá nay đã có tab riêng để anh em thoải mái chọn tội danh, chọn trường phái viết tâm thư và nhận phán quyết giả lập.
+            </p>
+          </div>
+          <Link
+            href="/an-xa"
+            className="rounded-pill bg-accent px-4 py-2 text-sm font-bold text-background transition-transform hover:-translate-y-0.5"
+          >
+            Vào Tòa án Ân xá →
+          </Link>
+        </Card>
       </ScrollReveal>
 
       <ScrollReveal as="section">
@@ -74,4 +120,48 @@ export default async function TribePage() {
       </ScrollReveal>
     </div>
   );
+}
+
+async function QuizSubmitBox() {
+  if (!isSupabaseConfigured) {
+    return (
+      <Card className="p-4 text-sm">
+        <p className="font-bold">Đóng góp câu hỏi Đố vui</p>
+        <p className="mt-2 text-muted">Chế độ demo: chưa nối Supabase nên chưa gửi được câu hỏi mới.</p>
+      </Card>
+    );
+  }
+  const viewer = await getViewer();
+  if (!viewer) {
+    return (
+      <Card className="p-4 text-sm">
+        <p className="font-bold">Đóng góp câu hỏi Đố vui</p>
+        <p className="mt-2 text-muted">Đăng nhập Google (góc trên bên phải) để gửi câu hỏi đố vui của bạn cho Bộ Tộc cùng giải.</p>
+      </Card>
+    );
+  }
+  return <QuizQuestionForm />;
+}
+
+async function FanArtSubmitBox() {
+  if (!isSupabaseConfigured) {
+    return (
+      <Card className="p-4 text-sm">
+        <p className="font-bold">Gửi tranh Fan Art qua Google Drive</p>
+        <p className="mt-2 text-muted">Chế độ demo: chưa nối Supabase nên chưa gửi được link tranh mới.</p>
+      </Card>
+    );
+  }
+  const viewer = await getViewer();
+  if (!viewer) {
+    return (
+      <Card className="p-4 text-sm">
+        <p className="font-bold">Gửi tranh Fan Art qua Google Drive</p>
+        <p className="mt-2 text-muted">
+          Đăng nhập Google (góc trên bên phải) để gửi link ảnh trên Google Drive cá nhân (bật chế độ “Bất kỳ ai có đường liên kết đều xem được”).
+        </p>
+      </Card>
+    );
+  }
+  return <FanArtForm />;
 }

@@ -10,4 +10,6 @@ export const TAGS = {
   played: "played",
   suggestions: "suggestions",
   songs: "songs",
+  fanArt: "fan-art",
+  quiz: "quiz",
 } as const;

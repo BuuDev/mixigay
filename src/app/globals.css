@@ -2,6 +2,7 @@
 @import "../shared/design/tokens.css";
 @import "../shared/design/themes.generated.css";
 @import "../shared/motion/motion.css";
+@import "../shared/motion/view-transitions.css";
 
 html {
   scroll-behavior: smooth;
