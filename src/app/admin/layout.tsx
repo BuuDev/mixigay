@@ -15,6 +15,8 @@ const NAV = [
   { href: "/admin/nhac", label: "Nhạc nịnh" },
   { href: "/admin/fan-art", label: "Tranh Fan Art" },
   { href: "/admin/quiz", label: "Đố vui Quiz" },
+  { href: "/admin/tuong", label: "Bức tường" },
+  { href: "/admin/quan-tri", label: "Quản trị viên" },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

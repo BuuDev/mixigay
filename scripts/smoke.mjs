@@ -22,6 +22,7 @@ const env = {
 // ----- Stub Supabase -----
 const now = new Date().toISOString();
 const tables = {
+  attendance_count: 1240,
   live_status: { state: "live", video_id: "dQw4w9WgXcQ", title: "SMOKE live title", start_time: now, concurrent_viewers: 4321, checked_at: now },
   games: [{ slug: "pubg", name: "PUBG", is_vlog: false, cover_url: null, sort_order: 0, game_keywords: [{ keyword: "pubg" }] }],
   schedule_slots: [{ id: "00000000-0000-0000-0000-000000000001", day_of_week: 1, time_vn: "20:00:00", title: "SMOKE slot", game_slug: "pubg", note: null }],
@@ -124,21 +125,24 @@ try {
   }
 
   console.log("Pages");
-  for (const path of ["/", "/lich", "/video", "/vlog", "/series", "/nhac", "/bo-toc", "/an-xa", "/da-choi", "/de-xuat", "/gioi-thieu", "/robots.txt", "/sitemap.xml"]) {
+  for (const path of ["/", "/lich", "/video", "/vlog", "/series", "/nhac", "/bo-toc", "/an-xa", "/gui-anh-do", "/da-choi", "/de-xuat", "/gioi-thieu", "/robots.txt", "/sitemap.xml", "/thong-ke", "/tai-khoan"]) {
     await expectStatus(path, path, 200);
   }
-  await expectBody("/", "/", { has: ["SMOKE live title", "SMOKE PUBG video", "Đăng nhập Google", "không liên kết chính thức", "Đếm ngược", "Chạm để mở", "Trang không nhận tiền"] });
-  await expectBody("/lich", "/lich", { has: ["SMOKE slot"] });
+  await expectBody("/", "/", { has: ["SMOKE live title", "SMOKE PUBG video", "Vào Bộ Tộc", "không liên kết chính thức", "Đếm ngược", "Chạm để mở", "Trang không nhận tiền"] });
+  await expectBody("/lich", "/lich", { has: ["SMOKE slot", "Tối nay tôi có mặt", "người Bộ Tộc đã hẹn"] });
+  await expectBody("/thong-ke", "/thong-ke", { has: ["Thống kê stream"] });
+  await expectBody("/bo-toc wall", "/bo-toc", { has: ["Bức tường Bộ Tộc"] });
   await expectBody("/de-xuat", "/de-xuat", { has: ["SMOKE suggestion", "để gửi đề xuất"] });
-  await expectBody("/bo-toc", "/bo-toc", { has: ["Từ điển Bộ Tộc", "Tộc Trưởng", "facebook.com/groups/mixigaming", "Hồ sơ Dự Án Ma", "Đơn hối lỗi xin về bờ", "Góp Gạch Xây Trường", "Trang không nhận quyên góp", "Lươn Cao Bằng", "Đố vui Bộ Tộc", "SMOKE quiz question", "Phòng tranh Fan Art", "SMOKE fan art"] });
+  await expectBody("/bo-toc", "/bo-toc", { has: ["Từ điển Bộ Tộc", "Tộc Trưởng", "facebook.com/groups/mixigaming", "Hồ sơ Dự Án Ma", "Bộ Tộc vẫn hóng", "Đơn hối lỗi xin về bờ", "Góp Gạch Xây Trường", "Trang không nhận quyên góp", "Lươn Cao Bằng", "Đố vui Bộ Tộc", "SMOKE quiz question", "Phòng tranh Fan Art", "SMOKE fan art"] });
   await expectBody("/an-xa", "/an-xa", { has: ["TÒA ÁN ÂN XÁ", "Máy tạo Đơn hối lỗi xin về bờ", "Khai báo hồ sơ"] });
+  await expectBody("/gui-anh-do", "/gui-anh-do", { has: ["GỬI ANH ĐỘ MIXI", "Top Game Bộ Tộc đề xuất", "SMOKE song", "SMOKE fan art"] });
   await expectBody("/lich", "/lich", { has: ["Radar sự kiện Bộ Tộc", "Sinh nhật Tộc Trưởng"] });
-  await expectBody("/nhac", "/nhac", { has: ["Nhạc nịnh Bộ Tộc", "SMOKE song", "Nghe trực tiếp", "Đăng nhập Google (góc trên bên phải) để gửi link"] });
+  await expectBody("/nhac", "/nhac", { has: ["Nhạc nịnh Bộ Tộc", "SMOKE song", "Nghe trực tiếp", "Bấm “Vào Bộ Tộc” (góc trên bên phải) để gửi link"] });
 
   console.log("Admin (anonymous)");
   // Markers rendered only by admin pages; none may reach an anonymous visitor.
-  const adminMarkers = ["Quota YouTube", "Thêm khung giờ", "Video chưa phân loại", "Playlist chính chủ", "ẩn (spam)", "— thêm game —", "Nhạc nịnh – duyệt bài", "Tranh Fan Art (Google Drive) – duyệt bài", "Đố vui Bộ Tộc – duyệt câu hỏi", "Cấm ngầm"];
-  for (const path of ["/admin", "/admin/lich", "/admin/video", "/admin/game", "/admin/de-xuat", "/admin/da-choi", "/admin/nhac", "/admin/fan-art", "/admin/quiz"]) {
+  const adminMarkers = ["Quota YouTube", "Thêm khung giờ", "Video chưa phân loại", "Playlist chính chủ", "ẩn (spam)", "— thêm game —", "Nhạc nịnh – duyệt bài", "Tranh Fan Art (Google Drive) – duyệt bài", "Đố vui Bộ Tộc – duyệt câu hỏi", "Cấm ngầm", "Quản trị viên & tài khoản chính chủ", "Bức tường Bộ Tộc – duyệt lời nhắn"];
+  for (const path of ["/admin", "/admin/lich", "/admin/video", "/admin/game", "/admin/de-xuat", "/admin/da-choi", "/admin/nhac", "/admin/fan-art", "/admin/quiz", "/admin/quan-tri", "/admin/tuong"]) {
     await expectBody(path, path, { has: ["could not be found"], lacks: adminMarkers });
   }
 
@@ -150,10 +154,15 @@ try {
     headers: { Authorization: `Bearer ${env.CRON_SECRET}` },
   });
   await expectStatus("steam invalid appId", "/api/steam/abc", 400);
-  const cb = await get("/auth/callback?next=//evil.example");
-  const loc = cb.headers.get("location") ?? "";
-  if (new URL(loc, APP).host === new URL(APP).host || loc.startsWith("http://localhost")) ok(`auth callback stays on-site (${loc})`);
-  else bad(`auth callback redirected off-site: ${loc}`);
+  // Accounts are tên Bộ Tộc + mã khóa (ADR-013): no OAuth callback exists any more.
+  await expectStatus("no Google OAuth callback", "/auth/callback?code=x", 404);
+  const badInvite = await get("/moi/not-a-real-token");
+  const inviteHtml = await badInvite.text();
+  if (badInvite.status === 200 && inviteHtml.includes("Link mời không dùng được")) ok("a bad invite link is refused");
+  else bad(`bad invite link: ${badInvite.status}`);
+  if (!/noindex/.test(inviteHtml)) bad("invite page must be noindex");
+  if (badInvite.headers.get("referrer-policy") === "no-referrer") ok("invite page sends no Referer");
+  else bad(`invite page Referrer-Policy: ${badInvite.headers.get("referrer-policy")}`);
   await expectStatus("steam preview needs sign-in", "/api/steam/570", 401);
 } catch (e) {
   bad(e.message);

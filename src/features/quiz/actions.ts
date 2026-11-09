@@ -21,7 +21,7 @@ const QuizInput = z.object({
 /** Signed-in fan submits a quiz question; it remains unapproved until an admin approves it. */
 export async function submitQuizQuestion(_prev: QuizSubmitResult, formData: FormData): Promise<QuizSubmitResult> {
   const viewer = await getViewer();
-  if (!viewer) return { ok: false, message: "Đăng nhập Google để đóng góp câu hỏi đố vui." };
+  if (!viewer) return { ok: false, message: "Vào Bộ Tộc (đăng nhập) để đóng góp câu hỏi đố vui." };
 
   const parsed = QuizInput.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu câu hỏi không hợp lệ" };

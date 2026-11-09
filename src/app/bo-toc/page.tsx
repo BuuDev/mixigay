@@ -15,6 +15,7 @@ import { TribeVibe } from "@/features/tribe/components/tribe-vibe";
 import { newestPublishedAt, trendingTopics } from "@/features/tribe/lib/trends";
 import { VideoRail } from "@/features/videos/components/video-rail";
 import { getGames, getVideos } from "@/features/videos/server/queries";
+import { WallSection } from "@/features/wall/components/wall-section";
 import { isSupabaseConfigured } from "@/shared/lib/env";
 import { ScrollReveal } from "@/shared/motion/scroll-reveal";
 import { Card } from "@/shared/ui/card";
@@ -72,9 +73,14 @@ export default async function TribePage() {
       </ScrollReveal>
 
       <ScrollReveal as="section">
-        <SectionHeader eyebrow="Tháng 10 – 11/2026" title="Hồ sơ Dự Án Ma" icon={<IconSuggest size={26} className="text-accent" />} />
+        <SectionHeader eyebrow="Lưu bút · tối đa 140 ký tự" title="Bức tường Bộ Tộc" icon={<IconWall size={26} className="text-accent" />} />
+        <WallSection />
+      </ScrollReveal>
+
+      <ScrollReveal as="section">
+        <SectionHeader eyebrow="Tháng 10 – 11/2026" title="Hồ sơ Dự Án Ma · Bộ Tộc vẫn hóng" icon={<IconSuggest size={26} className="text-accent" />} />
         <p className="mx-auto mb-5 max-w-2xl text-center text-sm text-muted">
-          Những dự định được “vẽ” trên sóng. Bộ đếm cứ thế tăng — tới ngày có video làm thật thì đóng dấu “Đã làm thật”.
+          Những dự định thú vị anh Độ từng chia sẻ trên sóng mà anh em Bộ Tộc vẫn đang hào hứng chờ ngày lên hình. Khi nào có video thực hiện sẽ được đóng dấu “Đã làm thật” thật nổi!
         </p>
         <GhostProjectsBoard />
       </ScrollReveal>
@@ -136,7 +142,7 @@ async function QuizSubmitBox() {
     return (
       <Card className="p-4 text-sm">
         <p className="font-bold">Đóng góp câu hỏi Đố vui</p>
-        <p className="mt-2 text-muted">Đăng nhập Google (góc trên bên phải) để gửi câu hỏi đố vui của bạn cho Bộ Tộc cùng giải.</p>
+        <p className="mt-2 text-muted">Bấm “Vào Bộ Tộc” (góc trên bên phải) để gửi câu hỏi đố vui của bạn cho Bộ Tộc cùng giải.</p>
       </Card>
     );
   }
@@ -158,7 +164,7 @@ async function FanArtSubmitBox() {
       <Card className="p-4 text-sm">
         <p className="font-bold">Gửi tranh Fan Art qua Google Drive</p>
         <p className="mt-2 text-muted">
-          Đăng nhập Google (góc trên bên phải) để gửi link ảnh trên Google Drive cá nhân (bật chế độ “Bất kỳ ai có đường liên kết đều xem được”).
+          Bấm “Vào Bộ Tộc” (góc trên bên phải) để gửi link ảnh trên Google Drive cá nhân (bật chế độ “Bất kỳ ai có đường liên kết đều xem được”).
         </p>
       </Card>
     );

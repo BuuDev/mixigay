@@ -10,7 +10,7 @@
                        │   Postgres (bảng + RLS) ◄────┼──── ghi ─────┐                      │
                        │        │                     │              │                      │
                        │        └─► Realtime (live_status) ──► trình duyệt (LiveBanner)     │
-                       │   Auth (Google OAuth)                                              │
+                       │   Auth (tên + mã khóa)                                              │
                        └──────────────────────────────┼──────────────┼──────────────────────┘
                                                       ▼              │
   YouTube WebSub ───► /api/webhooks/youtube ──►  Next.js trên Vercel (Node.js runtime)

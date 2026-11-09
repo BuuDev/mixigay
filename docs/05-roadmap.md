@@ -76,20 +76,23 @@ Giai đoạn 7  Góc Bộ Tộc v2 (docs/design)        nền xong – các kh�
 - [ ] PWA: service worker (đi cùng Web Push)
 - [x] ~~Dark mode~~ — bỏ: brand chỉ có nền tối ([ADR-009](08-decisions.md#adr-009))
 - [ ] Web Push: đăng ký/hủy, gửi khi live
-- [ ] `schedule_overrides` (nghỉ / đổi giờ một ngày) + UI admin
+- [x] `schedule_overrides` (nghỉ / đổi giờ một ngày) + UI admin
 - [ ] WebSub cho phát hiện video mới nhanh hơn
 
 ## Giai đoạn 5 – Thống kê stream (P1)
 
-- [ ] Trang `/thong-ke`: biểu đồ người xem theo thời gian của từng buổi (từ `live_samples`)
-- [ ] Giờ lên sóng trung bình theo thứ, độ dài buổi trung bình, chuỗi ngày stream liên tiếp
-- [ ] Top buổi đông người xem nhất
-- [ ] Job dọn `live_samples`: gộp về mẫu 5 phút sau 30 ngày để giữ DB < 500 MB
+- [x] Trang `/thong-ke`: biểu đồ người xem theo thời gian của từng buổi (từ `live_samples`)
+- [x] Giờ lên sóng trung bình theo thứ, độ dài buổi trung bình, chuỗi ngày stream liên tiếp (ngày tính từ 06:00 giờ VN)
+- [x] Top buổi đông người xem nhất
+- [x] Job dọn `live_samples`: gộp về mẫu 5 phút sau 30 ngày để giữ DB < 500 MB (`compact_live_samples`, pg_cron hằng ngày)
 
 ## Giai đoạn 6 – Cộng đồng (P2)
 
 - [ ] Kho quote: chọn video, nhập giây (hoặc dán link có `?t=`), duyệt trước. Link `youtube.com/watch?v=…&t=<s>s`.
-- [ ] Fan art: Supabase Storage bucket `fan-art`, giới hạn 5 MB, chỉ ảnh, duyệt trước, ghi tên/credit tác giả
+- [x] Fan art: làm theo cách **link Google Drive của chính fan** thay cho Supabase Storage (không lưu file trên server), duyệt trước, ghi tên tác giả (`fan_art`, migration 20261110100000)
+- [x] Định danh riêng tư (ADR-013): bỏ Gmail; tài khoản = tên Bộ Tộc + mã khóa cho mọi người; anh Độ / team / mod vào bằng link mời dùng 1 lần, tự đặt mã khóa; huy hiệu "✓ Chính chủ"; chặn tên giả danh (cả chữ Cyrillic, số thay chữ)
+- [ ] **(cần bạn)** Đổi cài đặt Supabase Auth theo `docs/06-setup.md` (tắt đăng ký công khai, bật Email provider, tắt Confirm email / Google), tạo invite chủ trang, rồi tạo link mời cho anh Độ sau khi xác nhận qua kênh chính thức
+- [ ] **(cần bạn)** Khóa Cloudflare Turnstile cho form tạo tài khoản
 - [x] Hàng đợi duyệt chung trong `/admin` (đề xuất, nhạc, báo cáo; fan art do bên làm fan art nối thêm)
 - [x] Báo cáo nội dung (nút "báo cáo" → admin) — bảng `reports`, hàng đợi ở `/admin`
 
@@ -105,10 +108,11 @@ Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mas
 - [x] Bộ icon Phosphor duotone (ADR-010): thay 15 icon cũ, thêm `external`, `kindle`, `calendar-add`, `countdown`, `event`, `attend`, `tribe`, `wall`, `shop`, `bell`, `skin`, `timeline`, `expand`, `close`
 - [x] §1 Màn nhóm lửa (`features/intro`): unlit → lighting → status, 1 lần/ngày/thiết bị, nút bỏ qua, reduced-motion nhảy thẳng
 - [x] §2 Đếm ngược vòng tròn + khối ngày kiểu poster + lịch tháng (popover) + "Thêm vào lịch" (Google Calendar)
-- [ ] §2 Lịch đặc biệt do admin ghi đè (`schedule_overrides` chưa nối vào lịch tháng)
+- [x] §2 Lịch đặc biệt do admin ghi đè (nối vào lịch tháng, lịch tuần, đếm ngược, màn mở đầu, nhịp poll)
 - [x] §3 Nút nổi "Đang live" (live: equalizer + ping + số người xem; idle: đếm ngược rút gọn), ẩn khi có overlay
-- [ ] §4 "Tối nay tôi có mặt" (RSVP) — bảng `attendance`, skill `fan-content`
-- [ ] §5 Bức tường Bộ tộc (lưu bút ≤140 ký tự, duyệt trước, 3 tin/ngày)
+- [x] §4 "Tối nay tôi có mặt" (RSVP) — bảng `attendance`; khách chỉ lưu trên thiết bị, không tính vào tổng
+- [x] §5 Bức tường Bộ tộc (lưu bút ≤140 ký tự, duyệt trước, 3 tin/ngày) — `/bo-toc`, chữ to trên `/gui-anh-do`, duyệt ở `/admin/tuong`
+- [ ] Nút báo cáo cho lời nhắn đã duyệt trên Bức tường (thêm loại `wall_message` vào `reports`)
 - [x] Đổi tên trang thành **Góc Bộ Tộc** (ADR-011); bìa thiệp khung vòm có ảnh anh Độ, album polaroid + lightbox, ảnh hiện lên từ đống lửa ở màn mở đầu
 - [ ] Ghi tên tác giả cho từng ảnh trong album khi tìm được nguồn gốc
 - [x] Chuẩn UI 2026 (ADR-012): thanh tab điện thoại + menu popover, chuyển cảnh polaroid → lightbox (ViewTransition), WCAG 2.2 AA (a11y 100 trên 9 trang), sửa LCP ảnh bìa, đồng hồ theo phút

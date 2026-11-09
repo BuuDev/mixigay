@@ -11,14 +11,14 @@ sql_paths = ["./seed.sql"]
 [auth]
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["http://localhost:3000/**"]
-
-# Google is the only way in. Email/password sign-up stays off: it would let anyone
-# register an address listed in admin_emails (the DB also requires a confirmed email).
-[auth.email]
+# Private accounts (ADR-013): nobody signs up through the Auth API. Users are created
+# only by the app's server (service role) with a synthetic address; fans and anh Độ
+# give no email, phone or Google account.
 enable_signup = false
+enable_anonymous_sign_ins = false
 
-[auth.external.google]
-enabled = true
-client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
-secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
-skip_nonce_check = true
+# Email/password is the internal mechanism behind "tên Bộ Tộc + mã khóa" (sign-in only;
+# sign-up stays off above). Addresses are synthetic (*.invalid), so no confirmations.
+[auth.email]
+enable_signup = true
+enable_confirmations = false

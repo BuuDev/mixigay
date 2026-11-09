@@ -13,7 +13,7 @@ const Input = z.object({ kind: z.enum(REPORT_KINDS), id: z.uuid(), reason: z.enu
 export async function reportContent(kind: string, id: string, reason: string): Promise<ReportResult> {
   const parsed = Input.safeParse({ kind, id, reason });
   if (!parsed.success) return { ok: false, message: "Báo cáo không hợp lệ." };
-  if (!(await getViewer())) return { ok: false, message: "Đăng nhập Google để báo cáo." };
+  if (!(await getViewer())) return { ok: false, message: "Vào Bộ Tộc (đăng nhập) để báo cáo." };
   const supabase = await serverClient();
   // No .select(): reporters cannot read reports back (RLS), so RETURNING would fail.
   const { error } = await supabase.from("reports").insert({ target_kind: parsed.data.kind, target_id: parsed.data.id, reason: parsed.data.reason });

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ArchPortrait } from "@/features/album/components/arch-portrait";
 import { PhotoAlbum } from "@/features/album/components/photo-album";
 import { ALBUM, HERO_PHOTO } from "@/features/album/lib/photos";
+import { AttendanceBlock } from "@/features/attendance/components/attendance-block";
 import { EventRadar } from "@/features/events/components/event-radar";
 import { IntroRitual } from "@/features/intro/components/intro-ritual";
 import { LiveHero } from "@/features/live/components/live-hero";
@@ -46,7 +47,7 @@ export default async function Home() {
       <section className="grid min-h-[80svh] items-center gap-8 py-8 lg:grid-cols-[18rem_1fr] lg:gap-12">
         {/* No ScrollReveal here: the portrait is the LCP element and must paint before any JS. */}
         <div>
-          <p className="mb-4 text-center font-script text-2xl font-semibold text-balance text-accent-glow">Góc Bộ Tộc trân trọng mời anh em</p>
+          <p className="mb-4 text-center font-script text-2xl font-semibold text-balance text-accent-glow">Góc Bộ Tộc · Tranh vẽ của fan</p>
           <ArchPortrait photo={HERO_PHOTO} priority />
         </div>
         <div>
@@ -60,6 +61,9 @@ export default async function Home() {
         <div className="grid items-center gap-10 lg:grid-cols-2">
           <CountdownRing schedule={schedule} overrides={overrides} />
           <MonthCalendar schedule={schedule} overrides={overrides} />
+        </div>
+        <div className="mt-10">
+          <AttendanceBlock schedule={schedule} overrides={overrides} />
         </div>
       </Block>
 

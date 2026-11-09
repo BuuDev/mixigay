@@ -21,7 +21,7 @@ export function SongBoard({ songs, votedIds, signedIn, live }: { songs: FanSong[
 
   function vote(id: string) {
     if (!live) return setNotice("Chế độ demo: chưa nối Supabase nên chưa upvote được.");
-    if (!signedIn) return setNotice("Đăng nhập Google (góc trên bên phải) để upvote.");
+    if (!signedIn) return setNotice("Bấm “Vào Bộ Tộc” (góc trên bên phải) để upvote.");
     const on = !state.voted.has(id);
     start(async () => {
       apply({ id, on });

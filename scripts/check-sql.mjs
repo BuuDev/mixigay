@@ -103,24 +103,15 @@ await db.exec(`
 `);
 
 console.log("Users & admins");
-await db.exec(`insert into public.admin_emails values ('admin@example.com')`);
 const [fan] = await q(`insert into auth.users (email, raw_user_meta_data) values ('fan@example.com', '{"full_name":"Fan A"}') returning id`);
 const [fan2] = await q(`insert into auth.users (email) values ('fan2@example.com') returning id`);
-const [adm] = await q(`insert into auth.users (email) values ('ADMIN@example.com') returning id`);
-eq("profile created from Google metadata", (await q(`select display_name from public.profiles where id = $1`, [fan.id]))[0], { display_name: "Fan A" });
-eq("admin granted by email (case-insensitive)", (await q(`select count(*)::int n from public.admins`))[0].n, 1);
+const [adm] = await q(`insert into auth.users (email) values ('admin@example.com') returning id`);
+eq("profile created from sign-up metadata", (await q(`select display_name from public.profiles where id = $1`, [fan.id]))[0], { display_name: "Fan A" });
+eq("profile stores no avatar or email", (await q(`select avatar_url from public.profiles where id = $1`, [fan.id]))[0], { avatar_url: null });
+// Admins come only from invites (Accounts & invites below); fixtures insert them directly.
 const [late] = await q(`insert into auth.users (email) values ('late@example.com') returning id`);
-await db.exec(`insert into public.admin_emails values ('late@example.com')`);
-eq("admin granted when email added after sign-up", (await q(`select count(*)::int n from public.admins where user_id = $1`, [late.id]))[0].n, 1);
-// An attacker signs up with email/password using an admin's address; the email is never confirmed.
-await db.exec(`insert into public.admin_emails values ('boss@example.com')`);
-const [squatter] = await q(`insert into auth.users (email, email_confirmed_at) values ('boss@example.com', null) returning id`);
-eq("unconfirmed email does not become admin", (await q(`select count(*)::int n from public.admins where user_id = $1`, [squatter.id]))[0].n, 0);
-await db.exec(`insert into public.admin_emails values ('boss2@example.com')`);
-const [squatter2] = await q(`insert into auth.users (email, email_confirmed_at) values ('boss2@example.com', null) returning id`);
-eq("listing an email later skips unconfirmed accounts", (await q(`select count(*)::int n from public.admins where user_id = $1`, [squatter2.id]))[0].n, 0);
-await q(`update auth.users set email_confirmed_at = now() where id = $1`, [squatter.id]);
-eq("admin granted once the email is confirmed", (await q(`select count(*)::int n from public.admins where user_id = $1`, [squatter.id]))[0].n, 1);
+await q(`insert into public.admins (user_id) values ($1), ($2)`, [adm.id, late.id]);
+await denied("the email-based admin list is gone", () => q(`insert into public.admin_emails values ('x@example.com')`));
 const [longName] = await q(`insert into auth.users (email, raw_user_meta_data) values ('long@example.com', $1) returning id`, [JSON.stringify({ full_name: "x".repeat(80) })]);
 eq("long Google names are truncated to 50", (await q(`select char_length(display_name) n from public.profiles where id = $1`, [longName.id]))[0].n, 50);
 // Fixture fans are "old" accounts; the new-account limits are asserted under Moderation.
@@ -473,6 +464,141 @@ await denied("fan reads steam_lookups", async () => {
   if (rows.length) return rows;
   throw new Error("no access");
 });
+
+// ----- Private accounts: invites, owner, verified badge, reserved names (20261110120000) -----
+console.log("Accounts & invites");
+const nameOf2 = async (id) => (await q(`select display_name from public.profiles where id = $1`, [id]))[0].display_name;
+// The server creates auth users itself (public sign-up is off); simulate that here.
+const serverCreateUser = async (handle, displayName) => {
+  const [u] = await q(`insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id`, [`u-${handle}@id.gocbotoc.invalid`, JSON.stringify({ full_name: displayName })]);
+  await q(`insert into public.account_logins (handle_key, user_id, auth_email) values (public.name_key($1), $2, $3)`, [handle, u.id, `u-${handle}@id.gocbotoc.invalid`]);
+  return u;
+};
+
+for (const [label, name] of [["Cyrillic look-alikes", "Dоmіxі"], ["digit swaps", "D0 M1x1"], ["“Official” suffix", "Độ Mixi Official"], ["MixiGaming", "MixiGaming chính thức"], ["Tộc Trưởng", "Tộc Trưởng"], ["spaced out", "Đ ộ M i x i"], ["admin", "Admin Bộ Tộc"]]) {
+  const u = await serverCreateUser(`imp${label.length}${name.length}`, name);
+  eq(`reserved name refused at sign-up: ${label}`, (await nameOf2(u.id)).startsWith("Fan "), true);
+}
+const plainFan = await serverCreateUser("botocmixi", "Bộ Tộc Mixi");
+eq("ordinary fan names with “Mixi” stay", await nameOf2(plainFan.id), "Bộ Tộc Mixi");
+await as(plainFan.id, () => q(`update public.profiles set display_name = 'Dоmіxі' where id = $1`, [plainFan.id]));
+eq("renaming to a look-alike is refused too", (await nameOf2(plainFan.id)).startsWith("Fan "), true);
+await denied("fan grants themself the badge", () => as(plainFan.id, () => q(`update public.profiles set verified = true where id = $1 returning id`, [plainFan.id])));
+
+for (const [label, sql] of [
+  ["account_logins", "select * from public.account_logins"],
+  ["invites", "select * from public.invites"],
+  ["auth_attempts", "select * from public.auth_attempts"],
+  ["peek_invite", "select * from public.peek_invite('x')"],
+  ["consume_invite", `select public.consume_invite('x', '${plainFan.id}')`],
+  ["take_auth_attempt", "select public.take_auth_attempt('login_ip', 'k', 5, interval '1 minute')"],
+]) {
+  await denied(`fan cannot use ${label}`, async () => {
+    const rows = await as(plainFan.id, () => q(sql));
+    if (rows.length) return rows;
+    throw new Error("no rows");
+  });
+}
+await denied("anon cannot issue invites", () => as(null, () => q(`select public.issue_invite('owner', 'x', 'x')`)));
+await denied("fan cannot issue invites", () => as(plainFan.id, () => q(`select public.issue_invite('admin', 'mod1', 'Mod')`)));
+await denied("a plain admin cannot issue invites", () => as(adm.id, () => q(`select public.issue_invite('official', 'domixi', 'Độ Mixi')`)));
+
+// Bootstrap: the first owner invite comes from the SQL editor (no JWT).
+const [{ t: ownerToken }] = await q(`select public.issue_invite('owner', 'Chủ Trang', 'Chủ trang') t`);
+eq("invite token is long and random", /^[0-9a-f]{64}$/.test(ownerToken), true);
+eq("only the token hash is stored", (await q(`select count(*)::int n from public.invites where token_hash = $1`, [ownerToken]))[0].n, 0);
+eq("peek shows what the invite is for", (await q(`select role, handle_key from public.peek_invite($1)`, [ownerToken]))[0], { role: "owner", handle_key: "chutrang" });
+const owner = await serverCreateUser("chutrang", "Chủ trang");
+await q(`select public.consume_invite($1, $2)`, [ownerToken, owner.id]);
+eq("owner invite makes an owner admin", (await q(`select owner from public.admins where user_id = $1`, [owner.id]))[0].owner, true);
+await denied("an invite works only once", () => q(`select public.consume_invite($1, $2)`, [ownerToken, plainFan.id]));
+await denied("owner cannot issue another owner invite", () => as(owner.id, () => q(`select public.issue_invite('owner', 'owner2', 'Owner 2')`)));
+
+const [{ t: offToken }] = await as(owner.id, () => q(`select public.issue_invite('official', 'domixi', 'Độ Mixi') t`));
+await denied("handle already promised to an open invite", () => as(owner.id, () => q(`select public.issue_invite('admin', 'Đọ Mixi', 'x')`)));
+const official = await serverCreateUser("domixi", "Độ Mixi");
+eq("before redeeming, even the invited account cannot use the reserved name", (await nameOf2(official.id)).startsWith("Fan "), true);
+await q(`select public.consume_invite($1, $2)`, [offToken, official.id]);
+eq("official invite: admin + badge + real name", (await q(`select p.verified, p.display_name, exists (select 1 from public.admins a where a.user_id = p.id) adm from public.profiles p where id = $1`, [official.id]))[0], { verified: true, display_name: "Độ Mixi", adm: true });
+eq("anyone can read the badge", (await as(null, () => q(`select verified from public.profiles where id = $1`, [official.id])))[0].verified, true);
+
+const [{ t: oldToken }] = await as(owner.id, () => q(`select public.issue_invite('admin', 'mod2', 'Mod 2') t`));
+await q(`update public.invites set expires_at = now() - interval '1 minute' where token_hash = public.token_hash($1)`, [oldToken]);
+await denied("an expired invite is refused", () => q(`select public.consume_invite($1, $2)`, [oldToken, plainFan.id]));
+
+const access = await as(owner.id, () => q(`select kind, display_name, role from public.list_access() where display_name = 'Độ Mixi'`));
+eq("owner sees admins by name and role, no email", access, [{ kind: "admin", display_name: "Độ Mixi", role: "official" }]);
+await denied("a plain admin cannot list access", () => as(adm.id, () => q(`select * from public.list_access()`)));
+await denied("a plain admin cannot remove admins", () => as(adm.id, () => q(`select public.remove_admin($1)`, [official.id])));
+await denied("owner cannot remove themself", () => as(owner.id, () => q(`select public.remove_admin($1)`, [owner.id])));
+await as(owner.id, () => q(`select public.remove_admin($1)`, [official.id]));
+eq("removal takes role and badge away", (await q(`select verified, exists (select 1 from public.admins a where a.user_id = p.id) adm from public.profiles p where id = $1`, [official.id]))[0], { verified: false, adm: false });
+eq("…and the reserved name with them", (await nameOf2(official.id)).startsWith("Fan "), true);
+
+const tries = [];
+for (let i = 0; i < 4; i++) tries.push((await q(`select public.take_auth_attempt('login_handle', 'abc', 3, interval '10 minutes') ok`))[0].ok);
+eq("auth attempts are capped", tries, [true, true, true, false]);
+
+console.log("Account hardening");
+await denied("swapping the synthetic address for a real email is refused", () => q(`update auth.users set email = 'anh.do@gmail.com' where id = $1`, [plainFan.id]));
+await allowed("a new synthetic address is fine", () => q(`update auth.users set email = $2 where id = $1`, [plainFan.id, `u-${"0".repeat(8)}-0000-0000-0000-${"0".repeat(12)}@id.gocbotoc.invalid`]));
+for (const fn of ["public.is_reserved_name('domixi')", "public.auth_attempts_exceeded('login_ip', 'k', 1, interval '1 minute')", "public.note_auth_failure('login_ip', 'k')"]) {
+  await denied(`anon cannot call ${fn.split("(")[0]}`, () => as(null, () => q(`select ${fn}`)));
+}
+await q(`select public.note_auth_failure('login_handle_ip', 'h|ip')`);
+await q(`select public.note_auth_failure('login_handle_ip', 'h|ip')`);
+eq("failures are counted per handle+IP", [(await q(`select public.auth_attempts_exceeded('login_handle_ip', 'h|ip', 2, interval '10 minutes') x`))[0].x, (await q(`select public.auth_attempts_exceeded('login_handle_ip', 'h|other', 2, interval '10 minutes') x`))[0].x], [true, false]);
+
+// ----- Wall, attendance, live_samples compaction (20261110130000) -----
+console.log("Wall messages");
+const wall = (uid, body) => as(uid, () => q(`insert into public.wall_messages (body) values ($1)`, [body]));
+await allowed("fan writes on the wall (pending)", () => wall(fan.id, "Chúc anh Độ stream vui nha!"));
+const [w1] = await q(`select id from public.wall_messages where author_id = $1`, [fan.id]);
+eq("pending message invisible to others", await as(fan2.id, () => q(`select id from public.wall_messages where id = $1`, [w1.id])), []);
+eq("pending message invisible to anon", await as(null, () => q(`select id from public.wall_messages where id = $1`, [w1.id])), []);
+eq("author sees own pending message", (await as(fan.id, () => q(`select id from public.wall_messages where id = $1`, [w1.id]))).length, 1);
+await denied("message over 140 characters", () => wall(fan2.id, "x".repeat(141)));
+await denied("message of invisible characters only", () => wall(fan2.id, "\u200b\u200b\u200b"));
+await denied("fan self-approves on insert", () => as(fan2.id, () => q(`insert into public.wall_messages (body, approved) values ('Tự duyệt', true)`)));
+await denied("fan approves own message", () => as(fan.id, () => q(`update public.wall_messages set approved = true where id = $1 returning id`, [w1.id])));
+await denied("author deletes own message", () => as(fan.id, () => q(`delete from public.wall_messages where id = $1 returning id`, [w1.id])));
+await denied("anon writes on the wall", () => wall(null, "Khách vãng lai"));
+await wall(fan.id, "Tin thứ hai");
+await wall(fan.id, "Tin thứ ba");
+await denied("4th message in a day", () => wall(fan.id, "Tin thứ tư"));
+await allowed("admin approves a message", async () => {
+  const rows = await as(adm.id, () => q(`update public.wall_messages set approved = true where id = $1 returning id`, [w1.id]));
+  if (!rows.length) throw new Error("0 rows");
+});
+eq("approved message visible to anon", (await as(null, () => q(`select body from public.wall_messages where id = $1`, [w1.id])))[0], { body: "Chúc anh Độ stream vui nha!" });
+const fresh2 = await serverCreateUser("wallnewbie", "Wall Newbie");
+await wall(fresh2.id, "Tin đầu tiên");
+await denied("account under 24h: 2nd message", () => wall(fresh2.id, "Tin thứ hai"));
+await as(adm.id, () => q(`select public.moderate_user($1, 'shadow')`, [fresh2.id]));
+const [fw] = await q(`select id from public.wall_messages where author_id = $1`, [fresh2.id]);
+await denied("admin cannot publish a shadow-banned author's message", () => as(adm.id, () => q(`update public.wall_messages set approved = true where id = $1 returning id`, [fw.id])));
+
+console.log("Attendance");
+const today = (await q(`select public.today_vn()::text d`))[0].d;
+const attend = (uid, d = today) => as(uid, () => q(`insert into public.attendance (date_vn) values ($1)`, [d]));
+await allowed("fan taps “Tối nay tôi có mặt”", () => attend(fan.id));
+await denied("same fan taps twice", () => attend(fan.id));
+await denied("tap for another day", () => attend(fan2.id, "2020-01-01"));
+await denied("anon taps", () => attend(null));
+await allowed("second fan taps", () => attend(fan2.id));
+await allowed("shadow-banned tap reports success…", () => attend(fresh2.id));
+eq("…and the public count excludes it", (await as(null, () => q(`select public.attendance_count($1::date) n`, [today])))[0].n, 2);
+eq("fans cannot list who attends", (await as(fan2.id, () => q(`select user_id from public.attendance`))).length, 1);
+await as(fan2.id, () => q(`delete from public.attendance where user_id = $1`, [fan2.id]));
+eq("un-tap lowers the count", (await q(`select public.attendance_count($1::date) n`, [today]))[0].n, 1);
+
+console.log("live_samples compaction");
+await q(`insert into public.live_samples (video_id, sampled_at, concurrent_viewers)
+  select 'fxVid1', timestamptz '2026-01-01 12:00:00+00' + make_interval(mins => m), 1000 + m from generate_series(0, 14) m`);
+await q(`insert into public.live_samples (video_id, sampled_at, concurrent_viewers) values ('fxVid1', now() - interval '1 hour', 5), ('fxVid1', now() - interval '59 minutes', 6)`);
+eq("compaction keeps one sample per 5 minutes after 30 days", (await q(`select public.compact_live_samples() n`))[0].n, 12);
+eq("…and leaves recent samples alone", (await q(`select count(*)::int n from public.live_samples where sampled_at > now() - interval '2 hours'`))[0].n, 2);
+await denied("fan cannot run compaction", () => as(fan.id, () => q(`select public.compact_live_samples()`)));
 
 console.log(failures ? `\nDB_CHECK=fail (${failures})` : "\nDB_CHECK=pass");
 process.exit(failures ? 1 : 0);

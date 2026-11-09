@@ -1,8 +1,6 @@
 "use client";
 
-import Image from "next/image";
 import { useState, useSyncExternalStore } from "react";
-import { HERO_PHOTO } from "@/features/album/lib/photos";
 import { useLiveStatus } from "@/features/live/hooks/use-live-status";
 import type { LiveStatus } from "@/features/live/types";
 import { formatCountdown } from "@/features/schedule/lib/countdown";
@@ -101,27 +99,6 @@ export function IntroRitual({ status: initial, schedule, overrides }: { status: 
                 )}
               </AnimatePresence>
               {phase === "lighting" && <Burst count={18} distance={120} />}
-              {/* Like opening an invitation: anh Độ's portrait rises out of the fire once it is lit. */}
-              <AnimatePresence>
-                {phase === "status" && (
-                  <m.div
-                    key="portrait"
-                    className="absolute -top-6 left-1/2 size-28 -translate-x-1/2 overflow-hidden rounded-full border-2 border-accent shadow-[0_0_30px_var(--td-ember)]"
-                    initial={{ opacity: 0, y: 40, scale: 0.6 }}
-                    animate={{
-                      opacity: 1,
-                      y: 0,
-                      scale: 1,
-                      transition: {
-                        duration: duration.slow,
-                        ease: [0.34, 1.56, 0.64, 1],
-                      },
-                    }}
-                  >
-                    <Image src={HERO_PHOTO.src} alt={HERO_PHOTO.alt} fill sizes="7rem" className="object-cover object-top" />
-                  </m.div>
-                )}
-              </AnimatePresence>
             </div>
 
             <div className="mt-8 min-h-40 w-full max-w-sm">

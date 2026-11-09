@@ -20,7 +20,7 @@ const SongInput = z.object({
 /** A fan submits a song link; it stays hidden until an admin approves it. */
 export async function submitSong(_prev: SongResult, formData: FormData): Promise<SongResult> {
   const viewer = await getViewer();
-  if (!viewer) return { ok: false, message: "Đăng nhập Google để gửi bài." };
+  if (!viewer) return { ok: false, message: "Vào Bộ Tộc (đăng nhập) để gửi bài." };
   const parsed = SongInput.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ" };
   const { title, artist, url, note } = parsed.data;
@@ -48,7 +48,7 @@ export async function submitSong(_prev: SongResult, formData: FormData): Promise
 export async function toggleSongVote(songId: string): Promise<{ ok: boolean; message?: string }> {
   if (!z.uuid().safeParse(songId).success) return { ok: false };
   const viewer = await getViewer();
-  if (!viewer) return { ok: false, message: "Đăng nhập Google để upvote." };
+  if (!viewer) return { ok: false, message: "Vào Bộ Tộc (đăng nhập) để upvote." };
   const supabase = await serverClient();
   const match = { song_id: songId, user_id: viewer.id };
   const { data: existing } = await supabase.from("fan_song_votes").select("song_id").match(match).maybeSingle();

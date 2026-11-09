@@ -133,3 +133,24 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 - LCP mô phỏng trên mạng chậm vẫn khoảng 5 s, chủ yếu do lượng JS; LCP đo thật trên máy là 0,15 s.
 - Giảm JS (Motion, các chunk chưa dùng) để lại cho đợt sau.
 
+## ADR-013 – Tài khoản riêng tư: tên Bộ Tộc + mã khóa, không email, link mời cho chính chủ {#adr-013}
+
+**Trạng thái:** Chấp nhận, 2026-11-10 (thay phần "Auth Google" của ADR-001)
+
+**Bối cảnh:** Chủ dự án lo rằng bắt đăng nhập Gmail sẽ làm lộ thông tin: của anh Độ (mọi admin đều thấy email, email nằm trong DB của một web fan) và của người xem. Anh Độ cũng sẽ lo cho thông tin của người xem.
+
+**Quyết định:**
+- Bỏ đăng nhập Google. Mọi tài khoản là tên Bộ Tộc + mã khóa. Mã khóa do trang sinh (4 từ + 4 số, khoảng 41 bit) hoặc do người dùng tự đặt (≥ 10 ký tự).
+- Supabase Auth vẫn quản lý phiên và băm mật khẩu, nhưng mỗi user dùng một địa chỉ ảo `*.invalid`. Đăng ký công khai tắt: chỉ server của app tạo tài khoản, kèm giới hạn theo IP đã băm, giới hạn toàn site và Turnstile (tùy chọn).
+- Anh Độ, team kênh và mod vào bằng link mời dùng một lần, hết hạn sau 48 giờ, tự đặt mã khóa. Chỉ chủ trang tạo được lời mời.
+
+**Phương án loại:**
+- *Gmail kèm danh sách email admin:* lộ email cho mọi admin.
+- *Anonymous sign-in của Supabase:* ai cũng gọi được từ trình duyệt, dễ bị tạo clone hàng loạt; mất cookie là mất tài khoản.
+- *Discord/Facebook OAuth:* vẫn đưa danh tính mạng xã hội cho trang.
+
+**Hệ quả:**
+- Mất mã khóa thì không khôi phục được (trang có ghi rõ). Chủ trang cấp lại quyền bằng link mời mới.
+- Không còn tài khoản Google làm rào chắn chống clone. Thay bằng: giới hạn tạo tài khoản, luật tài khoản < 24 giờ (không vote, 2 đề xuất/ngày), duyệt trước, cấm và cấm ngầm, Turnstile.
+- Service role có thêm một ngoại lệ, đã ghi trong `docs/07-conventions.md`.
+

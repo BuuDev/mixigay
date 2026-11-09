@@ -37,8 +37,11 @@ export default function AboutPage() {
       </p>
       <h2 className="text-lg font-semibold">Dữ liệu</h2>
       <p>
-        Khi đăng nhập Google, trang chỉ lưu tên hiển thị, ảnh đại diện, các đề xuất, lượt upvote và các bài nhạc nịnh bạn gửi (tên bài, người làm, link, ghi
-        chú). Số liệu video lấy từ YouTube Data API, thông tin game lấy từ Steam.
+        Tài khoản ở Góc Bộ Tộc chỉ gồm <strong>tên Bộ Tộc và mã khóa</strong>: trang không hỏi email, số điện thoại hay tài khoản Google/Facebook của bất kỳ ai,
+        kể cả anh Độ. Trang chỉ lưu tên đăng nhập, tên hiển thị, các đề xuất, lượt upvote, báo cáo, lời nhắn trên Bức tường, lượt “Tối nay tôi có mặt” (chỉ công
+        khai tổng số) và những gì bạn tự gửi (bài nhạc, tranh, câu đố). Mã khóa được lưu dạng băm, không ai xem được; mất mã khóa thì không khôi phục được tài
+        khoản. Để chống spam, trang lưu tạm mã mạng đã băm (không lưu địa chỉ IP) và có thể dùng bước xác minh Cloudflare Turnstile khi tạo tài khoản. Khách
+        chưa đăng nhập bấm “có mặt” thì chỉ lưu trên máy của bạn. Số liệu video lấy từ YouTube Data API, thông tin game lấy từ Steam.
       </p>
       <h2 id="lien-he" className="scroll-mt-20 text-lg font-semibold">
         Liên hệ / yêu cầu gỡ nội dung

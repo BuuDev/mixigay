@@ -25,4 +25,9 @@ describe("album", () => {
       expect(p.credit).toBeTruthy();
     }
   });
+
+  it("uses fan-art (never a real stage photograph) as HERO_PHOTO so the cover reads as fan-made", async () => {
+    const { HERO_PHOTO } = await import("./photos");
+    expect(HERO_PHOTO.kind).toBe("fan-art");
+  });
 });

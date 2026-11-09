@@ -77,7 +77,7 @@ async function SubmitBox() {
       <Card className="p-4 text-sm">
         <p className="font-bold">Gửi bài nhạc nịnh</p>
         <p className="mt-2 text-muted">
-          Đăng nhập Google (góc trên bên phải) để gửi link bài của bạn. Có thể xem thêm ở trang{" "}
+          Bấm “Vào Bộ Tộc” (góc trên bên phải) để gửi link bài của bạn. Có thể xem thêm ở trang{" "}
           <Link href="/bo-toc" className="text-accent underline underline-offset-2">
             Bộ Tộc
           </Link>

@@ -12,4 +12,7 @@ export const TAGS = {
   songs: "songs",
   fanArt: "fan-art",
   quiz: "quiz",
+  wall: "wall",
+  attendance: "attendance",
+  stats: "stats",
 } as const;

@@ -18,6 +18,8 @@ export interface Suggestion {
   authorAvatar?: string;
   /** For reporting an offensive display name; absent in demo data. */
   authorId?: string;
+  /** "✓ Chính chủ": the account is verified as anh Độ / the channel team. */
+  authorVerified?: boolean;
   createdAt: string;
   upvotes: number;
   status: SuggestionStatus;

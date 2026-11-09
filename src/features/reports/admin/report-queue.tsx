@@ -42,7 +42,11 @@ export async function ReportQueue() {
     g.reasons[r.reason] = (g.reasons[r.reason] ?? 0) + 1;
     groups.set(key, g);
   }
-  const list = [...groups.values()].sort((a, b) => b.count - a.count || Date.parse(b.latest) - Date.parse(a.latest)).slice(0, 50);
+  // Impersonation of anh Độ / the channel first, then the most-reported.
+  const impersonation = (g: Group) => (g.reasons.impersonation ? 1 : 0);
+  const list = [...groups.values()]
+    .sort((a, b) => impersonation(b) - impersonation(a) || b.count - a.count || Date.parse(b.latest) - Date.parse(a.latest))
+    .slice(0, 50);
 
   // Human-readable labels for the reported targets.
   const ids = (k: ReportKind) => list.filter((g) => g.kind === k).map((g) => g.id);

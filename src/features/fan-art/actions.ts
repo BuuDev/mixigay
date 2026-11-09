@@ -18,7 +18,7 @@ const FanArtInput = z.object({
 /** A fan submits a Google Drive share link; it stays pending until an admin reviews and approves it. */
 export async function submitFanArt(_prev: FanArtResult, formData: FormData): Promise<FanArtResult> {
   const viewer = await getViewer();
-  if (!viewer) return { ok: false, message: "Đăng nhập Google để gửi tranh vẽ." };
+  if (!viewer) return { ok: false, message: "Vào Bộ Tộc (đăng nhập) để gửi tranh vẽ." };
 
   const parsed = FanArtInput.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ" };

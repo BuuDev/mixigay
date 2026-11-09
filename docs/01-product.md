@@ -25,7 +25,7 @@ Trang đi theo hướng **chỉ dẫn link về kênh gốc**: lượt xem, ủn
 | Vai trò | Có thể làm |
 |---|---|
 | Khách (chưa đăng nhập) | Xem mọi trang công khai |
-| Fan (đăng nhập Google) | Gửi đề xuất, upvote (1 phiếu/đề xuất), gửi quote, gửi fan art, đăng ký thông báo |
+| Fan (đăng nhập bằng tên Bộ Tộc + mã khóa, không email) | Gửi đề xuất, upvote (1 phiếu/đề xuất), gửi quote, gửi fan art, đăng ký thông báo |
 | Admin (bạn, danh sách email cố định) | Sửa lịch tuần, gán game cho video, quản lý từ khóa game, đổi trạng thái đề xuất, duyệt fan art/quote, cập nhật "Đã chơi" |
 
 ## Danh sách tính năng và mức ưu tiên
@@ -39,7 +39,7 @@ Trang đi theo hướng **chỉ dẫn link về kênh gốc**: lượt xem, ủn
 | F3 | Card live: tiêu đề, thumbnail, số người xem, mở YouTube | P0 | UI xong (mock) | |
 | F4 | Video theo game, sắp xếp theo lượt xem / mới nhất, mục "Chưa phân loại" | P0 | UI xong (mock) | Phân loại: nhãn tay → playlist → từ khóa |
 | F5 | Vlog (một "game" đặc biệt `isVlog`) | P0 | UI xong (mock) | |
-| F6 | Đề xuất game: đăng nhập Google, upvote, trạng thái, gợi ý trùng | P0 | UI xong (lưu tạm trình duyệt) | |
+| F6 | Đề xuất game: đăng nhập (tên + mã khóa), upvote, trạng thái, gợi ý trùng | P0 | UI xong (lưu tạm trình duyệt) | |
 | F7 | Tự lấy thông tin game Steam từ link (ảnh, giá, thể loại) | P0 | Nhận appid xong | Steam Store API |
 | F8 | "Độ đã chơi": đang chơi / phá đảo / drop, liên kết với đề xuất | P0 | UI xong (mock) | |
 | F9 | Trang admin tối giản | P0 | Chưa | Không cần đẹp |

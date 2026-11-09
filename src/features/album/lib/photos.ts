@@ -57,5 +57,8 @@ export const ALBUM: AlbumPhoto[] = [
   },
 ];
 
-/** Portrait used by the intro and the home hero. */
-export const HERO_PHOTO = ALBUM[0];
+/**
+ * Portrait used by the home hero arch: always a fan-art illustration (`kind: "fan-art"`),
+ * never a real stage photograph, so the landing page reads unmistakably as a fan-made tribute.
+ */
+export const HERO_PHOTO = ALBUM.find((p) => p.kind === "fan-art" && p.id === "chanh-city") ?? ALBUM[2];

@@ -16,16 +16,19 @@ export const getViewer = cache(async function getViewer(): Promise<Viewer | null
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  const [{ data: profile }, { data: isAdmin }] = await Promise.all([
-    supabase.from("profiles").select("display_name, avatar_url").eq("id", user.id).maybeSingle(),
+  const [{ data: profile }, { data: isAdmin }, { data: isOwner }] = await Promise.all([
+    supabase.from("profiles").select("display_name, avatar_url, verified").eq("id", user.id).maybeSingle(),
     supabase.rpc("is_admin"),
+    supabase.rpc("is_owner"),
   ]);
+  // No email here on purpose: accounts carry a synthetic address that must never be shown.
   return {
     id: user.id,
-    email: user.email,
-    name: profile?.display_name ?? user.email ?? "fan",
+    name: profile?.display_name ?? "Fan",
     avatarUrl: profile?.avatar_url ?? undefined,
     isAdmin: isAdmin === true,
+    isOwner: isOwner === true,
+    verified: profile?.verified === true,
   };
 });
 

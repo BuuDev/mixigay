@@ -32,7 +32,7 @@ export function useSuggestionVotes({ initial, votedIds, mode, signedIn }: { init
       return;
     }
     if (!signedIn) {
-      setNotice("Đăng nhập Google (góc trên bên phải) để upvote.");
+      setNotice("Bấm “Vào Bộ Tộc” (góc trên bên phải) để upvote.");
       return;
     }
     startTransition(async () => {

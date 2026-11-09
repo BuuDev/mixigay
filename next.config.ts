@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "shared.fastly.steamstatic.com" },
     ],
   },
+  // Invite links carry a one-time token in the path: never leak it through Referer.
+  async headers() {
+    return [{ source: "/moi/:token*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] }];
+  },
   turbopack: {
     rules: {
       "*.css": {

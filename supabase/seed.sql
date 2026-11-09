@@ -140,4 +140,4 @@ insert into public.videos (video_id, title, published_at, duration_seconds, view
   ('yWN4qh1CWZA', '(Restream) Chiến đấu hết mình trước kèo khủng long 20vs20 vs SBTC và rủ bạn Ba đưa Moi Xoang trở lại', '2026-09-16T14:00:00Z', 16800, 1300000, true, 'the-isle'),
   ('B8kP_2VWpL0', '(Restream) Cảnh báo kênh chat FA về vấn nạn lừa đảo và trận Ao Làng PUBG nghẹt thở đến phút chót.', '2026-09-14T14:00:00Z', 16800, 1400000, true, 'pubg');
 
--- Make yourself admin locally: insert into public.admin_emails (email) values ('you@example.com');
+-- Become the owner locally: select public.issue_invite('owner', 'ten-ban', 'Tên bạn'); then open http://localhost:3000/moi/<token>.

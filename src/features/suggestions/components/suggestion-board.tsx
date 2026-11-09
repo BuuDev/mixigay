@@ -89,7 +89,7 @@ export function SuggestionBoard({ initial, votedIds, pending = [], mode, signedI
         ) : (
           <Card className="p-4 text-sm lg:sticky lg:top-20">
             <h2 className="font-semibold">Đề xuất game cho anh Độ</h2>
-            <p className="mt-2 text-muted">Đăng nhập Google (góc trên bên phải) để gửi đề xuất và upvote. Chỉ dùng để chống spam.</p>
+            <p className="mt-2 text-muted">Bấm “Vào Bộ Tộc” (góc trên bên phải) để gửi đề xuất và upvote. Chỉ cần tên Bộ Tộc + mã khóa, không cần email.</p>
           </Card>
         )}
       </aside>

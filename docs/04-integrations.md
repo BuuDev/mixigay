@@ -44,15 +44,12 @@ Viết client mỏng tự làm trong `src/server/youtube/` bằng `fetch` (khôn
 - Gọi qua route `/api/steam/[appId]` có `"use cache"` + `cacheLife('weeks')`. Client không gọi thẳng Steam (CORS + để cache chung).
 - Ảnh `header_image` hiển thị bằng `next/image`, thêm `shared.akamai.steamstatic.com` / `cdn.akamai.steamstatic.com` vào `images.remotePatterns`.
 
-## Google OAuth qua Supabase Auth
+## Tài khoản (Supabase Auth, không OAuth)
 
-1. Google Cloud Console → OAuth consent screen (External), sau đó tạo OAuth Client ID (Web).
-2. Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`.
-3. Supabase Dashboard → Authentication → Providers → Google: dán Client ID/Secret.
-4. Supabase → URL Configuration: thêm `http://localhost:3000/**` và domain production vào Redirect URLs.
-5. Next.js: route `src/app/auth/callback/route.ts` gọi `exchangeCodeForSession`. `proxy.ts` làm mới session theo hướng dẫn `@supabase/ssr` cho Next.js (đọc `node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md` trước).
-
-Scope chỉ cần `openid email profile`.
+Không dùng Google hay OAuth nào ([ADR-013](08-decisions.md#adr-013)). Tài khoản là "tên Bộ Tộc + mã khóa":
+- `src/features/auth/server/accounts.ts` tạo user bằng service role (`auth.admin.createUser`) với địa chỉ ảo `u-<uuid>@id.gocbotoc.invalid`, rồi đăng nhập bằng `signInWithPassword` để có cookie phiên. `proxy.ts` làm mới phiên như trước.
+- Đăng ký công khai tắt trong Supabase, nên API Auth không tạo được tài khoản nào ngoài đường này.
+- Cloudflare Turnstile (tùy chọn): `NEXT_PUBLIC_TURNSTILE_SITE_KEY` hiện widget ở form tạo tài khoản, server kiểm `TURNSTILE_SECRET_KEY` qua `siteverify`.
 
 ## Thông báo khi lên sóng (P1)
 

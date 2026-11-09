@@ -1,20 +1,37 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { serverClient } from "@/server/supabase/server";
+import { changeOwnPassphrase, redeemInvite, registerFan, signInFan, type AuthResult } from "./server/accounts";
 
-export async function signInWithGoogle(formData: FormData) {
-  const h = await headers();
-  const origin = h.get("origin") ?? `https://${h.get("host")}`;
-  const next = String(formData.get("next") ?? "/");
-  const supabase = await serverClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}` },
+export type AuthFormState = AuthResult | null;
+
+const field = (fd: FormData, key: string) => String(fd.get(key) ?? "");
+
+export async function signIn(_prev: AuthFormState, fd: FormData): Promise<AuthFormState> {
+  return signInFan({ handle: field(fd, "handle"), passphrase: field(fd, "passphrase") });
+}
+
+export async function register(_prev: AuthFormState, fd: FormData): Promise<AuthFormState> {
+  return registerFan({
+    handle: field(fd, "handle"),
+    displayName: field(fd, "displayName"),
+    passphrase: field(fd, "passphrase"),
+    turnstile: fd.get("cf-turnstile-response") ? field(fd, "cf-turnstile-response") : null,
   });
-  if (error || !data.url) redirect("/?loi=dang-nhap");
-  redirect(data.url);
+}
+
+export async function acceptInvite(token: string, _prev: AuthFormState, fd: FormData): Promise<AuthFormState> {
+  if (field(fd, "passphrase") !== field(fd, "confirm")) return { ok: false, message: "Hai lần nhập mã khóa chưa khớp." };
+  const res = await redeemInvite({ token, passphrase: field(fd, "passphrase") });
+  if (res.ok) redirect("/admin");
+  return res;
+}
+
+/** Needs the current passphrase (a stolen session alone cannot lock the owner out). */
+export async function changePassphrase(_prev: AuthFormState, fd: FormData): Promise<AuthFormState> {
+  if (field(fd, "passphrase") !== field(fd, "confirm")) return { ok: false, message: "Hai lần nhập mã khóa chưa khớp." };
+  return changeOwnPassphrase({ current: field(fd, "current"), next: field(fd, "passphrase") });
 }
 
 export async function signOut() {

@@ -31,3 +31,10 @@ select cron.schedule('sync-videos', '17 */6 * * *', $$ select public.call_cron_r
 
 -- Keep pg_net's response log small.
 select cron.schedule('purge-net-responses', '0 4 * * *', $$ delete from net._http_response where created < now() - interval '1 day' $$);
+
+-- live_samples: one sample per 5 minutes after 30 days (public.compact_live_samples,
+-- migration 20261110130000). Pure SQL, no YouTube quota.
+select cron.schedule('compact-live-samples', '30 4 * * *', $$ select public.compact_live_samples() $$);
+
+-- Rate-limit bookkeeping for sign-up / sign-in (migration 20261110120000).
+select cron.schedule('purge-auth-attempts', '45 4 * * *', $$ delete from public.auth_attempts where at < now() - interval '2 days' $$);

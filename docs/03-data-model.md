@@ -245,7 +245,7 @@ create table quiz_questions (
 | push_subscriptions | chủ sở hữu | đăng nhập | – | chủ sở hữu |
 | api_usage | admin | – (service role qua `add_api_usage`) | – | – |
 | admins | chính mình | – | – | – |
-| admin_emails, notifications_log | – (chỉ service role) | – | – | – |
+| notifications_log, account_logins, invites, auth_attempts | – (chỉ service role) | – | – | – |
 
 Job cron dùng service role nên bỏ qua RLS. Vì vậy mọi kiểm tra quyền của job phải nằm ở phía route (`CRON_SECRET`).
 
@@ -259,7 +259,7 @@ Chỉ bật Realtime cho `live_status`, bằng lệnh `alter publication supabas
 - `suggestion_votes` insert/delete → cập nhật `suggestions.upvotes`.
 - Tác giả **không** còn tự upvote (đề xuất chưa duyệt thì không vote được).
 - `profiles_sanitize_name`: làm sạch `display_name` (xem "Chống phá hoại").
-- Cấp admin chỉ cho email **đã xác nhận** nằm trong `admin_emails`: lúc tạo user, lúc email được xác nhận, hoặc lúc thêm email vào danh sách.
+- Admin chỉ được cấp qua **lời mời** (`invites`, xem mục "Định danh"). Cơ chế cũ cấp admin theo email đã xác nhận (`admin_emails`) đã bị gỡ ở `20261110120000`.
 - Kiểm chứng toàn bộ các quy tắc trên: `npm run db:check` (`scripts/check-sql.mjs`).
 
 ## Seed
@@ -323,4 +323,59 @@ Migration `supabase/migrations/20261110110000_reports_song_votes_steam.sql`. Cá
 | `reports(target_kind, target_id, reason, note, resolved)` | Fan đã đăng nhập, không bị cấm, chỉ được ghi 4 cột. Mỗi fan chỉ báo cáo một lần cho mỗi mục (unique). Tối đa 20 báo cáo mỗi ngày. Mục bị báo cáo phải đang hiển thị: đề xuất đã duyệt, bài nhạc đã duyệt, hoặc hồ sơ. **Người báo cáo không đọc lại được** báo cáo, kể cả của mình, nên insert từ app không được `.select()`/`RETURNING`. Chỉ admin xem và xử lý. Báo cáo không tự ẩn nội dung, để tránh bị hội đồng báo cáo; admin quyết định ở `/admin` (mục "Hàng đợi duyệt"). |
 | `fan_song_votes(song_id, user_id)` + `fan_songs.upvotes` | Giống `suggestion_votes`: tài khoản ≥ 24 giờ, chỉ vote bài đã duyệt, 60 phiếu/giờ. Phiếu của người bị cấm ngầm "thành công" nhưng không được lưu. `moderate_user` gỡ luôn các phiếu này. |
 | `steam_lookups` + `take_steam_lookup()` | Route `/api/steam/[appId]` gọi trước mỗi lần tra cứu: mỗi fan 20 lần / 10 phút, quá thì trả 429. API không đọc được bảng này. |
+
+## Định danh: tên Bộ Tộc + mã khóa, link mời, huy hiệu chính chủ
+
+Migration `supabase/migrations/20261110120000_admin_access_official.sql`, [ADR-013](08-decisions.md#adr-013). Các quy tắc đều có assert trong `npm run db:check` (mục "Accounts & invites").
+
+- **Không ai đưa email, số điện thoại hay tài khoản Google.**
+  - Tài khoản = tên đăng nhập (`account_logins.handle_key`) + mã khóa. Đăng ký công khai tắt trong Supabase.
+  - Server tạo user bằng service role, với địa chỉ ảo `u-<uuid>@id.gocbotoc.invalid`, chỉ nằm trong `auth.users` và `account_logins`. API không đọc được bảng này.
+- `name_key()`: khóa so sánh cho tên. Đổi chữ trông giống chữ Latin (Cyrillic, Greek) về Latin, bỏ dấu, chữ thường, chỉ giữ chữ và số. Phải khớp với `src/features/auth/lib/handle.ts`, có test kiểm tra.
+- **Tên dành riêng** (`reserved_name_terms`):
+  - `is_reserved_name()` dùng `name_key()` và đổi thêm số thành chữ (0→o, 1→i, 3→e, 4→a, 5→s);
+  - tài khoản chưa xác minh dùng tên dành riêng sẽ bị đổi thành "Fan ####" (trigger `sanitize_display_name`, không bao giờ báo lỗi);
+  - tạo tài khoản fan với tên đăng nhập dành riêng bị từ chối ngay ở server;
+  - migration quét lại mọi tên đang có.
+- **Vai trò:**
+  - `admins.owner` là chủ trang: quản lý admin và lời mời;
+  - admin thường chỉ kiểm duyệt nội dung;
+  - `profiles.verified` là huy hiệu "✓ Chính chủ": ai cũng đọc được, fan không tự bật được.
+- **Lời mời** (`invites`):
+  - token 64 ký tự hex, chỉ lưu bản băm SHA-256, dùng một lần, hết hạn sau 48 giờ;
+  - `issue_invite()`: chủ trang tạo lời mời `admin` / `official`; lời mời `owner` chỉ tạo được từ SQL editor;
+  - `peek_invite()` / `consume_invite()`: chỉ service role gọi được.
+  - `consume_invite` cấp quyền admin và, với lời mời `official`, bật huy hiệu rồi đặt tên hiển thị của lời mời.
+- `list_access()`, `revoke_invite()`, `remove_admin()`: chỉ chủ trang.
+  - Danh sách chỉ có tên hiển thị và tên đăng nhập, không có email.
+  - `remove_admin` khóa tuần tự, không cho tự bỏ quyền mình hay bỏ quyền chủ trang, và gỡ huy hiệu (nên tên dành riêng bị reset theo).
+- **Giới hạn** (`auth_attempts` + `take_auth_attempt()`, chỉ service role; khóa là IP đã băm HMAC, không lưu IP gốc):
+  - tạo tài khoản 3/giờ/IP, 60/giờ toàn site;
+  - đăng nhập 5 lần / 10 phút / tên và 30 / 10 phút / IP;
+  - đổi lời mời 10/giờ/IP.
+- Gỡ bỏ: bảng `admin_emails`, các trigger cấp admin theo email đã xác nhận, và ảnh đại diện lấy từ tài khoản ngoài. `handle_new_user` chỉ còn tạo profile.
+- Trigger `auth_users_keep_synthetic_email` chặn đổi sang email thật qua Auth API (`PUT /auth/v1/user`), vì đổi được thì có thể dùng /recover, /otp.
+- Đăng nhập chỉ đếm **lần sai** (`auth_attempts_exceeded` + `note_auth_failure`), để người lạ cố tình nhập sai không khóa được tài khoản của người khác:
+  - 5 lần sai / 10 phút cho mỗi cặp tên + mạng;
+  - 50 lần sai / giờ cho mỗi tên;
+  - 30 lần sai / 10 phút cho mỗi mạng (IPv6 tính theo dải /64).
+- Mã khóa:
+  - ≥ 10 ký tự, không phải mã phổ biến, không chứa tên đăng nhập;
+  - tài khoản admin / chính chủ / chủ trang cần ≥ 16 ký tự;
+  - đổi mã khóa phải nhập mã hiện tại.
+
+## Bức tường Bộ Tộc, "Tối nay tôi có mặt", gộp `live_samples`
+
+Migration `supabase/migrations/20261110130000_wall_attendance_stats.sql`. Có assert trong `npm run db:check` (các mục "Wall messages", "Attendance", "live_samples compaction").
+
+| Bảng / hàm | Quy tắc |
+|---|---|
+| `wall_messages(body ≤ 140, approved)` | **Duyệt trước** (COMPONENTS.md §5). Fan chỉ ghi `body`. Giới hạn: 3 tin/ngày, tài khoản < 24 giờ 1 tin/ngày, toàn site 60 tin/giờ. Ký tự ẩn bị xóa trước khi đếm độ dài. Chỉ admin xóa được (tác giả xóa được thì sẽ lách giới hạn/ngày). Không duyệt được tin của người bị cấm hoặc cấm ngầm (`block_banned_approval`). |
+| `attendance(date_vn, user_id)` | Mỗi fan bấm 1 lần cho **hôm nay theo giờ VN** (`today_vn()`), bấm lại để bỏ. Fan chỉ thấy lượt của mình; tổng công khai qua `attendance_count(date)`. Lượt của người bị cấm ngầm "thành công" nhưng không được lưu. Khách chưa đăng nhập chỉ lưu trên thiết bị (localStorage), không tính vào tổng. |
+| `compact_live_samples()` | Mẫu cũ hơn 30 ngày: giữ 1 mẫu mỗi 5 phút cho mỗi video. Chạy hằng ngày bằng pg_cron (`supabase/cron.sql`), chỉ là SQL, không tốn quota YouTube. API không gọi được. |
+| `moderate_user` | Cấm / cấm ngầm còn gỡ duyệt mọi tin trên tường và xóa lượt điểm danh. |
+
+Chấp nhận theo thiết kế (đã qua review):
+- Người bị cấm ngầm có thể nhận ra mình bị cấm, vì lượt điểm danh "thành công" nhưng tải lại trang thì mất. Phiếu vote bị cấm ngầm cũng có hành vi tương tự.
+- Một nhóm tài khoản có thể làm đầy giới hạn 60 tin/giờ toàn site của Bức tường. Cấm hoặc cấm ngầm các tài khoản đó sẽ trả lại hạn mức, vì giới hạn chỉ đếm tác giả có `trust ≥ 0`.
 

@@ -23,7 +23,7 @@ const SuggestionInput = z.object({
 
 export async function createSuggestion(_prev: FormResult, formData: FormData): Promise<FormResult> {
   const viewer = await getViewer();
-  if (!viewer) return { ok: false, message: "Đăng nhập Google để gửi đề xuất." };
+  if (!viewer) return { ok: false, message: "Vào Bộ Tộc (đăng nhập) để gửi đề xuất." };
 
   const parsed = SuggestionInput.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ" };
@@ -86,7 +86,7 @@ const REJECTED = "Nội dung không phù hợp với Góc Bộ Tộc. Viết l�
 export async function toggleVote(suggestionId: string): Promise<{ ok: boolean; message?: string }> {
   if (!z.uuid().safeParse(suggestionId).success) return { ok: false };
   const viewer = await getViewer();
-  if (!viewer) return { ok: false, message: "Đăng nhập Google để upvote." };
+  if (!viewer) return { ok: false, message: "Vào Bộ Tộc (đăng nhập) để upvote." };
   const supabase = await serverClient();
   const { data: existing } = await supabase
     .from("suggestion_votes")

@@ -26,11 +26,17 @@ supabase migration new <ten>   # tạo migration mới trong supabase/migrations
 supabase gen types typescript --local > src/server/supabase/database.types.ts
 ```
 
-Google login local đã cấu hình sẵn trong `supabase/config.toml`, đọc `SUPABASE_AUTH_GOOGLE_CLIENT_ID` / `SUPABASE_AUTH_GOOGLE_SECRET` từ môi trường.
+Tài khoản là **tên Bộ Tộc + mã khóa**, không email, không Google ([ADR-013](08-decisions.md#adr-013)). `supabase/config.toml` đã tắt đăng ký công khai; chỉ server của app tạo được tài khoản (cần `SUPABASE_SERVICE_ROLE_KEY`).
 
 **Chế độ mock:** khi `NEXT_PUBLIC_SUPABASE_URL` trống, mọi trang dùng `src/features/*/mock.ts`, đề xuất chỉ lưu trên trình duyệt, admin trả 404. CI build theo chế độ này.
 
-**Cấp quyền admin:** chạy SQL `insert into public.admin_emails (email) values ('ban@gmail.com');`. Nếu tài khoản đã tồn tại thì được cấp ngay; nếu chưa thì được cấp lúc đăng nhập lần đầu.
+**Chủ trang, admin và tài khoản chính chủ (không ai đăng ký, không ai đưa email):**
+- **Chủ trang đầu tiên** (chính bạn): trong SQL editor chạy `select public.issue_invite('owner', 'ten-dang-nhap', 'Tên hiển thị');`. Lệnh trả về một token; mở `<SITE_URL>/moi/<token>`, tự đặt mã khóa là xong. Token chỉ hiện một lần, dùng một lần, hết hạn sau 48 giờ.
+- **Anh Độ / team kênh / mod:** chủ trang vào `/admin/quan-tri`, chọn vai trò ("Chính chủ" hoặc "Quản trị viên"), nhập tên đăng nhập (ví dụ `domixi`) và tên hiển thị (ví dụ "Độ Mixi"), bấm "Tạo link mời", rồi gửi link riêng cho đúng người.
+  - Người nhận mở link, **tự đặt mã khóa**. Không ai khác biết mã đó, kể cả chủ trang.
+  - "Chính chủ" = quyền quản trị + huy hiệu "✓ Chính chủ" + được dùng các tên dành riêng ("Độ Mixi", "MixiGaming"…). Chỉ chọn sau khi đã xác nhận qua kênh chính thức (fanpage, Discord chính chủ).
+  - Gửi link qua tin nhắn riêng, không đăng công khai. Lỡ lộ thì bấm "Hủy link" rồi tạo link mới.
+  - Đổi máy hoặc quên mã khóa: chủ trang bỏ quyền tài khoản cũ rồi tạo link mời mới.
 
 ## Biến môi trường
 
@@ -46,7 +52,8 @@ Copy `.env.example` → `.env.local` rồi điền. **Không commit `.env.local`
 | `YOUTUBE_CHANNEL_ID` | server | `channels.list?forHandle=` (xem 04) | 2 |
 | `NEXT_PUBLIC_SITE_URL` | client + server | domain production, dùng cho sitemap/robots/metadata | 3 |
 | `NEXT_PUBLIC_CONTACT_URL` | client | link liên hệ/gỡ nội dung trên trang Giới thiệu | 3 |
-| `SUPABASE_AUTH_GOOGLE_CLIENT_ID`, `SUPABASE_AUTH_GOOGLE_SECRET` | chỉ Supabase CLI local | OAuth client (xem dưới) | 1 |
+| `AUTH_HASH_SALT` | server | Chuỗi ngẫu nhiên dài, dùng để băm IP khi giới hạn tạo tài khoản / đăng nhập | 1 |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | client / server | Cloudflare Turnstile (tùy chọn, chống bot khi tạo tài khoản) | 1 |
 | `WEBSUB_SECRET` | server | `openssl rand -hex 32` | 4 |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID` | server | @BotFather | 4 |
 | `DISCORD_WEBHOOK_URL` | server | Discord → Kênh → Integrations → Webhooks | 4 |
@@ -55,7 +62,6 @@ Copy `.env.example` → `.env.local` rồi điền. **Không commit `.env.local`
 ## Google Cloud (một project dùng chung)
 
 1. Tạo project → bật **YouTube Data API v3** → tạo **API key**, giới hạn key chỉ cho YouTube Data API.
-2. OAuth consent screen (External, scope `openid email profile`) → tạo **OAuth Client ID (Web)** → redirect URI `https://<ref>.supabase.co/auth/v1/callback` (và `http://127.0.0.1:54321/auth/v1/callback` cho local).
 
 ## Production
 
@@ -70,7 +76,14 @@ Copy `.env.example` → `.env.local` rồi điền. **Không commit `.env.local`
    ```
 
 5. Backfill toàn kênh một lần (~120 đơn vị quota): `curl -X POST -H "Authorization: Bearer $CRON_SECRET" "https://<domain>/api/cron/sync-videos?full=1"`. Sau đó vào `/admin/game` gán playlist chính chủ cho game.
-6. Supabase Auth → Providers → **Email: tắt** (chỉ dùng Google). DB cũng chỉ cấp admin cho email đã xác nhận, nhưng không nên để mở cửa đăng ký bằng email.
+6. Supabase → Authentication → Sign In / Providers: **tắt "Allow new users to sign up"** (chỉ server của app tạo tài khoản), **Email provider: bật, "Confirm email": tắt** (địa chỉ là địa chỉ ảo `*.invalid`, chỉ dùng nội bộ cho mã khóa), **Anonymous sign-ins: tắt**, **Google: tắt**. **Tăng rate limit đăng nhập của Supabase** (Authentication → Rate Limits → sign-ins) lên khoảng 300 / 5 phút. Mọi lần đăng nhập đều đi từ server của app, nên Supabase thấy IP của Vercel chứ không thấy IP người dùng; app đã tự giới hạn theo người. Đặt `TURNSTILE_SECRET_KEY` trước khi mở cho fan, nếu không thì chỉ còn các giới hạn theo IP.
+
+**Chủ trang mất mã khóa:** mở SQL editor:
+1. `delete from public.admins where user_id = '<id>';`
+2. `delete from public.account_logins where user_id = '<id>';` (thay `<id>` bằng id lấy từ `account_logins` theo tên đăng nhập);
+3. `select public.issue_invite('owner', '<ten-moi>', 'Tên bạn');` rồi mở link mời mới.
+
+Người khác mất mã khóa: chủ trang bỏ quyền tài khoản cũ ở `/admin/quan-tri` rồi tạo link mời mới.
 7. Supabase Auth → URL Configuration: Site URL = domain production. Thêm `https://*-<team>.vercel.app/**` cho preview.
 8. Vercel → Firewall: bật rate limit cho `POST` vào các trang có form (`/de-xuat`, `/nhac`) và `/api/steam/*` (ví dụ 30 request/phút/IP). DB đã giới hạn theo tài khoản; lớp này chặn script spam trước khi tới Supabase. Khi bị tấn công dồn dập: bật Attack Mode.
 

@@ -14,11 +14,11 @@ export interface SuggestionRow {
   upvotes: number;
   hidden: boolean;
   created_at: string;
-  profiles: { display_name: string; avatar_url: string | null } | null;
+  profiles: { display_name: string; avatar_url: string | null; verified?: boolean } | null;
 }
 
 export const SUGGESTION_SELECT =
-  "id,author_id,name,source,url,reason,status,linked_game_slug,steam_app_id,steam_data,upvotes,hidden,created_at,profiles(display_name,avatar_url)";
+  "id,author_id,name,source,url,reason,status,linked_game_slug,steam_app_id,steam_data,upvotes,hidden,created_at,profiles(display_name,avatar_url,verified)";
 
 /** steam_data is jsonb: accept it only in the expected shape so one bad row cannot crash the page. */
 function steamInfo(appId: number, data: unknown): Suggestion["steam"] {
@@ -39,6 +39,7 @@ export function mapSuggestion(r: SuggestionRow): Suggestion {
     author: r.profiles?.display_name ?? "fan",
     authorAvatar: r.profiles?.avatar_url ?? undefined,
     authorId: r.author_id,
+    authorVerified: r.profiles?.verified === true,
     createdAt: r.created_at,
     upvotes: r.upvotes,
     status: r.status,

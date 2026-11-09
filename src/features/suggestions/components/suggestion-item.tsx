@@ -40,7 +40,13 @@ export function SuggestionItem({ suggestion: s, voted, onVote }: { suggestion: S
         )}
         <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
           <span>
-            {s.author} · {formatDate(s.createdAt)}
+            {s.author}
+            {s.authorVerified && (
+              <span className="ml-1 rounded bg-cleared/15 px-1.5 font-semibold text-cleared" title="Tài khoản đã xác minh là anh Độ / team Kênh MixiGaming">
+                ✓ Chính chủ
+              </span>
+            )}{" "}
+            · {formatDate(s.createdAt)}
           </span>
           <ReportButton kind="suggestion" targetId={s.id} authorId={s.authorId} demo={!s.authorId} />
         </div>

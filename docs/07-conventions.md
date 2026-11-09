@@ -125,7 +125,7 @@ Nguồn: skill `frontend-design` (Anthropic), `web-quality-audit`/`accessibility
 
 - Trang **không** import `mock.ts` hay Supabase trực tiếp, mà luôn đi qua `features/*/server/queries.ts`.
 - Ghi dữ liệu qua Server Actions. Mỗi action tự kiểm tra auth và validate input (dùng `zod` khi bắt đầu có action đầu tiên).
-- Service role client chỉ dùng trong `app/api/cron/**` và `app/api/webhooks/**` (thông qua `src/features/*/server/* + src/server/jobs/*`). **Ngoại lệ duy nhất:** `createSuggestion` ghi `steam_app_id`/`steam_data` mà chính server lấy từ Steam, sau khi bản ghi đã được insert bằng quyền của user. Muốn thêm ngoại lệ thì phải ghi vào đây.
+- Service role client chỉ dùng trong `app/api/cron/**` và `app/api/webhooks/**` (thông qua `src/features/*/server/* + src/server/jobs/*`). **Ngoại lệ duy nhất:** `createSuggestion` ghi `steam_app_id`/`steam_data` mà chính server lấy từ Steam, sau khi bản ghi đã được insert bằng quyền của user. Ngoại lệ thứ hai: `src/features/auth/server/accounts.ts` (tạo user, tra tên đăng nhập → địa chỉ ảo, đếm số lần thử, đổi lời mời), vì đăng ký công khai đã tắt ([ADR-013](08-decisions.md#adr-013)). Muốn thêm ngoại lệ thì phải ghi vào đây.
 - Cột do fan ghi được giới hạn bằng **column grant** (`grant insert (cột…)`), không chỉ bằng RLS. RLS lọc hàng chứ không lọc cột.
 - Dữ liệu `jsonb` phải validate khi map (`src/features/*/lib/mapper.ts`), để một hàng hỏng không làm sập trang dùng chung cache.
 - Trang admin: **mỗi page tự gọi `await requireAdmin()`** ở dòng đầu. Không dựa vào layout.
