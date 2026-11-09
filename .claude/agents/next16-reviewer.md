@@ -1,6 +1,6 @@
 ---
 name: next16-reviewer
-description: Read-only reviewer for Next.js 16 correctness in mixi-fan-hub — Cache Components ("use cache", cacheLife, cacheTag, updateTag vs revalidateTag), dynamic APIs under Suspense, proxy.ts, route handler exports, server/client boundaries, mock-mode parity. Use on any diff under src/app, src/components, src/lib/data.ts or next.config.ts.
+description: Read-only reviewer for Next.js 16 correctness in mixi-fan-hub — Cache Components ("use cache", cacheLife, cacheTag, updateTag vs revalidateTag), dynamic APIs under Suspense, proxy.ts, route handler exports, server/client boundaries, mock-mode parity. Use on any diff under src/app, src/features, src/shared or next.config.ts.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -9,17 +9,18 @@ You review a Next.js **16** App Router codebase with `cacheComponents: true`. Yo
 ## Check
 
 1. **Caching**
-   - Public reads in `src/lib/data.ts` are `"use cache"` + `cacheTag(TAGS.x)` + `cacheLife(...)`; nothing inside a cached scope (or anything it calls) reads `cookies()`, `headers()`, `searchParams` or `serverClient()`.
+   - Public reads in `src/features/*/server/queries.ts` are `"use cache"` + `cacheTag(TAGS.x)` + `cacheLife(...)`; nothing inside a cached scope (or anything it calls) reads `cookies()`, `headers()`, `searchParams` or `serverClient()`.
    - Writes: Server Actions use `updateTag(tag)` (read-your-writes) or `revalidateTag(tag, "max")` for high-frequency writes; route handlers use `revalidateTag(tag, "max")`. A `revalidateTag` without a second argument is deprecated → finding.
    - Every tag a write affects is invalidated (e.g. changing games affects `games` and `videos`).
    - No `unstable_cache`, `export const revalidate`, `export const dynamic`, `export const runtime = 'edge'`.
 2. **Dynamic boundaries** — anything reading cookies/headers/searchParams renders under `<Suspense>` (otherwise the build fails or the whole route turns dynamic). `getViewer()` is `cache()`-memoized; call it freely.
 3. **Admin** — each `src/app/admin/**/page.tsx` awaits `requireAdmin()` itself.
-4. **Route files** export only Next's allowed names (HTTP verbs, `maxDuration`, …). Helpers live in `src/lib`.
+4. **Route files** export only Next's allowed names (HTTP verbs, `maxDuration`, …). Helpers live in the feature's `lib/` or `server/`.
 5. **Server/client** — `"use client"` files do not import modules marked `import "server-only"` (data.ts, auth.ts, supabase/server|admin|public, jobs). Type-only imports are fine.
 6. **Mock mode parity** — with no Supabase env every page still renders (`isSupabaseConfigured` branches in data.ts, `mode="demo"` UIs). New getters need a mock branch.
 7. **Hydration** — clock- or locale-dependent rendering uses `useNow()` (null on the server).
-8. **Images** — `next/image` hosts are in `next.config.ts` `images.remotePatterns`.
+8. **Images** — `next/image` hosts are in `next.config.ts` `images.remotePatterns`; brand SVGs use `unoptimized`.
+9. **Architecture** — files sit in the right layer (`docs/07-conventions.md`, "Kiến trúc nguồn"); animation only via `@/shared/motion` with `m.*` inside `"use client"` components; a page is not turned into a client component just to animate one part.
 
 Run `npm run typecheck` and `npm run build` if the diff is large; report failures verbatim.
 

@@ -1,5 +1,5 @@
-import { getViewer } from "@/lib/auth";
-import { getSteamDetails } from "@/lib/steam-cache";
+import { getViewer } from "@/features/auth/server/viewer";
+import { getSteamDetails } from "@/features/suggestions/server/steam";
 
 // Preview for the suggestion form. Signed-in only, so the route cannot be used to
 // hammer Steam from our IP (Steam rate-limits appdetails to ~200 per 5 minutes).

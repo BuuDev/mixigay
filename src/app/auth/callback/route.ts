@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { safeNext } from "@/lib/redirect";
-import { serverClient } from "@/lib/supabase/server";
+import { safeNext } from "@/features/auth/lib/redirect";
+import { serverClient } from "@/server/supabase/server";
 
 /** Google → Supabase → here with ?code=…; exchanges it for a session cookie. */
 export async function GET(request: NextRequest) {

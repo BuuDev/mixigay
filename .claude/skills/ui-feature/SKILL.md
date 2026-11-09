@@ -8,7 +8,14 @@ description: Build or change a public page or component in mixi-fan-hub — live
 ## Before writing
 
 - Next 16 is not the Next you know: read the relevant file in `node_modules/next/dist/docs/01-app/` first (caching, Image, metadata).
-- If the work comes from the v2 design spec ("Tộc Đêm", `COMPONENTS.md`), follow it for states, copy, icons, tokens and motion. If the spec or its assets (`tokens/`, `icons/`, `illustrations/`, `mascot/`) are not in the repo, ask the user for them instead of inventing art.
+- The design source is `docs/design/COMPONENTS.md` (blocks, states, copy, motion) and `docs/design/brand.html` (tokens, icons, mascot, illustrations, skins). Follow them; never invent art. Assets are generated with `npm run brand` — if an icon the spec names is missing (see roadmap GĐ7 list), use a neutral placeholder and add it to that list.
+
+## Where code goes (feature-first, docs/07-conventions.md)
+
+- New block of the spec = new folder `src/features/<name>/` (`components/`, `lib/`, `hooks/`, `server/queries.ts`, `mock.ts`, `types.ts` as needed). The page in `src/app/**/page.tsx` only fetches and composes.
+- Reusable, feature-agnostic UI goes to `src/shared/ui/` (Button, Card, Badge, Chip, EmptyState, PageHeader, `Icon*`, `Mascot`, `Illustration`, `Logo`). Check there before writing a new primitive.
+- Colours by semantic name only (`bg-surface`, `text-accent`, `bg-steam/15`…), no hex, no `dark:` (dark only). Join classes with `cn()`.
+- Any animation: follow the `motion` skill.
 
 ## Rules of this site (fan-site-guard checks these)
 
@@ -19,9 +26,9 @@ description: Build or change a public page or component in mixi-fan-hub — live
 
 ## Server/client split
 
-- Pages are Server Components that read through `src/lib/data.ts` (cached). Never import `mock-data.ts` or Supabase directly in a page or component.
+- Pages are Server Components that read through `src/features/*/server/queries.ts` (cached). Never import `mock-data.ts` or Supabase directly in a page or component.
 - Anything per-user (cookies) goes in a child component under `<Suspense>`; anything clock-dependent uses `useNow()` (null during SSR, so no hydration mismatch); live state uses `useLiveStatus()` (Realtime).
-- Times: stored UTC, schedule in Vietnam time via `src/lib/schedule.ts`, shown in the viewer's zone.
+- Times: stored UTC, schedule in Vietnam time via `src/features/schedule/lib/schedule.ts`, shown in the viewer's zone.
 - Images: `next/image` with hosts listed in `next.config.ts`.
 
 ## Interaction and motion
@@ -34,7 +41,7 @@ description: Build or change a public page or component in mixi-fan-hub — live
 
 ## Verify
 
-- `npm test` for any new pure logic (countdown math, calendar links: put it in `src/lib` with a test).
+- `npm test` for any new pure logic (countdown math, calendar links: put it in the feature's `lib/` with a test).
 - `npm run smoke` (add the page to the page list and a stub-data marker).
 - A screenshot at phone and desktop width if a browser tool is available; otherwise say it was not visually checked.
 

@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import { VideoBrowser } from "@/components/video-browser";
-import { getGames, getVideos } from "@/lib/data";
+import { VideoBrowser } from "@/features/videos/components/video-browser";
+import { getGames, getVideos } from "@/features/videos/server/queries";
+import { IconGameMisc } from "@/shared/ui/icons.generated";
+import { PageHeader } from "@/shared/ui/page-header";
 
-export const metadata: Metadata = { title: "Video theo game – Góc Fan Độ" };
+export const metadata: Metadata = { title: "Video theo game – Tộc Đêm" };
 
 export default async function VideosPage() {
   const [videos, games] = await Promise.all([getVideos(), getGames()]);
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Video theo game</h1>
-      <p className="text-sm text-muted">
+      <PageHeader title="Video theo game" icon={<IconGameMisc size={26} className="text-accent" />}>
         Phân loại theo playlist chính chủ và từ khóa trong tiêu đề. Video chưa nhận diện được nằm ở mục “Chưa phân loại”.
-      </p>
+      </PageHeader>
       <VideoBrowser videos={videos} games={games} />
     </div>
   );

@@ -10,10 +10,10 @@ Every such feature has the same five parts. The suggestions feature (`/de-xuat`)
 | Part | Reference |
 |---|---|
 | Table + RLS + column grants + rate-limit trigger | `suggestions` in `supabase/migrations/20261109000000_init.sql` |
-| Server Action (auth → zod → insert → `updateTag`) | `src/app/de-xuat/actions.ts` |
-| Client UI with demo + live mode, optimistic update | `src/components/suggestion-board.tsx` |
+| Server Action (auth → zod → insert → `updateTag`) | `src/features/suggestions/actions.ts` |
+| Client UI with demo + live mode, optimistic update | `src/features/suggestions/components/suggestion-board.tsx` |
 | Page (cached public list + per-user part under `<Suspense>`) | `src/app/de-xuat/page.tsx` |
-| Admin moderation | `src/app/admin/de-xuat/page.tsx` + `updateSuggestion` in `src/app/admin/actions.ts` |
+| Admin moderation | `src/features/suggestions/admin/suggestion-admin.tsx` + `updateSuggestion` in `src/features/*/admin/actions.ts` |
 
 ## Rules
 
@@ -23,7 +23,7 @@ Every such feature has the same five parts. The suggestions feature (`/de-xuat`)
 4. **Action** — `getViewer()` first; zod-validate; never trust ids, status or counters from the form; map DB errors to Vietnamese messages; `updateTag` for the author's own new row, `revalidateTag(tag, "max")` for high-frequency actions (votes, RSVPs) so spam cannot keep emptying the shared cache.
 5. **Rendering** — text as React children only (no `dangerouslySetInnerHTML`); user links with `rel="noopener noreferrer nofollow ugc"`; images only from hosts in `next.config.ts` `images.remotePatterns`.
 6. **Uploads (fan art)** — Supabase Storage bucket with size (≤5 MB) and MIME (`image/*`) limits in the bucket policy, path `<user_id>/<uuid>`, only approved objects listed publicly; never proxy uploads through a Vercel Function (4.5 MB body limit).
-7. **Timestamps (quotes)** — store `video_id` + `at_seconds`; link with `youtubeUrl(id) + "&t=" + s + "s"`; accept a pasted `?t=` link and parse it in `src/lib` with a test.
+7. **Timestamps (quotes)** — store `video_id` + `at_seconds`; link with `youtubeUrl(id) + "&t=" + s + "s"`; accept a pasted `?t=` link and parse it in the feature's `lib/` with a test.
 8. **Moderation** — admin page lists pending first; approve/hide/delete actions; mascot/empty states per `COMPONENTS.md` if the v2 design is in use.
 9. **Mock mode** — the page must work without Supabase (demo data in `mock-data.ts`, local-only submit), as `SuggestionBoard` does.
 

@@ -1,0 +1,97 @@
+/*
+ * Motion foundation. Rules (docs/design/COMPONENTS.md):
+ *  - one big moment only: the intro ritual; everything else answers a user action;
+ *  - ambient loops (embers, live pulse) are CSS, so they cost no JS;
+ *  - prefers-reduced-motion turns ambient motion off entirely.
+ * Durations/easings mirror src/shared/motion/tokens.ts (used by Motion components).
+ */
+:root {
+  --td-dur-instant: 120ms;
+  --td-dur-fast: 180ms;
+  --td-dur-base: 260ms;
+  --td-dur-slow: 420ms;
+  --td-dur-ritual: 800ms;
+  --td-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --td-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --td-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@theme inline {
+  --ease-out: var(--td-ease-out);
+  --ease-in-out: var(--td-ease-in-out);
+  --ease-spring: var(--td-ease-spring);
+}
+
+/* Use as `motion-safe:animate-td-pulse` so reduced-motion users get a static dot. */
+@theme {
+  --animate-td-pulse: td-pulse 1.6s ease-out infinite;
+}
+
+/* Live badge pulse */
+@keyframes td-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--td-live) 60%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+/* Background embers: <Embers/> renders 12–18 <i> with --x, --d, --delay, --sway. */
+.td-embers {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+.td-embers i {
+  position: absolute;
+  bottom: -10px;
+  left: var(--x, 50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--td-ember-glow);
+  opacity: 0;
+  filter: blur(0.3px);
+  animation: td-rise var(--d, 9s) linear var(--delay, 0s) infinite;
+}
+.td-embers i:nth-child(3n) {
+  width: 3px;
+  height: 3px;
+}
+.td-embers i:nth-child(4n) {
+  width: 5px;
+  height: 5px;
+  background: var(--td-ember);
+}
+.td-embers[data-live="true"] i {
+  background: var(--td-live);
+}
+@keyframes td-rise {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(var(--sway, 20px), -50vh) scale(0.9);
+  }
+  100% {
+    transform: translate(calc(var(--sway, 20px) * -1), -105vh) scale(0.5);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .td-embers {
+    display: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

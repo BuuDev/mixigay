@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin } from "@/features/auth/server/viewer";
 
 export const metadata: Metadata = { title: "Quản trị – Góc Fan Độ", robots: { index: false } };
 

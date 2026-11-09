@@ -19,10 +19,10 @@ Source of truth: `supabase/migrations/*.sql`. Supabase grants `anon`/`authentica
    - `alter publication supabase_realtime add table …` only if a client subscribes.
 3. **Functions**: `set search_path = ''` and fully qualified names. `security definer` only when it must bypass RLS, and then `revoke execute … from public, anon, authenticated` + explicit `grant execute … to service_role`. Prefer `security invoker` so RLS keeps applying (see `set_auto_game`).
 4. **App side**, in this order:
-   - row shape in `src/lib/supabase/rows.ts`;
-   - mapper in `src/lib/supabase/map.ts` (+ test in `map.test.ts`); validate any `jsonb` column's shape there;
-   - app type in `src/lib/types.ts`;
-   - getter in `src/lib/data.ts` with both branches: mock (`mock-data.ts`) and Supabase (`publicClient()` inside `"use cache"` + `cacheTag`); add the tag to `TAGS`.
+   - row shape in `src/features/*/lib/mapper.ts`;
+   - mapper in `src/features/*/lib/mapper.ts` (+ test in `map.test.ts`); validate any `jsonb` column's shape there;
+   - app type in `src/features/*/types.ts`;
+   - getter in `src/features/*/server/queries.ts` with both branches: mock (`mock-data.ts`) and Supabase (`publicClient()` inside `"use cache"` + `cacheTag`); add the tag to `TAGS`.
 5. **Seed**: extend `supabase/seed.sql` so local dev shows the feature.
 6. **Assertions**: add to `scripts/check-sql.mjs` — at least one `allowed(...)` for the intended writer and one `denied(...)` for each of: anon, another fan, a fan writing a protected column, the rate limit. Then `npm run db:check`.
 7. **Docs**: `docs/03-data-model.md` (RLS table + notes).

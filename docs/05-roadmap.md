@@ -10,6 +10,7 @@ Giai đoạn 3  Đề xuất game thật + admin       🟡 thiếu E2E, OG imag
 Giai đoạn 4  Thông báo + PWA                 ~1 tuần
 Giai đoạn 5  Thống kê stream                 ~1 tuần
 Giai đoạn 6  Quote & fan art                 ~2 tuần
+Giai đoạn 7  Tộc Đêm v2 (docs/design)        nền xong – các khối làm dần
 ```
 
 ---
@@ -17,7 +18,7 @@ Giai đoạn 6  Quote & fan art                 ~2 tuần
 ## Giai đoạn 0 – Prototype UI ✅
 
 - [x] Các trang `/`, `/lich`, `/video`, `/vlog`, `/da-choi`, `/de-xuat` với dữ liệu mẫu
-- [x] `src/lib/data.ts` làm lớp truy cập dữ liệu async
+- [x] `src/features/*/server/queries.ts` làm lớp truy cập dữ liệu async
 - [x] `classify.ts` (nhãn tay → từ khóa, vlog xét cuối), `schedule.ts` (buổi kế tiếp theo UTC+7)
 - [x] Footer ghi rõ trang do fan làm
 
@@ -29,7 +30,7 @@ Giai đoạn 6  Quote & fan art                 ~2 tuần
 - [x] Thêm script `typecheck` (`tsc --noEmit`)
 - [x] GitHub Actions: `lint` + `typecheck` + `test` + `build` trên mỗi PR
 - [x] `supabase init`, migration đầu tiên theo [03-data-model.md](03-data-model.md), `seed.sql` từ mock-data
-- [x] `src/lib/supabase/{server,client,admin}.ts`, `proxy.ts` làm mới session
+- [x] `src/server/supabase/{server,public,admin}.ts`, `proxy.ts` làm mới session
 - [x] Đăng nhập/đăng xuất Google trong `SiteHeader`, trigger tạo `profiles`
 - [x] Chuyển các getter đọc-only trong `data.ts` (games, schedule, played) sang Supabase, giữ nguyên chữ ký
 - [ ] **(cần bạn)** Tạo project Vercel + Supabase production, cấu hình env (xem [06-setup.md](06-setup.md))
@@ -41,7 +42,7 @@ Giai đoạn 6  Quote & fan art                 ~2 tuần
 **Mục tiêu:** trang hiển thị video thật, trạng thái live thật, lệch tối đa 2 phút.
 
 - [ ] **(cần bạn)** Lấy `YOUTUBE_CHANNEL_ID` thật (xem [04-integrations.md](04-integrations.md))
-- [x] `src/lib/youtube/`: client `fetch` + parse duration + ghi `api_usage`
+- [x] `src/server/youtube/`: client `fetch` + parse duration + ghi `api_usage`
 - [x] Route `/api/cron/sync-videos`: backfill lần đầu, sau đó chạy tăng dần. Phân loại `auto_game_slug` bằng `classify.ts` + `playlist_game_map`.
 - [x] Route `/api/cron/poll-live`: RSS + DB → `videos.list`, cập nhật `live_status`, `live_samples`. Có logic thưa/dày theo lịch.
 - [x] Bảo vệ cron bằng `CRON_SECRET`. Lên lịch `pg_cron` + `pg_net` trong Supabase (`supabase/cron.sql`, chạy tay ở production).
@@ -90,6 +91,27 @@ Giai đoạn 6  Quote & fan art                 ~2 tuần
 - [ ] Fan art: Supabase Storage bucket `fan-art`, giới hạn 5 MB, chỉ ảnh, duyệt trước, ghi tên/credit tác giả
 - [ ] Hàng đợi duyệt chung trong `/admin`
 - [ ] Báo cáo nội dung (nút "báo cáo" → admin)
+
+## Giai đoạn 7 – Tộc Đêm v2 (`docs/design/COMPONENTS.md`)
+
+Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mascot/minh họa sinh từ brand.html, lớp motion (CSS + Motion), Embers, LiveDot; các trang hiện có đã đổi sang nhận diện mới; LiveHero có thêm trạng thái "Hôm nay Độ nghỉ".
+
+- [x] Kiến trúc `src/features/*`, `src/shared/*`, `src/server/*` + luật ESLint phân tầng (ADR-007)
+- [x] Design system Tộc Đêm, chỉ nền tối, `npm run brand` (ADR-009)
+- [x] Nền animation: `@/shared/motion`, `motion.css`, skill `motion` (ADR-008)
+- [x] §10 Tàn lửa nền (trang chủ, đổi đỏ khi live, tắt khi reduced-motion/pin yếu)
+- [ ] **(cần designer)** Icon spec nhắc nhưng brand.html chưa có: `external`, `kindle`, `calendar-add`, `countdown`, `event`, `attend`, `tribe`, `wall`, `shop`, `bell`, `skin`, `timeline`, `expand`, `close`
+- [ ] §1 Màn nhóm lửa (`features/intro`): unlit → lighting → status, 1 lần/ngày/thiết bị, nút bỏ qua
+- [ ] §2 Đếm ngược vòng tròn + lịch tháng + "Thêm vào lịch" (Google Calendar link) + lịch đặc biệt do admin ghi đè (`schedule_overrides`)
+- [ ] §3 Nút nổi "Đang live" (live / idle)
+- [ ] §4 "Tối nay tôi có mặt" (RSVP) — bảng `attendance`, skill `fan-content`
+- [ ] §5 Bức tường Bộ tộc (lưu bút ≤140 ký tự, duyệt trước, 3 tin/ngày)
+- [ ] §6 Hộp ủng hộ (mở nắp → link chính chủ)
+- [ ] §7 Timeline buổi stream (từ chapters trong mô tả video)
+- [ ] §8 Gallery fan art + lightbox (gộp với GĐ6)
+- [ ] §9 Skin theo dịp: admin bật theo khoảng ngày → `data-theme` trên `<html>`
+- [ ] §11 Nút chuông thông báo (gộp với GĐ4 Web Push)
+- [ ] OG image theo brand (dòng "không liên kết chính thức")
 
 ---
 

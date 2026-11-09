@@ -17,6 +17,7 @@ A change in this repo is done only when every applicable line below is green **i
 | `npm run db:check` | anything under `supabase/` changed | `DB_CHECK=pass`, **and** your new rule has an assertion in `scripts/check-sql.mjs` |
 | `npm run smoke` | a page, route, action, auth, proxy or admin file changed | `SMOKE=pass` (builds in Supabase mode against a stub, checks every route anonymously) |
 | `npm run build` | always (smoke already builds in Supabase mode; this one is mock mode, as CI runs it) | exit 0 |
+| `npm run brand` | `docs/design/brand.html` changed | regenerated files committed; `git diff --stat public/brand src/shared` reviewed |
 
 Never weaken an assertion to get green. If a check is wrong, fix the check and say why.
 
@@ -26,10 +27,10 @@ Large or risky diffs (auth, RLS, server actions, cron, anything touching money/l
 
 | Touched | Subagent |
 |---|---|
-| `supabase/**`, `src/app/**/actions.ts`, `src/lib/auth.ts`, `src/app/admin/**` | `rls-auditor` |
-| any `src/app/**` or `src/lib/data.ts`, caching, `proxy.ts` | `next16-reviewer` |
-| UI text, links, images, fan-submitted content | `fan-site-guard` |
-| `src/lib/youtube/**`, `src/lib/jobs/**`, `supabase/cron.sql`, Steam calls | `quota-auditor` |
+| `supabase/**`, `src/app/**/actions.ts`, `src/features/auth/server/viewer.ts`, `src/app/admin/**` | `rls-auditor` |
+| any `src/app/**` or `src/features/*/server/queries.ts`, caching, `proxy.ts` | `next16-reviewer` |
+| UI text, links, images, fan-submitted content, `src/shared/design/**`, `public/brand/**` | `fan-site-guard` |
+| `src/server/youtube/**`, `src/features/*/server/* + src/server/jobs/**`, `supabase/cron.sql`, Steam calls | `quota-auditor` |
 
 Fix every critical/high finding, then re-run section 1.
 

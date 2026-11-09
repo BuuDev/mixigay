@@ -2,7 +2,7 @@
 
 **Nguồn sự thật là `supabase/migrations/20261109000000_init.sql`.** Đoạn SQL dưới đây là bản tóm tắt để đọc nhanh. Migration thật còn có thêm: hàm `f_unaccent` (IMMUTABLE, để làm cột generated), bảng `admin_emails` + trigger cấp quyền admin, hàm `search_similar(q)`, `add_api_usage`, `set_auto_game`, `set_playlist_members`, và `playlist_game_map.game_slug` có thể null (job tự thêm playlist mới, admin gán game sau). Migration mới tạo bằng `supabase migration new <tên>`.
 
-Kiểu TypeScript tương ứng hiện có ở `src/lib/types.ts`. Sau khi có DB, sinh type bằng `supabase gen types typescript` ra `src/lib/supabase/database.types.ts`, và để `types.ts` map từ đó.
+Kiểu TypeScript tương ứng hiện có ở `src/features/*/types.ts`. Sau khi có DB, sinh type bằng `supabase gen types typescript` ra `src/server/supabase/database.types.ts`, và để `types.ts` map từ đó.
 
 ## Sơ đồ quan hệ
 
@@ -244,4 +244,4 @@ Chỉ bật Realtime cho `live_status`, bằng lệnh `alter publication supabas
 
 ## Seed
 
-`supabase/seed.sql` lấy dữ liệu từ `src/lib/mock-data.ts` (games, keywords, lịch mẫu) để môi trường dev giống prototype.
+`supabase/seed.sql` lấy dữ liệu từ `src/features/*/mock.ts` (games, keywords, lịch mẫu) để môi trường dev giống prototype.

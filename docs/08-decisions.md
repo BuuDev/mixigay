@@ -42,7 +42,7 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 
 ## ADR-005 – Phân loại game: nhãn tay → playlist chính chủ → từ khóa {#adr-005}
 
-**Trạng thái:** Chấp nhận (đã cài một phần trong `src/lib/classify.ts`)
+**Trạng thái:** Chấp nhận (đã cài một phần trong `src/features/videos/lib/classify.ts`)
 
 **Quyết định:** Thứ tự ưu tiên là `manual_game_slug` > playlist map > từ khóa tiêu đề (game thường trước, vlog sau) > "Chưa phân loại". Vlog là một game có `is_vlog = true`, không phải module riêng.
 
@@ -52,8 +52,36 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 
 **Trạng thái:** Chấp nhận
 
-**Quyết định:** Khi thiếu `NEXT_PUBLIC_SUPABASE_URL`/`ANON_KEY`, `src/lib/data.ts` trả dữ liệu mẫu, `SuggestionBoard` chạy chế độ demo, auth và admin tắt.
+**Quyết định:** Khi thiếu `NEXT_PUBLIC_SUPABASE_URL`/`ANON_KEY`, mỗi `features/*/server/queries.ts` trả dữ liệu mẫu (`features/*/mock.ts`), `SuggestionBoard` chạy chế độ demo, auth và admin tắt.
 
 **Lý do:** CI build không cần secret; người mới clone về là chạy được ngay; làm UI không phụ thuộc DB.
 
 **Hệ quả:** Mỗi getter phải giữ cả hai nhánh. Không được import `mock-data.ts` ở chỗ nào khác ngoài `data.ts`.
+
+## ADR-007 – Chia mã nguồn theo tính năng {#adr-007}
+
+**Trạng thái:** Chấp nhận, 2026-11
+
+**Bối cảnh:** Spec v2 thêm khoảng 10 khối mới (intro, RSVP, tường, hộp quà, timeline, gallery, skin…). Cấu trúc cũ chia theo loại file (`lib/`, `components/`, một `data.ts` và một `types.ts` chung) khiến mỗi tính năng phải sửa nhiều file dùng chung, và các file chung phình to dần.
+
+**Quyết định:** `src/app` chỉ làm routing. Mỗi tính năng là một folder `src/features/<x>` chứa types, mock, lib (thuần), server (queries/job), actions, hooks, components, admin. Phần không thuộc tính năng nào nằm ở `src/shared` (UI, design, motion, lib) và `src/server` (hạ tầng). ESLint chặn import ngược tầng (`eslint.config.mjs`).
+
+**Hệ quả:** Thêm hay xóa một tính năng gần như chỉ đụng tới folder của nó cộng với một page. Đổi lại phải chấp nhận vài chỗ import chéo giữa các tính năng (ví dụ `live` dùng `schedule/lib`). Không dùng barrel để khỏi trộn code server và client.
+
+## ADR-008 – Animation: CSS cho nền, Motion cho tương tác {#adr-008}
+
+**Trạng thái:** Chấp nhận, 2026-11
+
+**Quyết định:** Hiệu ứng lặp/nền (tàn lửa, pulse) và hover dùng CSS. Hiệu ứng vào/ra, chuỗi nhiều bước và cử chỉ dùng `motion@14` (motion/react) qua một entry duy nhất là `@/shared/motion`: `LazyMotion` tải feature theo yêu cầu, `strict` để buộc dùng `m.*`, `MotionConfig reducedMotion="user"`. Chuyển cảnh giữa các route (React `<ViewTransition>`) để dành, khi cần thì ghi ADR mới.
+
+**Phương án loại:** chỉ dùng CSS + WAAPI (phải tự viết exit animation và sequencing, code dài khi số hiệu ứng tăng); nạp toàn bộ `motion` (bundle lớn).
+
+**Hệ quả:** Thêm khoảng 15–20 KB (gzip) cho domAnimation, chỉ tải khi có component dùng `m.*`. Mọi giá trị thời lượng/easing lấy từ token (`motion.css` ↔ `tokens.ts`).
+
+## ADR-009 – Nhận diện Tộc Đêm, chỉ nền tối, asset sinh từ brand.html {#adr-009}
+
+**Trạng thái:** Chấp nhận, 2026-11
+
+**Quyết định:** Dùng bộ nhận diện v2 trong `docs/design/brand.html`. Bỏ chế độ sáng. Logo, mascot, minh họa, icon và skin được sinh bằng `npm run brand`. Component dùng tên màu ngữ nghĩa, ánh xạ tới token `--td-*`; skin theo dịp chỉ đổi token qua `data-theme`.
+
+**Hệ quả:** Designer cập nhật brand.html, chạy lại `npm run brand` là xong, không phải sửa tay asset. Icon `external`, `kindle`, `calendar-add`, `attend`, `tribe`, `wall`, `bell`, `shop`… mà spec nhắc tới chưa có trong brand.html, cần designer bổ sung (đã ghi ở roadmap).

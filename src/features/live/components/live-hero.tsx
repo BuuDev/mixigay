@@ -1,0 +1,52 @@
+"use client";
+
+import { isOffDay, nextSlot } from "@/features/schedule/lib/schedule";
+import type { ScheduleSlot } from "@/features/schedule/types";
+import { useNow } from "@/shared/hooks/use-now";
+import { AnimatePresence, m, rise } from "@/shared/motion";
+import { Embers } from "@/shared/motion/embers";
+import { Card } from "@/shared/ui/card";
+import { useLiveStatus } from "../hooks/use-live-status";
+import type { LiveStatus } from "../types";
+import { LiveNow } from "./live-now";
+import { NextStream, OffDay } from "./next-stream";
+import { UpcomingStream } from "./upcoming-stream";
+
+type View = "live" | "upcoming" | "next" | "offday" | "loading";
+
+function pickView(status: LiveStatus, schedule: ScheduleSlot[], now: Date | null): View {
+  if (status.state === "live" && status.videoId) return "live";
+  if (status.state === "upcoming" && status.videoId && status.startTime) return "upcoming";
+  if (!now) return "loading";
+  return isOffDay(schedule, now) ? "offday" : "next";
+}
+
+/**
+ * The status block: live now → upcoming premiere → countdown to the next
+ * scheduled slot → day off. Starts from the server's status and follows Supabase
+ * Realtime; each change cross-fades (AnimatePresence) instead of jumping.
+ * `embers` adds the background particles (home page only, spec §10).
+ */
+export function LiveHero({ status: initial, schedule, embers = false }: { status: LiveStatus; schedule: ScheduleSlot[]; embers?: boolean }) {
+  const now = useNow();
+  const status = useLiveStatus(initial);
+  const view = pickView(status, schedule, now);
+  const next = now ? nextSlot(schedule, now) : null;
+
+  return (
+    <>
+      {embers && <Embers live={view === "live"} />}
+      <Card className="relative overflow-hidden p-5 sm:p-6" aria-live="polite">
+        <AnimatePresence mode="wait" initial={false}>
+          <m.div key={view} variants={rise} initial="hidden" animate="visible" exit="exit">
+            {view === "live" && <LiveNow status={status} now={now} />}
+            {view === "upcoming" && <UpcomingStream status={status} now={now} />}
+            {view === "next" && next && now && <NextStream slot={next.slot} at={next.at} now={now} />}
+            {view === "offday" && <OffDay next={next} />}
+            {view === "loading" && <div className="h-32" />}
+          </m.div>
+        </AnimatePresence>
+      </Card>
+    </>
+  );
+}

@@ -16,7 +16,7 @@ npm run build
 
 ## Hai chế độ chạy
 
-- **Mock (mặc định, không cần cấu hình):** không có `NEXT_PUBLIC_SUPABASE_URL` thì mọi trang đọc `src/lib/mock-data.ts` (videoId giả), đề xuất chỉ lưu trên trình duyệt, đăng nhập và admin tắt. CI build theo chế độ này.
+- **Mock (mặc định, không cần cấu hình):** không có `NEXT_PUBLIC_SUPABASE_URL` thì mọi trang đọc `src/features/*/mock.ts` (videoId giả), đề xuất chỉ lưu trên trình duyệt, đăng nhập và admin tắt. CI build theo chế độ này.
 - **Supabase:** điền `.env.local` theo [docs/06-setup.md](docs/06-setup.md). Khi đó có dữ liệu thật, đăng nhập Google, upvote, trang `/admin`, và job cron lấy dữ liệu YouTube.
 
 | Trang | Đường dẫn | Ghi chú |

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SITE_URL } from "@/lib/links";
+import { SITE_URL } from "@/shared/lib/links";
 
 const PATHS = ["/", "/lich", "/video", "/vlog", "/da-choi", "/de-xuat", "/gioi-thieu"];
 

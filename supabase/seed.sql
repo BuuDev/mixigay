@@ -1,4 +1,4 @@
--- Dev seed generated from src/lib/mock-data.ts (fake video ids). Applied by `supabase db reset`.
+-- Dev seed generated from src/features/*/mock.ts (fake video ids). Applied by `supabase db reset`.
 
 insert into public.games (slug, name, is_vlog, sort_order) values
   ('pubg', 'PUBG', false, 0),

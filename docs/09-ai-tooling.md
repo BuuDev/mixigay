@@ -22,6 +22,7 @@ Yêu cầu ──► plan-feature (workflow, tùy chọn) ──► skill phù h
 | Lệnh | Làm gì | Khi nào |
 |---|---|---|
 | `npm run db:check` | Áp mọi migration + seed vào Postgres trong bộ nhớ (PGlite), giả lập default privileges của Supabase, rồi chạy ~50 assertion RLS/grant/trigger (`scripts/check-sql.mjs`) | Mọi thay đổi trong `supabase/` |
+| `npm run brand` | Sinh lại logo, mascot, minh họa, icon và skin từ `docs/design/brand.html` (`scripts/extract-brand.mjs`) | Khi designer cập nhật brand |
 | `npm run smoke` | Build ở chế độ Supabase với stub REST/Auth, chạy `next start`, gọi mọi route như khách: trang có dữ liệu, admin 404 và **không lộ nội dung**, cron đòi secret, redirect không ra ngoài (`scripts/smoke.mjs`) | Mọi thay đổi trang/route/action/auth |
 
 Cả hai đã bắt được lỗi thật khi xây dựng: page admin stream nội dung cho khách, và `revoke … from public` thu luôn quyền của `authenticated`.
@@ -37,7 +38,8 @@ Quy trình cho một loại việc lặp lại. Agent tự nạp skill khi yêu 
 | `fan-content` | Quote, fan art, tường lưu bút, RSVP | Mẫu 5 phần copy từ `/de-xuat`; duyệt nội dung; mock mode; upload qua Storage |
 | `youtube-job` | Cron, poll, sync, WebSub, thông báo, thống kê | Bảng quota, cấm `search.list`, `cronRoute`, idempotent, claim-before-send |
 | `admin-page` | Trang/action trong `/admin` | `requireAdmin()` ở **từng page**, thêm marker vào smoke |
-| `ui-feature` | Trang/component công khai, các mục spec v2 (`COMPONENTS.md`) | Luật web fan, tách server/client, reduced motion, mobile-first |
+| `ui-feature` | Trang/component công khai, các mục spec v2 (`docs/design/COMPONENTS.md`) | Kiến trúc feature, design system Tộc Đêm, luật web fan, tách server/client |
+| `motion` | Mọi animation: intro, hộp quà, popover, lightbox, tàn lửa, chuyển trạng thái | Chọn tầng CSS / Motion / ViewTransition, chỉ import `@/shared/motion`, preset + token, reduced-motion, transform/opacity |
 
 ## 3. Subagent (`.claude/agents/*.md`)
 

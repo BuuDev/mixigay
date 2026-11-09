@@ -7,7 +7,7 @@ description: Add or change anything that calls the YouTube Data API, Steam, or r
 
 ## Quota is the constraint
 
-YouTube gives 10,000 units/day; jobs stop at `QUOTA_STOP` (8,000) in `src/lib/jobs/context.ts`. Current budget ≈1,500/day (table in `docs/02-architecture.md`).
+YouTube gives 10,000 units/day; jobs stop at `QUOTA_STOP` (8,000) in `src/server/jobs/context.ts`. Current budget ≈1,500/day (table in `docs/02-architecture.md`).
 
 | Call | Units | Allowed in a job? |
 |---|---|---|
@@ -20,7 +20,7 @@ Before adding a call, write down calls/run × runs/day and add the row to the bu
 
 ## Shape of a job
 
-1. Logic in `src/lib/jobs/<job>.ts` as `async (ctx: JobContext, now: Date, opts) => result` — copy `poll-live.ts`. Pure decisions (what to poll, state transitions, parsing) go in a separate pure module with tests (`src/lib/live.ts`, `src/lib/jobs/video-row.ts`).
+1. Logic in `src/features/<feature>/server/<job>.ts` as `async (ctx: JobContext, now: Date, opts) => result` — copy `poll-live.ts`. Pure decisions (what to poll, state transitions, parsing) go in a separate pure module with tests (`src/features/live/lib/live.ts`, `src/features/videos/lib/video-row.ts`).
 2. Route `src/app/api/cron/<job>/route.ts`: `export const POST = cronRoute(...)` — this gives the `CRON_SECRET` check, 503 on missing config, 429 on quota. Add `maxDuration` if it pages through a lot.
 3. Schedule: add a `cron.schedule(...)` line to `supabase/cron.sql` (run by hand in production; not a migration).
 4. After writing data, `revalidateTag(TAGS.x, "max")` for the tags whose pages change.
@@ -29,7 +29,7 @@ Before adding a call, write down calls/run × runs/day and add the row to the bu
 
 ## Notifications
 
-`src/lib/notify.ts`: plain text only (no Telegram `parse_mode`), Discord `allowed_mentions: { parse: [] }`, never tag Độ or the official channel. Web Push: ask permission only after a user tap (spec §11), store subscriptions per user, delete on 404/410 from the push service.
+`src/features/live/server/notify.ts`: plain text only (no Telegram `parse_mode`), Discord `allowed_mentions: { parse: [] }`, never tag Độ or the official channel. Web Push: ask permission only after a user tap (spec §11), store subscriptions per user, delete on 404/410 from the push service.
 
 ## Steam
 

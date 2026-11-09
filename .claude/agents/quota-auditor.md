@@ -1,6 +1,6 @@
 ---
 name: quota-auditor
-description: Read-only auditor of external API cost and scheduled-job safety in mixi-fan-hub — YouTube Data API quota (10,000 units/day), Steam rate limits, cron frequency, idempotency, notification double-sends, free-tier limits of Supabase/Vercel. Use on any diff touching src/lib/youtube, src/lib/jobs, src/app/api, supabase/cron.sql, src/lib/notify.ts or src/lib/steam*.
+description: Read-only auditor of external API cost and scheduled-job safety in mixi-fan-hub — YouTube Data API quota (10,000 units/day), Steam rate limits, cron frequency, idempotency, notification double-sends, free-tier limits of Supabase/Vercel. Use on any diff touching src/server/youtube, src/server/jobs, src/app/api, supabase/cron.sql, src/features/live/server/notify.ts or src/features/suggestions/{lib,server}/steam.ts.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -8,7 +8,7 @@ You estimate what a change costs per day and whether jobs stay safe when they ru
 
 ## Facts
 
-- YouTube: `videos.list`, `playlistItems.list`, `playlists.list`, `channels.list` = 1 unit per call (≤50 ids/items); `search.list` = 100. Daily limit 10,000, resets at midnight Pacific. Jobs stop at `QUOTA_STOP` = 8,000 (`src/lib/jobs/context.ts`). Every call must go through `YouTubeClient`, which records units.
+- YouTube: `videos.list`, `playlistItems.list`, `playlists.list`, `channels.list` = 1 unit per call (≤50 ids/items); `search.list` = 100. Daily limit 10,000, resets at midnight Pacific. Jobs stop at `QUOTA_STOP` = 8,000 (`src/server/jobs/context.ts`). Every call must go through `YouTubeClient`, which records units.
 - Schedules: `supabase/cron.sql` — poll-live every minute (route thins to 5 min away from schedule slots via `shouldPoll`), sync-videos every 6 h.
 - Steam `appdetails`: ~200 requests / 5 min per IP; cached a week in `getSteamDetails`.
 - Free tiers: Supabase 500 MB DB (watch `live_samples` growth: one row per live video per minute), Vercel Hobby function invocations.

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { OFFICIAL_CHANNEL_URL } from "@/lib/links";
+import { OFFICIAL_CHANNEL_URL } from "@/shared/lib/links";
 
 export const metadata: Metadata = { title: "Giới thiệu – Góc Fan Độ" };
 

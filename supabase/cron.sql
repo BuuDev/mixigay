@@ -25,7 +25,7 @@ end;
 $$;
 revoke execute on function public.call_cron_route(text) from public, anon, authenticated;
 
--- The route decides between 1- and 5-minute polling (src/lib/live.ts shouldPoll).
+-- The route decides between 1- and 5-minute polling (src/features/live/lib/live.ts shouldPoll).
 select cron.schedule('poll-live', '* * * * *', $$ select public.call_cron_route('/api/cron/poll-live') $$);
 select cron.schedule('sync-videos', '17 */6 * * *', $$ select public.call_cron_route('/api/cron/sync-videos') $$);
 

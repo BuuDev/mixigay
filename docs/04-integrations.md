@@ -21,7 +21,7 @@ Trường cần lấy:
 - `statistics.viewCount`
 - `contentDetails.duration` (ISO 8601, ví dụ `PT2H13M5S`)
 
-Viết client mỏng tự làm trong `src/lib/youtube/` bằng `fetch` (không cần package `googleapis`, vì nó nặng). Mỗi lần gọi phải ghi `api_usage`.
+Viết client mỏng tự làm trong `src/server/youtube/` bằng `fetch` (không cần package `googleapis`, vì nó nặng). Mỗi lần gọi phải ghi `api_usage`.
 
 ### RSS (0 quota)
 
@@ -39,7 +39,7 @@ Viết client mỏng tự làm trong `src/lib/youtube/` bằng `fetch` (không c
 ## Steam Store API
 
 - `GET https://store.steampowered.com/api/appdetails?appids=<id>&cc=vn&l=vietnamese` (không cần key, có giới hạn khoảng 200 request / 5 phút).
-- Lấy appid từ link: regex `store\.steampowered\.com/app/(\d+)`. Hàm này đã có trong prototype (`suggestion-board.tsx`), nên tách ra `src/lib/steam.ts`.
+- Lấy appid từ link: regex `store\.steampowered\.com/app/(\d+)`. Hàm này đã có trong prototype (`suggestion-board.tsx`), nên tách ra `src/features/suggestions/lib/steam.ts`.
 - Trường dùng: `data.name`, `data.header_image`, `data.is_free`, `data.price_overview.final_formatted`, `data.genres[].description`.
 - Gọi qua route `/api/steam/[appId]` có `"use cache"` + `cacheLife('weeks')`. Client không gọi thẳng Steam (CORS + để cache chung).
 - Ảnh `header_image` hiển thị bằng `next/image`, thêm `shared.akamai.steamstatic.com` / `cdn.akamai.steamstatic.com` vào `images.remotePatterns`.

@@ -23,12 +23,12 @@ npm run build
 supabase start                 # in ra API URL, anon key, service_role key
 supabase db reset              # áp migrations + seed.sql
 supabase migration new <ten>   # tạo migration mới trong supabase/migrations/
-supabase gen types typescript --local > src/lib/supabase/database.types.ts
+supabase gen types typescript --local > src/server/supabase/database.types.ts
 ```
 
 Google login local đã cấu hình sẵn trong `supabase/config.toml`, đọc `SUPABASE_AUTH_GOOGLE_CLIENT_ID` / `SUPABASE_AUTH_GOOGLE_SECRET` từ môi trường.
 
-**Chế độ mock:** khi `NEXT_PUBLIC_SUPABASE_URL` trống, mọi trang dùng `src/lib/mock-data.ts`, đề xuất chỉ lưu trên trình duyệt, admin trả 404. CI build theo chế độ này.
+**Chế độ mock:** khi `NEXT_PUBLIC_SUPABASE_URL` trống, mọi trang dùng `src/features/*/mock.ts`, đề xuất chỉ lưu trên trình duyệt, admin trả 404. CI build theo chế độ này.
 
 **Cấp quyền admin:** chạy SQL `insert into public.admin_emails (email) values ('ban@gmail.com');`. Nếu tài khoản đã tồn tại thì được cấp ngay; nếu chưa thì được cấp lúc đăng nhập lần đầu.
 

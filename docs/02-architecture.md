@@ -68,7 +68,7 @@ YouTube đẩy thông báo khi có video/stream mới tới `POST /api/webhooks/
 
 Trang `/admin/*`, bảo vệ 2 lớp:
 
-1. **Mỗi page** và mỗi Server Action admin gọi `requireAdmin()` (`src/lib/auth.ts`). Ai không phải admin nhận 404. Lưu ý: layout và page render **song song**, nên check ở `admin/layout.tsx` không chặn được page stream nội dung ra. Thiếu check ở page là lỗi bảo mật (đã gặp và sửa khi smoke test).
+1. **Mỗi page** và mỗi Server Action admin gọi `requireAdmin()` (`src/features/auth/server/viewer.ts`). Ai không phải admin nhận 404. Lưu ý: layout và page render **song song**, nên check ở `admin/layout.tsx` không chặn được page stream nội dung ra. Thiếu check ở page là lỗi bảo mật (đã gặp và sửa khi smoke test).
 2. RLS (`is_admin()`) chặn lại lần nữa ở DB. `src/proxy.ts` chỉ làm mới session, không quyết định quyền.
 
 ## Ngân sách quota YouTube (10.000 đơn vị/ngày)
@@ -100,14 +100,16 @@ Mỗi lần gọi API ghi vào bảng `api_usage(day, endpoint, units)`. Job d�
 
 Trước khi viết code cache, đọc `node_modules/next/dist/docs/01-app/01-getting-started/08-caching.md` và `09-revalidating.md`, vì API khác Next 14/15.
 
-## Lớp truy cập dữ liệu
+## Lớp truy cập dữ liệu và cấu trúc mã nguồn
 
-Mọi trang đọc dữ liệu qua `src/lib/data.ts` (các hàm async). Khi chuyển sang Supabase, **chỉ thay phần bên trong các hàm này**, không đổi chữ ký. Các trang và component giữ nguyên. Ghi dữ liệu đi qua Server Actions trong `src/app/**/actions.ts`.
+Mã nguồn chia theo tính năng (ADR-007, chi tiết ở `docs/07-conventions.md`). Mỗi tính năng có `server/queries.ts` (getter `"use cache"`, nhánh mock khi chưa cấu hình Supabase) và `lib/mapper.ts` (Row → kiểu domain, thuần, client dùng được). Trang trong `src/app` chỉ gọi getter rồi ghép component. Ghi dữ liệu đi qua `features/*/actions.ts` (fan) và `features/*/admin/actions.ts` (admin).
 
-Hai client Supabase:
+Client Supabase (`src/server/supabase/`):
 
-- `src/lib/supabase/server.ts`: `createServerClient` từ `@supabase/ssr`, đọc cookie, dùng anon key, chịu RLS. Dùng trong Server Component và Server Action.
-- `src/lib/supabase/admin.ts`: dùng service role key, **chỉ import trong `src/app/api/cron/**` và `src/app/api/webhooks/**`**. Gắn `import "server-only"` để không bị lọt vào bundle client.
+- `public.ts`: anon, không cookie, dùng bên trong `"use cache"`.
+- `server.ts`: `createServerClient` từ `@supabase/ssr`, đọc cookie, chịu RLS. Dùng trong Server Component dưới `<Suspense>` và trong Server Action.
+- `admin.ts`: service role, chỉ dùng trong job (`src/server/jobs` + `features/*/server/*` gọi từ `src/app/api/cron/**`) và ngoại lệ đã ghi trong `docs/07-conventions.md`. Có `import "server-only"`.
+- Phía trình duyệt: `src/shared/lib/supabase-browser.ts` (chỉ cho Realtime `live_status`).
 
 ## Bảo mật
 
