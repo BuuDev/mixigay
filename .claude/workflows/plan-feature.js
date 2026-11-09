@@ -14,7 +14,7 @@ if (!FEATURE || typeof FEATURE !== 'string') throw new Error('Pass args: { featu
 
 const CONTEXT = `Repository: mixi-fan-hub (current directory), an unofficial Độ Mixi fan site. Next.js 16 with Cache Components, Supabase (RLS), Vercel.
 Read docs/README.md for the doc map. Project skills live in .claude/skills/*/SKILL.md (db-change, fan-content, youtube-job, admin-page, ui-feature, done-check) — they are the house rules.
-If the feature refers to COMPONENTS.md (the v2 "Tộc Đêm" design spec), look for it in the repo; if absent, say so and plan only what does not need its assets.
+If the feature refers to COMPONENTS.md (the v2 "Góc Bộ Tộc" design spec), look for it in the repo; if absent, say so and plan only what does not need its assets.
 Feature to plan: ${FEATURE}`
 
 const AREAS = [
@@ -37,7 +37,7 @@ const AREAS = [
 
 phase('Scout')
 const maps = await parallel(
-  AREAS.map((a) => () => agent(`${CONTEXT}\n\n${a.prompt}\nReturn a concise report (≤ 300 words). Read-only.`, { label: `scout:${a.key}`, phase: 'Scout' })),
+  AREAS.map((a) => () => agent(`${CONTEXT}\n\n${a.prompt}\nReturn a concise report (≤ 300 words). Read-only.`, { model: 'opus', label: `scout:${a.key}`, phase: 'Scout' })),
 )
 const scouting = AREAS.map((a, i) => `## ${a.key}\n${maps[i] || '(scout failed — treat as unknown)'}`).join('\n\n')
 
@@ -56,7 +56,7 @@ const drafts = await parallel(
     { key: 'minimal', angle: 'Plan the SMALLEST version that is shippable and safe: reuse existing tables/components, defer nice-to-haves to new roadmap items.' },
     { key: 'robust', angle: 'Plan the version that will not need rework in 3 months: proper moderation, limits, mock mode, admin tooling, tests, docs.' },
   ].map((d) => () =>
-    agent(`${CONTEXT}\n\nScouting reports:\n${scouting}\n\n${d.angle}\n\n${PLAN_SHAPE}`, { label: `draft:${d.key}`, phase: 'Draft' }).then((plan) => ({ key: d.key, plan })),
+    agent(`${CONTEXT}\n\nScouting reports:\n${scouting}\n\n${d.angle}\n\n${PLAN_SHAPE}`, { model: 'opus', label: `draft:${d.key}`, phase: 'Draft' }).then((plan) => ({ key: d.key, plan })),
   ),
 )
 
@@ -69,7 +69,7 @@ const final = await agent(
 Two independent plans follow. Score each 1–5 on: follows the house skills; security (RLS/grants/admin checks); quota and cost; testability (db:check, smoke, unit); size (smaller wins when equal). Then write ONE final plan: start from the higher-scoring plan and graft the better ideas from the other. Keep the same section structure. End with a 3-line scorecard.
 
 ${usable.map((d) => `### Plan "${d.key}"\n${d.plan}`).join('\n\n')}`,
-  { label: 'judge', phase: 'Judge' },
+  { model: 'opus', label: 'judge', phase: 'Judge' },
 )
 
 return { feature: FEATURE, plan: final }

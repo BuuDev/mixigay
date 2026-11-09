@@ -4,6 +4,7 @@ import { check } from "@/server/supabase/check";
 import { publicClient } from "@/server/supabase/public";
 import { TAGS } from "@/shared/lib/cache-tags";
 import { isSupabaseConfigured } from "@/shared/lib/env";
+import { thumbnailFor } from "@/shared/lib/links";
 import { classifyVideo, UNCLASSIFIED } from "../lib/classify";
 import { mapGame, mapVideo, type GameRow, type VideoRow } from "../lib/mapper";
 import * as mock from "../mock";
@@ -26,7 +27,8 @@ export async function getVideos(): Promise<ClassifiedVideo[]> {
   cacheTag(TAGS.videos, TAGS.games);
   cacheLife("hours");
   if (!isSupabaseConfigured) {
-    return mock.videos.map((v) => ({ ...v, gameSlug: classifyVideo(v, mock.games) }));
+    // Mock videos use real ids (channel snapshot), so their YouTube thumbnails exist.
+    return mock.videos.map((v) => ({ ...v, thumbnailUrl: v.thumbnailUrl ?? thumbnailFor(v.videoId), gameSlug: classifyVideo(v, mock.games) }));
   }
   // PostgREST caps a response at 1000 rows, so page through.
   const rows: VideoRow[] = [];

@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { youtubeUrl } from "@/shared/lib/links";
 
 export function liveMessage(title: string, videoId: string): string {
-  return `🔴 Độ đang live: ${title}\n${youtubeUrl(videoId)}`;
+  return `🔴 Anh Độ đang live: ${title}\n${youtubeUrl(videoId)}`;
 }
 
 type Sender = { channel: string; send: (text: string) => Promise<void> };

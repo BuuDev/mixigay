@@ -17,8 +17,8 @@ const beVietnam = Be_Vietnam_Pro({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Tộc Đêm – lịch stream, video, đề xuất game cho Độ Mixi",
-  description: "Trang do fan tự làm: lịch stream, link live, video theo game và đề xuất game cho Độ Mixi. Không liên kết chính thức.",
+  title: "Góc Bộ Tộc – lịch stream, video, đề xuất game cho anh Độ Mixi",
+  description: "Trang do fan tự làm: lịch stream, link live, video theo game và đề xuất game cho anh Độ Mixi. Không liên kết chính thức với Kênh MixiGaming.",
 };
 
 export const viewport: Viewport = { themeColor: "#121018", colorScheme: "dark" };

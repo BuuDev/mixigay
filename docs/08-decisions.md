@@ -78,10 +78,29 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 
 **Hệ quả:** Thêm khoảng 15–20 KB (gzip) cho domAnimation, chỉ tải khi có component dùng `m.*`. Mọi giá trị thời lượng/easing lấy từ token (`motion.css` ↔ `tokens.ts`).
 
-## ADR-009 – Nhận diện Tộc Đêm, chỉ nền tối, asset sinh từ brand.html {#adr-009}
+## ADR-009 – Nhận diện Góc Bộ Tộc, chỉ nền tối, asset sinh từ brand.html {#adr-009}
 
 **Trạng thái:** Chấp nhận, 2026-11
 
-**Quyết định:** Dùng bộ nhận diện v2 trong `docs/design/brand.html`. Bỏ chế độ sáng. Logo, mascot, minh họa, icon và skin được sinh bằng `npm run brand`. Component dùng tên màu ngữ nghĩa, ánh xạ tới token `--td-*`; skin theo dịp chỉ đổi token qua `data-theme`.
+**Quyết định:** Dùng bộ nhận diện v2 trong `docs/design/brand.html`. Bỏ chế độ sáng. Logo, mascot, minh họa và skin được sinh bằng `npm run brand` (icon: xem [ADR-010](#adr-010)). Component dùng tên màu ngữ nghĩa, ánh xạ tới token `--td-*`; skin theo dịp chỉ đổi token qua `data-theme`.
 
-**Hệ quả:** Designer cập nhật brand.html, chạy lại `npm run brand` là xong, không phải sửa tay asset. Icon `external`, `kindle`, `calendar-add`, `attend`, `tribe`, `wall`, `bell`, `shop`… mà spec nhắc tới chưa có trong brand.html, cần designer bổ sung (đã ghi ở roadmap).
+**Hệ quả:** Designer cập nhật brand.html, chạy lại `npm run brand` là xong, không phải sửa tay asset. Phần icon được thay bằng ADR-010.
+
+## ADR-010 – Icon dùng Phosphor duotone thay cho bộ vẽ tay {#adr-010}
+
+**Trạng thái:** Chấp nhận, 2026-11 (thay phần icon của ADR-009)
+
+**Quyết định:** Mọi icon lấy từ `@phosphor-icons/react` (MIT), kiểu `duotone`, qua một entry duy nhất là `src/shared/ui/icons.tsx`. Import bản SSR theo từng file (`dist/ssr/<Tên>`) nên dùng được trong cả Server và Client Component và chỉ đóng gói icon thực sự dùng. Lớp nền duotone tô bằng `--td-icon-tint` (mặc định `--td-ember-glow`), nên skin theo dịp tự đổi màu icon. `npm run brand` không còn sinh icon; mục Icon trong brand.html chỉ còn để tham khảo.
+
+**Phương án loại:** tự vẽ thêm icon vào brand.html (chất lượng không đều, thiếu người vẽ); Lucide (chỉ có nét, không có kiểu hai màu); `@iconify/react` (mặc định tải icon từ API ngoài lúc chạy); Fluent Emoji/IconPark đa màu (màu cố định, không theo skin).
+
+**Hệ quả:** Thêm một dependency. Nét Phosphor (lưới 256, nét ~1.5px ở 24px) khác bộ cũ, nên đổi toàn bộ 15 icon cùng lúc để không lẫn hai phong cách. Linh vật Cú Tộc và minh họa vẫn sinh từ brand.html.
+
+## ADR-011 – Tên “Góc Bộ Tộc”, ảnh anh Độ làm nội dung kiểu thiệp mời {#adr-011}
+
+**Trạng thái:** Chấp nhận, 2026-11-09 (đổi tên của ADR-009)
+
+**Quyết định:** Chủ dự án bỏ tên “Tộc Đêm”, chỉ dùng từ ngữ của Bộ Tộc và về anh Độ; tên trang là **Góc Bộ Tộc**. Wordmark trong header là logomark lửa trại + chữ “GÓC BỘ TỘC” bằng font của trang (không sinh `logo-full-*.svg` nữa). Token CSS vẫn giữ tiền tố `--td-*` để khỏi đổi hàng trăm chỗ; đó là tên nội bộ, người xem không thấy. Theo yêu cầu của chủ dự án, ảnh anh Độ và tranh fan vẽ (`public/album`, `src/features/album`) được dùng làm nội dung theo kiểu thiệp cưới online: ảnh bìa khung vòm (đẩy chậm, vệt sáng, parallax), album polaroid xòe ra khi cuộn tới + lightbox, ảnh hiện lên từ đống lửa ở màn mở đầu. Logo MixiGaming và Refund Gaming trong ảnh gốc không được dùng (luật “không dùng nhận diện MixiGaming”), kể cả khi nằm trong tranh fan (đã bỏ tranh “phòng stream” vì có biển neon Mixi Gaming). Logo nhà tài trợ/sự kiện trong ảnh được làm mờ. Ảnh gốc chủ dự án gửi nằm ở `assets-raw/` (gitignore), không bao giờ ở `public/`.
+
+**Hệ quả:** Mỗi ảnh có chú thích, alt và dòng nguồn; trang Giới thiệu là kênh xin gỡ. Ảnh chụp thật có bản quyền của người chụp: khi biết tác giả, thêm tên vào `credit`. Mọi chuyển động nền tắt khi người xem bật giảm chuyển động.
+

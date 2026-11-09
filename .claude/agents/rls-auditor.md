@@ -1,6 +1,7 @@
 ---
 name: rls-auditor
 description: Read-only authorization auditor for mixi-fan-hub. Use on any diff touching supabase/ (migrations, RLS, grants, triggers, SQL functions), Server Actions, src/features/auth/server/viewer.ts, src/proxy.ts, auth routes or /admin. Finds ways a visitor, a signed-in fan or another fan can read or write what they should not. Give it the diff command (e.g. `git diff developer...HEAD`) or a list of files.
+model: opus
 tools: Read, Grep, Glob, Bash
 ---
 

@@ -15,7 +15,9 @@ Read `docs/README.md` first. Before writing code read `docs/07-conventions.md`; 
 Tooling (details in `docs/09-ai-tooling.md`):
 - Source layout is feature-first (`src/app` routing only → `src/features/<x>` → `src/shared`, `src/server`); ESLint enforces the layering. Design source: `docs/design/` (brand.html, COMPONENTS.md); regenerate assets with `npm run brand`.
 - Skills in `.claude/skills/`: `db-change`, `fan-content`, `youtube-job`, `admin-page`, `ui-feature`, `motion`, and `done-check` — run `done-check` at the end of every task.
-- Read-only reviewer subagents in `.claude/agents/`: `rls-auditor`, `next16-reviewer`, `fan-site-guard`, `quota-auditor`.
-- Workflows in `.claude/workflows/` (run only when the user asks): `plan-feature`, `review-changes`, `release-check`.
+- Subagents in `.claude/agents/`: read-only reviewers `rls-auditor`, `next16-reviewer`, `fan-site-guard`, `quota-auditor`; parallel builders `implementer`, `test-writer`; `fable-analyst` for deep technical analysis.
+- Models: Opus is the default for every subagent and workflow agent. Use Fable (`fable-analyst`, or `model: "fable"` anywhere) only when the user has asked for it or approved it in this conversation; `.claude/hooks/fable-gate.sh` turns any Fable call into a permission prompt.
+- Go parallel when there are 3+ independent units: send independent agents in one message, give each a disjoint set of files, run the gate once at the end.
+- Workflows in `.claude/workflows/` (run only when the user asks): `plan-feature`, `parallel-implement`, `review-changes`, `release-check`.
 - Verification beyond tests: `npm run db:check` (migrations + RLS on PGlite) and `npm run smoke` (built app against a Supabase stub).
 - Work happens on branch `developer`.

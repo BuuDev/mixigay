@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeName, safeHttpUrl } from "./text";
+import { normalizeName, safeHttpUrl, slugify } from "./text";
 
 describe("normalizeName", () => {
   it("strips Vietnamese diacritics and punctuation", () => {
@@ -16,5 +16,13 @@ describe("safeHttpUrl", () => {
     expect(safeHttpUrl("javascript:alert(1)")).toBeUndefined();
     expect(safeHttpUrl("not a url")).toBeUndefined();
     expect(safeHttpUrl("")).toBeUndefined();
+  });
+});
+
+describe("slugify", () => {
+  it("makes Vietnamese titles URL-safe", () => {
+    expect(slugify("Phòng Trà An Liễng")).toBe("phong-tra-an-lieng");
+    expect(slugify("  Độ đi date!! ")).toBe("do-di-date");
+    expect(slugify("GTA V 2026")).toBe("gta-v-2026");
   });
 });

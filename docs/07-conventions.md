@@ -20,7 +20,7 @@ src/
     components/              #   UI của tính năng; file lớn tách thành nhiều component nhỏ
     admin/                   #   UI + actions quản trị của tính năng
   shared/                    # không biết gì về tính năng nào
-    design/                  #   tokens.css (Tộc Đêm), themes.generated.css (skin)
+    design/                  #   tokens.css (Góc Bộ Tộc), themes.generated.css (skin)
     motion/                  #   NƠI DUY NHẤT dùng thư viện animation: provider, presets, tokens, Embers, LiveDot
     ui/                      #   Button, Card, Badge, Chip, EmptyState, PageHeader, icon, brand-art (logo/mascot/minh họa)
     layout/                  #   SiteHeader, SiteFooter
@@ -61,19 +61,20 @@ Tính năng hiện có: `live`, `schedule`, `videos` (gồm game và vlog), `pla
 | UI primitive | `src/shared/ui/button.tsx`, `badge.tsx` |
 | Animation | xem skill `motion` và `src/shared/motion/presets.ts` |
 
-## Design system Tộc Đêm
+## Design system Góc Bộ Tộc
 
 - Nguồn: `docs/design/brand.html` + `docs/design/COMPONENTS.md`. Asset (logo, mascot, minh họa, icon, skin) **được sinh ra** bằng `npm run brand` (`scripts/extract-brand.mjs`). Không sửa tay các file `*.generated.*` hay `public/brand/**`.
 - Màu: chỉ dùng tên ngữ nghĩa (`bg-surface`, `text-muted`, `border-border`, `bg-accent`, `text-cleared`, `bg-steam/15`…), không hex trong component. Token gốc `--td-*` ở `src/shared/design/tokens.css`; skin theo dịp đổi các token đó qua `data-theme` trên `<html>`.
 - `accent` (ember) cho hành động chính; `live` chỉ cho trạng thái phát sóng; không dùng hai màu này làm nền lớn.
 - Chỉ có nền tối (theo brand). Không thêm `dark:` variant.
-- Icon: `Icon*` từ `@/shared/ui/icons.generated` (24px, nét 2px, `currentColor`). Mascot/minh họa: `<Mascot pose>` / `<Illustration name>` / `<EmptyState art>` (file SVG tĩnh, không tốn JS).
+- Icon: `Icon*` từ `@/shared/ui/icons` (Phosphor duotone, `currentColor` + lớp nền `--td-icon-tint`, [ADR-010](08-decisions.md#adr-010)). Cần icon mới thì thêm vào file đó (import từ `@phosphor-icons/react/dist/ssr/<Tên>`), không vẽ tay, không import Phosphor trực tiếp trong component. Mascot/minh họa: `<Mascot pose>` / `<Illustration name>` / `<EmptyState art>` (file SVG tĩnh, không tốn JS).
 
 ## Đặt tên
 
 - File: `kebab-case.ts(x)`. Component export: `PascalCase` (named export, không default, trừ `page.tsx` / `layout.tsx` / `route.ts`).
 - Route URL: tiếng Việt không dấu, gạch nối (`/da-choi`, `/de-xuat`, `/thong-ke`).
 - Nội dung UI viết tiếng Việt. Comment trong code và tên biến viết tiếng Anh.
+- **Xưng hô lễ phép** (bảng trong `docs/research/2026-11-09-trends.md`): luôn “anh Độ” / “anh Độ Mixi” / “anh Moi”, “Kênh MixiGaming”, “Tộc Trưởng”, “Bộ Tộc” — như tên riêng; không gọi trống “Độ” (test `honorifics.test.ts` chặn). Trích tiêu đề video thì giữ nguyên văn. Tên trang luôn là “Góc Bộ Tộc”.
 - Slug game: `kebab-case` tiếng Anh/không dấu (`gta-v`, `viewer-made`).
 - Cột DB `snake_case`, kiểu TS `camelCase`. Việc map giữa hai bên làm trong `features/*/lib/mapper.ts`, không để lan ra component.
 

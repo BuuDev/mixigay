@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNow } from "@/shared/hooks/use-now";
 import { AnimatePresence, m, pop } from "@/shared/motion";
 import { cn } from "@/shared/ui/cn";
-import { IconOffday } from "@/shared/ui/icons.generated";
+import { IconOffday } from "@/shared/ui/icons";
 import { googleCalendarLink, monthGrid, slotInstant, vnDate, type DayCell } from "../lib/calendar";
 import type { ScheduleSlot } from "../types";
 
@@ -126,7 +126,7 @@ export function MonthCalendar({ schedule }: { schedule: ScheduleSlot[] }) {
                         <span className="font-mono font-bold">{s.time}</span> {s.title}
                       </span>
                       <a
-                        href={googleCalendarLink({ title: `Độ Mixi live: ${s.title}`, start: at })}
+                        href={googleCalendarLink({ title: `Anh Độ Mixi live: ${s.title}`, start: at })}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="shrink-0 text-accent hover:underline"

@@ -6,3 +6,12 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* Duotone icons (src/shared/ui/icons.tsx): tint the back layer with the skin's glow. */
+:root {
+  --td-icon-tint: var(--td-ember-glow);
+}
+[data-icon] [opacity="0.2"] {
+  fill: var(--td-icon-tint);
+  opacity: 0.35;
+}

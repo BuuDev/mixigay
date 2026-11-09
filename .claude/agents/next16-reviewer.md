@@ -1,6 +1,7 @@
 ---
 name: next16-reviewer
 description: Read-only reviewer for Next.js 16 correctness in mixi-fan-hub — Cache Components ("use cache", cacheLife, cacheTag, updateTag vs revalidateTag), dynamic APIs under Suspense, proxy.ts, route handler exports, server/client boundaries, mock-mode parity. Use on any diff under src/app, src/features, src/shared or next.config.ts.
+model: opus
 tools: Read, Grep, Glob, Bash
 ---
 

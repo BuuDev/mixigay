@@ -19,3 +19,14 @@ export function safeHttpUrl(raw: string | null | undefined): string | undefined 
     return undefined;
   }
 }
+
+/** URL slug: lower-case, no diacritics (đ → d), words joined by "-". */
+export function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}

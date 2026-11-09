@@ -2,7 +2,7 @@
 
 import { AnimatePresence, m, press } from "@/shared/motion";
 import { cn } from "@/shared/ui/cn";
-import { IconUpvote } from "@/shared/ui/icons.generated";
+import { IconUpvote } from "@/shared/ui/icons";
 
 /** Upvote toggle; the count rolls up/down when it changes. */
 export function VoteButton({ name, count, voted, onVote }: { name: string; count: number; voted: boolean; onVote: () => void }) {

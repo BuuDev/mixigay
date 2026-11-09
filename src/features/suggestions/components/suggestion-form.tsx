@@ -59,9 +59,9 @@ export function SuggestionForm() {
   }, [result]);
 
   return (
-    <Card className="p-4 lg:sticky lg:top-20">
+    <Card className="p-4">
       <form ref={formRef} action={formAction} className="space-y-3">
-        <h2 className="font-semibold">Đề xuất game cho Độ</h2>
+        <h2 className="font-semibold">Đề xuất game cho anh Độ</h2>
         <label className="block text-sm">
           Nguồn
           <select name="source" value={source} onChange={(e) => setSource(e.target.value as SuggestionSource)} className={fieldClass}>
@@ -117,7 +117,15 @@ export function SuggestionForm() {
         <SimilarHint items={similar.map((s) => ({ key: `${s.kind}-${s.ref}`, label: similarLabel(s) }))} />
         <label className="block text-sm">
           Lý do ngắn
-          <textarea name="reason" required minLength={5} maxLength={500} rows={3} className={fieldClass} />
+          <textarea
+            name="reason"
+            required
+            minLength={5}
+            maxLength={500}
+            rows={3}
+            placeholder="VD: Game giải đố độ khó thiếu nhi nhưng đảm bảo tốn 2 tiếng đọc lệnh..."
+            className={fieldClass}
+          />
         </label>
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? "Đang gửi…" : "Gửi đề xuất"}

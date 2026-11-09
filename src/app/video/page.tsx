@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { VideoBrowser } from "@/features/videos/components/video-browser";
 import { getGames, getVideos } from "@/features/videos/server/queries";
-import { IconGameMisc } from "@/shared/ui/icons.generated";
+import { IconGameMisc } from "@/shared/ui/icons";
 import { PageHeader } from "@/shared/ui/page-header";
 
-export const metadata: Metadata = { title: "Video theo game – Tộc Đêm" };
+export const metadata: Metadata = { title: "Video theo game – Góc Bộ Tộc" };
 
 export default async function VideosPage() {
   const [videos, games] = await Promise.all([getVideos(), getGames()]);

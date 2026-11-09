@@ -1,11 +1,13 @@
 import type { ScheduleSlot } from "./types";
 
+// The official schedule as published in every MixiGaming video description
+// (checked 2026-11-09): 22:22–03:00 daily, off Wednesday and Sunday; Saturday
+// starts at 23:00. The description publishes times only — no per-day topics,
+// so none are invented here.
 export const schedule: ScheduleSlot[] = [
-  { id: "s1", dayOfWeek: 1, time: "20:00", title: "PUBG leo rank", gameSlug: "pubg" },
-  { id: "s2", dayOfWeek: 2, time: "20:00", title: "Mixi City RP", gameSlug: "gta-v" },
-  { id: "s3", dayOfWeek: 3, time: "20:00", title: "CS2 cùng Refund", gameSlug: "cs2" },
-  { id: "s4", dayOfWeek: 4, time: "21:00", title: "Đêm kinh dị", gameSlug: "horror", note: "Có thể lùi 30 phút" },
-  { id: "s5", dayOfWeek: 5, time: "20:00", title: "Thử game viewer làm", gameSlug: "viewer-made" },
-  { id: "s6", dayOfWeek: 6, time: "14:00", title: "Stream ban ngày – game tự chọn" },
-  { id: "s7", dayOfWeek: 0, time: "20:00", title: "Mixi City RP", gameSlug: "gta-v" },
+  { id: "s1", dayOfWeek: 1, time: "22:22", title: "Live tối Thứ Hai" },
+  { id: "s2", dayOfWeek: 2, time: "22:22", title: "Live tối Thứ Ba" },
+  { id: "s4", dayOfWeek: 4, time: "22:22", title: "Live tối Thứ Năm" },
+  { id: "s5", dayOfWeek: 5, time: "22:22", title: "Live tối Thứ Sáu" },
+  { id: "s6", dayOfWeek: 6, time: "23:00", title: "Live tối Thứ Bảy", note: "Thứ Bảy lên sóng lúc 23:00" },
 ];

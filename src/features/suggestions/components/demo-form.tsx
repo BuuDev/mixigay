@@ -42,7 +42,7 @@ export function DemoForm({ items, onAdd }: { items: Suggestion[]; onAdd: (s: Sug
   return (
     <Card className="p-4 lg:sticky lg:top-20">
       <form onSubmit={submit} className="space-y-3">
-        <h2 className="font-semibold">Đề xuất game cho Độ</h2>
+        <h2 className="font-semibold">Đề xuất game cho anh Độ</h2>
         <p className="text-xs text-muted">Chế độ demo (chưa nối Supabase): đề xuất chỉ lưu tạm trên trình duyệt.</p>
         <label className="block text-sm">
           Tên game
@@ -72,7 +72,15 @@ export function DemoForm({ items, onAdd }: { items: Suggestion[]; onAdd: (s: Sug
         {appId && <p className="text-xs text-muted">Steam appid {appId} – khi nối Supabase sẽ tự lấy ảnh, giá, thể loại.</p>}
         <label className="block text-sm">
           Lý do ngắn
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} required maxLength={500} rows={3} className={fieldClass} />
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            required
+            maxLength={500}
+            rows={3}
+            placeholder="VD: Game giải đố độ khó thiếu nhi nhưng đảm bảo tốn 2 tiếng đọc lệnh..."
+            className={fieldClass}
+          />
         </label>
         <Button type="submit" className="w-full">
           Gửi đề xuất

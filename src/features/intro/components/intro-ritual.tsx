@@ -1,16 +1,29 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useSyncExternalStore } from "react";
+import { HERO_PHOTO } from "@/features/album/lib/photos";
 import { useLiveStatus } from "@/features/live/hooks/use-live-status";
 import type { LiveStatus } from "@/features/live/types";
 import { formatCountdown } from "@/features/schedule/lib/countdown";
-import { DAY_NAMES, isOffDay, nextSlot } from "@/features/schedule/lib/schedule";
+import {
+  DAY_NAMES,
+  isOffDay,
+  nextSlot,
+} from "@/features/schedule/lib/schedule";
 import type { ScheduleSlot } from "@/features/schedule/types";
 import { useNow } from "@/shared/hooks/use-now";
 import { useOverlayFlag } from "@/shared/hooks/use-overlay-flag";
 import { formatViews } from "@/shared/lib/format";
 import { youtubeUrl } from "@/shared/lib/links";
-import { AnimatePresence, duration, m, pop, rise, useReducedMotion } from "@/shared/motion";
+import {
+  AnimatePresence,
+  duration,
+  m,
+  pop,
+  rise,
+  useReducedMotion,
+} from "@/shared/motion";
 import { Burst } from "@/shared/motion/burst";
 import { Embers } from "@/shared/motion/embers";
 import { LiveBadge } from "@/shared/ui/badge";
@@ -32,7 +45,13 @@ const seenOnServer = () => true;
  * (600–900 ms) → one line about today (live / countdown / day off). Once per
  * device per Vietnam day, always skippable; reduced motion jumps to the end.
  */
-export function IntroRitual({ status: initial, schedule }: { status: LiveStatus; schedule: ScheduleSlot[] }) {
+export function IntroRitual({
+  status: initial,
+  schedule,
+}: {
+  status: LiveStatus;
+  schedule: ScheduleSlot[];
+}) {
   const seen = useSyncExternalStore(subscribe, seenSnapshot, seenOnServer);
   const [phase, setPhase] = useState<Phase>("unlit");
   const reduce = useReducedMotion();
@@ -52,7 +71,10 @@ export function IntroRitual({ status: initial, schedule }: { status: LiveStatus;
     }
     setPhase("lighting");
     // Only advance if the visitor has not skipped meanwhile.
-    setTimeout(() => setPhase((p) => (p === "lighting" ? "status" : p)), duration.ritual * 1000);
+    setTimeout(
+      () => setPhase((p) => (p === "lighting" ? "status" : p)),
+      duration.ritual * 1000,
+    );
   }
 
   return (
@@ -69,13 +91,24 @@ export function IntroRitual({ status: initial, schedule }: { status: LiveStatus;
             exit={{ opacity: 0, transition: { duration: duration.slow } }}
           >
             {phase === "status" && <Embers count={16} />}
-            <NeonText className="text-3xl sm:text-4xl">TỘC ĐÊM</NeonText>
-            <p className="mt-2 text-sm text-muted">Lửa trại của Bộ tộc — web fan tự làm</p>
+            <p className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">
+              Thiệp mời Bộ Tộc
+            </p>
+            <NeonText className="mt-2 text-3xl sm:text-4xl">
+              GÓC BỘ TỘC
+            </NeonText>
+            <p className="mt-2 text-sm text-muted">
+              Nhóm lửa trại, quây quần bên anh Độ — web fan tự làm
+            </p>
 
             <div className="relative mt-8 h-40 w-60">
               <AnimatePresence mode="wait" initial={false}>
                 {phase === "unlit" ? (
-                  <m.div key="unlit" exit={{ opacity: 0, scale: 0.9 }} className="absolute inset-0">
+                  <m.div
+                    key="unlit"
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="absolute inset-0"
+                  >
                     <Illustration name="intro-unlit" width={240} />
                   </m.div>
                 ) : (
@@ -83,29 +116,80 @@ export function IntroRitual({ status: initial, schedule }: { status: LiveStatus;
                     key="lit"
                     className="absolute inset-0 motion-safe:animate-td-flicker"
                     initial={{ opacity: 0, scale: 0.6 }}
-                    animate={{ opacity: 1, scale: 1, transition: { duration: duration.ritual, ease: [0.34, 1.56, 0.64, 1] } }}
+                    animate={{
+                      opacity: 1,
+                      scale: 1,
+                      transition: {
+                        duration: duration.ritual,
+                        ease: [0.34, 1.56, 0.64, 1],
+                      },
+                    }}
                   >
                     <Illustration name="intro-lit" width={240} />
                   </m.div>
                 )}
               </AnimatePresence>
               {phase === "lighting" && <Burst count={18} distance={120} />}
+              {/* Like opening an invitation: anh Độ's portrait rises out of the fire once it is lit. */}
+              <AnimatePresence>
+                {phase === "status" && (
+                  <m.div
+                    key="portrait"
+                    className="absolute -top-6 left-1/2 size-28 -translate-x-1/2 overflow-hidden rounded-full border-2 border-accent shadow-[0_0_30px_var(--td-ember)]"
+                    initial={{ opacity: 0, y: 40, scale: 0.6 }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                      scale: 1,
+                      transition: {
+                        duration: duration.slow,
+                        ease: [0.34, 1.56, 0.64, 1],
+                      },
+                    }}
+                  >
+                    <Image
+                      src={HERO_PHOTO.src}
+                      alt={HERO_PHOTO.alt}
+                      fill
+                      sizes="7rem"
+                      className="object-cover object-top"
+                    />
+                  </m.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="mt-8 min-h-40 w-full max-w-sm">
               <AnimatePresence mode="wait">
                 {phase === "unlit" && (
-                  <m.div key="cta" variants={rise} initial="hidden" animate="visible" exit="exit" className="flex flex-col items-center gap-3">
+                  <m.div
+                    key="cta"
+                    variants={rise}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="flex flex-col items-center gap-3"
+                  >
                     <Button size="lg" onClick={kindle} autoFocus>
                       🔥 Nhóm lửa
                     </Button>
-                    <button type="button" onClick={close} className="text-sm text-muted underline-offset-4 hover:text-foreground hover:underline">
+                    <button
+                      type="button"
+                      onClick={close}
+                      className="text-sm text-muted underline-offset-4 hover:text-foreground hover:underline"
+                    >
                       Vào thẳng
                     </button>
                   </m.div>
                 )}
                 {phase === "status" && (
-                  <m.div key="status" variants={pop} initial="hidden" animate="visible" className="flex flex-col items-center gap-4">
+                  <m.div
+                    key="status"
+                    variants={pop}
+                    initial="hidden"
+                    animate="visible"
+                    className="flex flex-col items-center gap-4"
+                  >
                     <TodayLine initial={initial} schedule={schedule} />
                     <Button variant="secondary" onClick={close}>
                       Vào trang
@@ -116,7 +200,11 @@ export function IntroRitual({ status: initial, schedule }: { status: LiveStatus;
             </div>
 
             {phase !== "status" && (
-              <button type="button" onClick={close} className="absolute top-4 right-4 rounded-pill px-3 py-1 text-sm text-muted hover:text-foreground">
+              <button
+                type="button"
+                onClick={close}
+                className="absolute top-4 right-4 rounded-pill px-3 py-1 text-sm text-muted hover:text-foreground"
+              >
                 Bỏ qua
               </button>
             )}
@@ -128,7 +216,13 @@ export function IntroRitual({ status: initial, schedule }: { status: LiveStatus;
 }
 
 /** The single status line shown once the fire is lit. */
-function TodayLine({ initial, schedule }: { initial: LiveStatus; schedule: ScheduleSlot[] }) {
+function TodayLine({
+  initial,
+  schedule,
+}: {
+  initial: LiveStatus;
+  schedule: ScheduleSlot[];
+}) {
   const status = useLiveStatus(initial);
   const now = useNow();
   if (!now) return null;
@@ -137,7 +231,13 @@ function TodayLine({ initial, schedule }: { initial: LiveStatus; schedule: Sched
     return (
       <div className="flex flex-col items-center gap-3">
         <Mascot pose="live" size={88} decorative />
-        <LiveBadge viewers={status.concurrentViewers ? formatViews(status.concurrentViewers) : undefined} />
+        <LiveBadge
+          viewers={
+            status.concurrentViewers
+              ? formatViews(status.concurrentViewers)
+              : undefined
+          }
+        />
         <ButtonLink href={youtubeUrl(status.videoId)} external>
           Xem trên YouTube
         </ButtonLink>
@@ -146,17 +246,24 @@ function TodayLine({ initial, schedule }: { initial: LiveStatus; schedule: Sched
   }
 
   const next = nextSlot(schedule, now);
-  const upcomingAt = status.state === "upcoming" && status.startTime ? new Date(status.startTime) : next?.at;
+  const upcomingAt =
+    status.state === "upcoming" && status.startTime
+      ? new Date(status.startTime)
+      : next?.at;
   if (isOffDay(schedule, now) && status.state !== "upcoming") {
     return (
       <div className="flex flex-col items-center gap-2">
         <Mascot pose="sleep" size={88} decorative />
-        <p className="text-lg font-bold">Hôm nay Độ nghỉ.</p>
+        <p className="text-lg font-bold">Hôm nay anh Độ nghỉ.</p>
         {next && (
           <p className="text-muted">
             Hẹn {next.slot.time} {DAY_NAMES[next.slot.dayOfWeek].toLowerCase()}.
           </p>
         )}
+        <p className="text-xs text-muted">
+          Lịch nghỉ cố định — anh em tranh thủ ngủ sớm hoặc cày lại Phòng Trà An
+          Liễng nhé.
+        </p>
       </div>
     );
   }
@@ -165,9 +272,16 @@ function TodayLine({ initial, schedule }: { initial: LiveStatus; schedule: Sched
       <Mascot pose="wait" size={88} decorative />
       {upcomingAt && (
         <p className="text-lg font-bold">
-          Còn <span className="font-mono tabular-nums">{formatCountdown(upcomingAt.getTime() - now.getTime())}</span> nữa
+          Còn{" "}
+          <span className="font-mono tabular-nums">
+            {formatCountdown(upcomingAt.getTime() - now.getTime())}
+          </span>{" "}
+          nữa
         </p>
       )}
+      <p className="text-xs text-muted">
+        Chuẩn bị trà đá, kê ghế đợi 22:22 lên sóng.
+      </p>
     </div>
   );
 }

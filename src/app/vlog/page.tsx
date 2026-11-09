@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { VideoGrid } from "@/features/videos/components/video-grid";
 import { getGames, getVideos } from "@/features/videos/server/queries";
-import { IconVlog } from "@/shared/ui/icons.generated";
+import { IconVlog } from "@/shared/ui/icons";
 import { PageHeader } from "@/shared/ui/page-header";
 
-export const metadata: Metadata = { title: "Vlog – Tộc Đêm" };
+export const metadata: Metadata = { title: "Vlog – Góc Bộ Tộc" };
 
 export default async function VlogPage() {
   const [videos, games] = await Promise.all([getVideos(), getGames()]);

@@ -13,7 +13,7 @@ export async function PlayedAdmin() {
   const [played, games] = await Promise.all([getPlayedGames(), getGames()]);
   const name = new Map(games.map((g) => [g.slug, g.name]));
   return (
-    <Section title="Độ đã chơi">
+    <Section title="Anh Độ đã chơi">
       {played.map((p) => (
         <form key={p.gameSlug} action={savePlayed} className="flex flex-wrap items-center gap-2 border-t border-border pt-2 text-sm">
           <input type="hidden" name="game" value={p.gameSlug} />

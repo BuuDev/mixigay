@@ -1,4 +1,4 @@
-# Tộc Đêm — Đặc tả component & tính năng (v2)
+# Góc Bộ Tộc — Đặc tả component & tính năng (v2)
 
 Tài liệu này mô tả *cái gì* và *trông thế nào*; bạn tự chọn cách code. Mỗi mục ghi: mục đích · trạng thái · dữ liệu · asset dùng · quy tắc chuyển động. Token màu theo `tokens/tokens.css`; icon theo `icons/`; minh họa theo `illustrations/` và `mascot/`.
 

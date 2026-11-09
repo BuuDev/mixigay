@@ -9,10 +9,10 @@ export const SOURCE: Record<SuggestionSource, { label: string; tone: BadgeTone }
 
 export const STATUS: Record<SuggestionStatus, { label: string; tone: BadgeTone }> = {
   pending: { label: "Đang chờ", tone: "muted" },
-  played: { label: "Độ đã chơi", tone: "cleared" },
+  played: { label: "Anh Độ đã chơi", tone: "cleared" },
   rejected: { label: "Từ chối", tone: "danger" },
 };
 
-export const PLAY_LABEL: Record<string, string> = { playing: "Độ đang chơi", finished: "Độ đã phá đảo", dropped: "Độ đã drop" };
+export const PLAY_LABEL: Record<string, string> = { playing: "Anh Độ đang chơi", finished: "Anh Độ đã phá đảo", dropped: "Anh Độ đã drop" };
 
 export const fieldClass = "mt-1 w-full rounded-md border border-border bg-background px-3 py-2";

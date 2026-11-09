@@ -72,6 +72,7 @@ Copy `.env.example` → `.env.local` rồi điền. **Không commit `.env.local`
 5. Backfill toàn kênh một lần (~120 đơn vị quota): `curl -X POST -H "Authorization: Bearer $CRON_SECRET" "https://<domain>/api/cron/sync-videos?full=1"`. Sau đó vào `/admin/game` gán playlist chính chủ cho game.
 6. Supabase Auth → Providers → **Email: tắt** (chỉ dùng Google). DB cũng chỉ cấp admin cho email đã xác nhận, nhưng không nên để mở cửa đăng ký bằng email.
 7. Supabase Auth → URL Configuration: Site URL = domain production. Thêm `https://*-<team>.vercel.app/**` cho preview.
+8. Vercel → Firewall: bật rate limit cho `POST` vào các trang có form (`/de-xuat`, `/nhac`) và `/api/steam/*` (ví dụ 30 request/phút/IP). DB đã giới hạn theo tài khoản; lớp này chặn script spam trước khi tới Supabase. Khi bị tấn công dồn dập: bật Attack Mode.
 
 ## Kiểm tra nhanh sau khi deploy
 

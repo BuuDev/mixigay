@@ -15,6 +15,8 @@ import { SuggestionItem } from "./suggestion-item";
 interface Props {
   initial: Suggestion[];
   votedIds: string[];
+  /** The viewer's own suggestions waiting for review (only they see these). */
+  pending?: Suggestion[];
   /** "live" talks to Supabase; "demo" (no backend configured) keeps everything in the browser. */
   mode: "live" | "demo";
   signedIn: boolean;
@@ -22,7 +24,7 @@ interface Props {
 
 const FILTERS = ["all", "pending", "played", "rejected"] as const;
 
-export function SuggestionBoard({ initial, votedIds, mode, signedIn }: Props) {
+export function SuggestionBoard({ initial, votedIds, pending = [], mode, signedIn }: Props) {
   const { items, voted, vote, notice, addDemo, demoItems } = useSuggestionVotes({ initial, votedIds, mode, signedIn });
   const [filter, setFilter] = useState<SuggestionStatus | "all">("all");
   const shown = items.filter((s) => filter === "all" || s.status === filter).sort((a, b) => b.upvotes - a.upvotes);
@@ -55,7 +57,7 @@ export function SuggestionBoard({ initial, votedIds, mode, signedIn }: Props) {
         ) : (
           <div className="mt-4">
             <EmptyState art="empty-suggestions" title="Chưa có đề xuất nào ở mục này">
-              Hãy là người đầu tiên đề xuất một game cho Độ.
+              Hãy là người đầu tiên đề xuất một game cho anh Độ.
             </EmptyState>
           </div>
         )}
@@ -65,10 +67,25 @@ export function SuggestionBoard({ initial, votedIds, mode, signedIn }: Props) {
         {mode === "demo" ? (
           <DemoForm items={demoItems} onAdd={addDemo} />
         ) : signedIn ? (
-          <SuggestionForm />
+          <div className="space-y-4 lg:sticky lg:top-20">
+            <SuggestionForm />
+            {pending.length > 0 && (
+              <Card className="p-4 text-sm">
+                <h2 className="font-semibold">Đề xuất của bạn đang chờ duyệt</h2>
+                <p className="mt-1 text-xs text-muted">Chỉ bạn thấy mục này. Đề xuất hiện công khai sau khi admin duyệt.</p>
+                <ul className="mt-2 space-y-1">
+                  {pending.map((s) => (
+                    <li key={s.id} className="truncate">
+                      ⏳ {s.name}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+          </div>
         ) : (
           <Card className="p-4 text-sm lg:sticky lg:top-20">
-            <h2 className="font-semibold">Đề xuất game cho Độ</h2>
+            <h2 className="font-semibold">Đề xuất game cho anh Độ</h2>
             <p className="mt-2 text-muted">Đăng nhập Google (góc trên bên phải) để gửi đề xuất và upvote. Chỉ dùng để chống spam.</p>
           </Card>
         )}

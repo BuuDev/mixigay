@@ -1,11 +1,14 @@
 import Image from "next/image";
 import { formatDate } from "@/shared/lib/format";
 import { Badge } from "@/shared/ui/badge";
+import { allowedSuggestionUrl } from "../lib/url-policy";
 import type { Suggestion } from "../types";
 import { SOURCE, STATUS } from "./labels";
 import { VoteButton } from "./vote-button";
 
 export function SuggestionItem({ suggestion: s, voted, onVote }: { suggestion: Suggestion; voted: boolean; onVote: () => void }) {
+  // Re-checked at render so rows saved before the host allowlist never become links.
+  const href = allowedSuggestionUrl(s.url);
   return (
     <div className="flex gap-4 rounded-lg border border-border bg-surface p-4 shadow-card">
       <VoteButton name={s.name} count={s.upvotes} voted={voted} onVote={onVote} />
@@ -17,8 +20,8 @@ export function SuggestionItem({ suggestion: s, voted, onVote }: { suggestion: S
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-semibold">
-            {s.url ? (
-              <a href={s.url} target="_blank" rel="noopener noreferrer nofollow ugc" className="hover:underline">
+            {href ? (
+              <a href={href} target="_blank" rel="noopener noreferrer nofollow ugc" className="hover:underline">
                 {s.name}
               </a>
             ) : (

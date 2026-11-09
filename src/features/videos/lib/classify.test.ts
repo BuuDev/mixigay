@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { classifyVideo, gradientFor, UNCLASSIFIED } from "./classify";
-import { games } from "../mock";
+import type { Game } from "../types";
+
+// Own fixture: classification rules must not change when mock data does.
+const games: Game[] = [
+  { slug: "pubg", name: "PUBG", keywords: ["pubg", "battlegrounds"], cover: "" },
+  { slug: "gta-v", name: "GTA V", keywords: ["gta", "rp", "mixi city"], cover: "" },
+  { slug: "cs2", name: "CS2", keywords: ["cs2"], cover: "" },
+  { slug: "vlog", name: "Vlog", keywords: ["vlog", "review", "ăn"], isVlog: true, cover: "" },
+];
 
 const v = (title: string, extra: { manualGameSlug?: string; playlistIds?: string[] } = {}) => ({ title, ...extra });
 

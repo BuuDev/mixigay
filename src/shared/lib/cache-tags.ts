@@ -9,4 +9,5 @@ export const TAGS = {
   videos: "videos",
   played: "played",
   suggestions: "suggestions",
+  songs: "songs",
 } as const;

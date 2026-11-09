@@ -3,7 +3,7 @@ import { youtubeUrl } from "@/shared/lib/links";
 import { Badge } from "@/shared/ui/badge";
 import { Mascot } from "@/shared/ui/brand-art";
 import { buttonClass } from "@/shared/ui/button";
-import { IconUpcoming } from "@/shared/ui/icons.generated";
+import { IconUpcoming } from "@/shared/ui/icons";
 import type { LiveStatus } from "../types";
 
 /** A scheduled YouTube stream exists: count down to it and link to its page. */

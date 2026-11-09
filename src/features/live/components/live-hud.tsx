@@ -18,7 +18,7 @@ export function LiveHud({ viewers }: { viewers: number }) {
       <span className="text-cleared tabular-nums" aria-label={`${viewers} người đang xem`}>
         👁 <CountUp value={viewers} format={(n) => hudDigits(n)} />
       </span>
-      <span aria-label={`Độ hype ${stars}/5`} className="tracking-tight">
+      <span aria-label={`Mức hype ${stars}/5`} className="tracking-tight">
         {Array.from({ length: 5 }, (_, i) => (
           <span key={i} className={i < stars ? "text-viewer" : "text-white/25"}>
             ★

@@ -28,6 +28,7 @@ const tables = {
   videos: [
     { video_id: "dQw4w9WgXcQ", title: "SMOKE PUBG video", published_at: now, duration_seconds: 3600, view_count: 99, thumbnail_url: null, was_live: true, playlist_ids: [], manual_game_slug: null, auto_game_slug: "pubg" },
   ],
+  fan_songs: [{ id: "00000000-0000-0000-0000-0000000000bb", title: "SMOKE song", artist: "Smoke Fan", url: "https://soundcloud.com/smoke/song", note: null, approved: true, created_at: now }],
   played_games: [{ game_slug: "pubg", status: "playing", sessions: 3, last_played: "2026-11-01" }],
   suggestions: [
     { id: "00000000-0000-0000-0000-0000000000aa", name: "SMOKE suggestion", source: "other", url: null, reason: "because", status: "played", linked_game_slug: "pubg", steam_app_id: null, steam_data: null, upvotes: 7, hidden: false, created_at: now, profiles: { display_name: "Smoke Fan", avatar_url: null } },
@@ -96,17 +97,20 @@ try {
   }
 
   console.log("Pages");
-  for (const path of ["/", "/lich", "/video", "/vlog", "/da-choi", "/de-xuat", "/gioi-thieu", "/robots.txt", "/sitemap.xml"]) {
+  for (const path of ["/", "/lich", "/video", "/vlog", "/series", "/nhac", "/bo-toc", "/da-choi", "/de-xuat", "/gioi-thieu", "/robots.txt", "/sitemap.xml"]) {
     await expectStatus(path, path, 200);
   }
   await expectBody("/", "/", { has: ["SMOKE live title", "SMOKE PUBG video", "Đăng nhập Google", "không liên kết chính thức", "Đếm ngược", "Chạm để mở", "Trang không nhận tiền"] });
   await expectBody("/lich", "/lich", { has: ["SMOKE slot"] });
   await expectBody("/de-xuat", "/de-xuat", { has: ["SMOKE suggestion", "để gửi đề xuất"] });
+  await expectBody("/bo-toc", "/bo-toc", { has: ["Từ điển Bộ Tộc", "Tộc Trưởng", "facebook.com/groups/mixigaming", "Hồ sơ Dự Án Ma", "Đơn hối lỗi xin về bờ", "Góp Gạch Xây Trường", "Trang không nhận quyên góp", "Lươn Cao Bằng"] });
+  await expectBody("/lich", "/lich", { has: ["Radar sự kiện Bộ Tộc", "Sinh nhật Tộc Trưởng"] });
+  await expectBody("/nhac", "/nhac", { has: ["Nhạc nịnh Bộ Tộc", "SMOKE song", "Đăng nhập Google (góc trên bên phải) để gửi link"] });
 
   console.log("Admin (anonymous)");
   // Markers rendered only by admin pages; none may reach an anonymous visitor.
-  const adminMarkers = ["Quota YouTube", "Thêm khung giờ", "Video chưa phân loại", "Playlist chính chủ", "ẩn (spam)", "— thêm game —"];
-  for (const path of ["/admin", "/admin/lich", "/admin/video", "/admin/game", "/admin/de-xuat", "/admin/da-choi"]) {
+  const adminMarkers = ["Quota YouTube", "Thêm khung giờ", "Video chưa phân loại", "Playlist chính chủ", "ẩn (spam)", "— thêm game —", "Nhạc nịnh – duyệt bài", "Cấm ngầm"];
+  for (const path of ["/admin", "/admin/lich", "/admin/video", "/admin/game", "/admin/de-xuat", "/admin/da-choi", "/admin/nhac"]) {
     await expectBody(path, path, { has: ["could not be found"], lacks: adminMarkers });
   }
 

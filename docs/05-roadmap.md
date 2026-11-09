@@ -10,7 +10,7 @@ Giai đoạn 3  Đề xuất game thật + admin       🟡 thiếu E2E, OG imag
 Giai đoạn 4  Thông báo + PWA                 ~1 tuần
 Giai đoạn 5  Thống kê stream                 ~1 tuần
 Giai đoạn 6  Quote & fan art                 ~2 tuần
-Giai đoạn 7  Tộc Đêm v2 (docs/design)        nền xong – các khối làm dần
+Giai đoạn 7  Góc Bộ Tộc v2 (docs/design)        nền xong – các khối làm dần
 ```
 
 ---
@@ -92,22 +92,24 @@ Giai đoạn 7  Tộc Đêm v2 (docs/design)        nền xong – các khối l
 - [ ] Hàng đợi duyệt chung trong `/admin`
 - [ ] Báo cáo nội dung (nút "báo cáo" → admin)
 
-## Giai đoạn 7 – Tộc Đêm v2 (`docs/design/COMPONENTS.md`)
+## Giai đoạn 7 – Góc Bộ Tộc v2 (`docs/design/COMPONENTS.md`)
 
 Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mascot/minh họa sinh từ brand.html, lớp motion (CSS + Motion), Embers, LiveDot; các trang hiện có đã đổi sang nhận diện mới; LiveHero có thêm trạng thái "Hôm nay Độ nghỉ".
 
 - [x] Kiến trúc `src/features/*`, `src/shared/*`, `src/server/*` + luật ESLint phân tầng (ADR-007)
-- [x] Design system Tộc Đêm, chỉ nền tối, `npm run brand` (ADR-009)
+- [x] Design system Góc Bộ Tộc, chỉ nền tối, `npm run brand` (ADR-009)
 - [x] Nền animation: `@/shared/motion`, `motion.css`, skill `motion` (ADR-008)
 - [x] Trang chủ dạng thiệp cuộn: mỗi khối ≈ 1 màn hình, hiện dần khi cuộn; hero khung vòm + HUD (giờ, bộ đếm người xem, sao hype); video dạng rail vuốt ngang
 - [x] §10 Tàn lửa nền (trang chủ, đổi đỏ khi live, tắt khi reduced-motion/pin yếu)
-- [ ] **(cần designer)** Icon spec nhắc nhưng brand.html chưa có: `external`, `kindle`, `calendar-add`, `countdown`, `event`, `attend`, `tribe`, `wall`, `shop`, `bell`, `skin`, `timeline`, `expand`, `close`
+- [x] Bộ icon Phosphor duotone (ADR-010): thay 15 icon cũ, thêm `external`, `kindle`, `calendar-add`, `countdown`, `event`, `attend`, `tribe`, `wall`, `shop`, `bell`, `skin`, `timeline`, `expand`, `close`
 - [x] §1 Màn nhóm lửa (`features/intro`): unlit → lighting → status, 1 lần/ngày/thiết bị, nút bỏ qua, reduced-motion nhảy thẳng
 - [x] §2 Đếm ngược vòng tròn + khối ngày kiểu poster + lịch tháng (popover) + "Thêm vào lịch" (Google Calendar)
 - [ ] §2 Lịch đặc biệt do admin ghi đè (`schedule_overrides` chưa nối vào lịch tháng)
 - [x] §3 Nút nổi "Đang live" (live: equalizer + ping + số người xem; idle: đếm ngược rút gọn), ẩn khi có overlay
 - [ ] §4 "Tối nay tôi có mặt" (RSVP) — bảng `attendance`, skill `fan-content`
 - [ ] §5 Bức tường Bộ tộc (lưu bút ≤140 ký tự, duyệt trước, 3 tin/ngày)
+- [x] Đổi tên trang thành **Góc Bộ Tộc** (ADR-011); bìa thiệp khung vòm có ảnh anh Độ, album polaroid + lightbox, ảnh hiện lên từ đống lửa ở màn mở đầu
+- [ ] Ghi tên tác giả cho từng ảnh trong album khi tìm được nguồn gốc
 - [x] §6 Hộp ủng hộ (nhún, gợi ý chạm, bật nắp + confetti, sheet link chính chủ: donate ZyPage/Streamlabs, YouTube, shop, fanpage, Discord — xác minh từ kênh YouTube chính chủ 2026-11-09, có test chặn host lạ)
 - [ ] §7 Timeline buổi stream (từ chapters trong mô tả video)
 - [ ] §8 Gallery fan art + lightbox (gộp với GĐ6)
@@ -115,15 +117,30 @@ Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mas
 - [ ] §11 Nút chuông thông báo (gộp với GĐ4 Web Push)
 - [ ] OG image theo brand (dòng "không liên kết chính thức")
 
+## Giai đoạn 8 – Content theo trend (khảo sát: `docs/research/2026-11-09-trends.md`)
+
+- [x] Lịch mẫu/seed theo lịch chính chủ (22:22, nghỉ T4 & CN, T7 23:00); dữ liệu mẫu là ảnh chụp video thật của kênh
+- [x] Danh mục game theo hiện tại: Delta Force, GTA V, giả lập kinh doanh, The Isle, game nhóm, game Bộ tộc làm, An Liễng, Tâm sự (59/60 video tự phân loại được)
+- [x] Series tự động từ tiêu đề “(Tên #n)” — `/series`, `/series/[slug]`, rail trên trang chủ
+- [x] Góc nhạc `/nhac`: Phòng Trà An Liễng + bảng nhạc nịnh fan gửi (bảng `fan_songs`, duyệt ở `/admin/nhac`)
+- [x] Bộ tộc `/bo-toc`: phong trào 30 ngày (đếm từ tiêu đề), góc tự trào “Chuyện thường ngày ở Bộ tộc” (`TribeVibe`), game Bộ tộc làm, từ điển có nguồn, link group/Discord chính chủ
+- [x] Hồ sơ “Dự án ma” tháng 10–11 (`GhostProjectsBoard`), Máy tạo văn mẫu hối lỗi xin unban (`UnbanCourt`), Hành trình “Góp gạch xây trường” + đếm ngược 01/12 (`CharityMilestoneCard`), Radar sự kiện & Bộ thẻ Đa nhân cách (`EventRadar`, `PersonaDeck`)
+- [x] P0 chống phá hoại: đề xuất duyệt trước khi hiện; giới hạn tài khoản mới, toàn site, vote; lọc chữ tiếng Việt (cờ bạc, tục tĩu, ký tự ẩn, teencode); link chỉ tới cửa hàng game/YouTube; lọc tên hiển thị; cấm và cấm ngầm trong admin
+- [ ] P1 chống phá hoại: nút báo cáo cho fan, cảnh báo admin khi hàng chờ tăng đột biến, Turnstile khi gửi, giới hạn route Steam theo người
+- [ ] Vote cho nhạc nịnh (dùng lại mẫu `suggestion_votes`)
+- [ ] Giải Ao Làng / Moi Xoang / Tetris: trang giải đấu do admin nhập kết quả
+- [ ] Shorts (The Isle, Đômakase): nhận diện shorts theo thời lượng khi sync và làm rail riêng
+- [ ] Từ điển Bộ tộc do fan đóng góp (duyệt trước), thay cho danh sách cố định trong code
+
 ---
 
 ## Rủi ro & cách xử lý
 
-| Rủi ro | Ảnh hưởng | Giảm thiểu |
-|---|---|---|
-| Hết quota YouTube | Mất trạng thái live | Bảng `api_usage` + ngưỡng 8.000. Không dùng `search.list`. Poll thưa ngoài giờ stream. |
-| RSS/`videos.list` không thấy buổi live mới (live không qua lịch hẹn) | Banner chậm | WebSub (GĐ4). Nút "tìm live" thủ công trong admin (dùng `search.list` 1 lần). |
-| Vercel Hobby chỉ cho cron 1 lần/ngày | Không poll được mỗi phút | Dùng `pg_cron` + `pg_net` của Supabase làm đồng hồ ([ADR-003](08-decisions.md#adr-003)) |
-| Supabase free tạm dừng project sau 7 ngày không hoạt động | DB ngủ | Cron poll-live chạy liên tục nên DB luôn có hoạt động |
-| Spam đề xuất | Bảng bẩn | Bắt buộc đăng nhập, rate limit, admin ẩn, chống trùng trgm + steam_app_id |
-| Khiếu nại thương hiệu/bản quyền | Phải gỡ trang | Tuân thủ nguyên tắc ở [01-product.md](01-product.md), trang giới thiệu có kênh liên hệ để gỡ |
+| Rủi ro                                                               | Ảnh hưởng                | Giảm thiểu                                                                                   |
+| -------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------- |
+| Hết quota YouTube                                                    | Mất trạng thái live      | Bảng `api_usage` + ngưỡng 8.000. Không dùng `search.list`. Poll thưa ngoài giờ stream.       |
+| RSS/`videos.list` không thấy buổi live mới (live không qua lịch hẹn) | Banner chậm              | WebSub (GĐ4). Nút "tìm live" thủ công trong admin (dùng `search.list` 1 lần).                |
+| Vercel Hobby chỉ cho cron 1 lần/ngày                                 | Không poll được mỗi phút | Dùng `pg_cron` + `pg_net` của Supabase làm đồng hồ ([ADR-003](08-decisions.md#adr-003))      |
+| Supabase free tạm dừng project sau 7 ngày không hoạt động            | DB ngủ                   | Cron poll-live chạy liên tục nên DB luôn có hoạt động                                        |
+| Spam đề xuất, quảng cáo cá độ, chửi bậy                              | Bảng bẩn, mất uy tín     | Duyệt trước, giới hạn theo người + tuổi tài khoản + toàn site, lọc chữ tiếng Việt, cấm/cấm ngầm (P0 trong GĐ8, [03](03-data-model.md#chống-phá-hoại-p0)) |
+| Khiếu nại thương hiệu/bản quyền                                      | Phải gỡ trang            | Tuân thủ nguyên tắc ở [01-product.md](01-product.md), trang giới thiệu có kênh liên hệ để gỡ |

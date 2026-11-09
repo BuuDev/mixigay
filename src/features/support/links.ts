@@ -11,10 +11,11 @@ export interface OfficialLink {
 }
 
 export const OFFICIAL_LINKS: OfficialLink[] = [
-  { id: "donate", label: "Donate cho Độ", hint: "Trang donate chính thức (ZyPage)", href: "https://zypage.com/mixigaming" },
+  { id: "donate", label: "Donate cho anh Độ", hint: "Trang donate chính thức (ZyPage)", href: "https://zypage.com/mixigaming" },
   { id: "donate-intl", label: "Donate quốc tế", hint: "Streamlabs của kênh", href: "https://streamlabs.com/mixigamingofficial/tip" },
   { id: "youtube", label: "Kênh YouTube", hint: "Xem, like, đăng ký — ủng hộ miễn phí", href: "https://www.youtube.com/@MixiGaming3con" },
   { id: "shop", label: "Shop chính chủ", hint: "shop.mixigaming.com", href: "https://shop.mixigaming.com/" },
-  { id: "fanpage", label: "Fanpage", hint: "Facebook MixiGaming", href: "https://www.facebook.com/MixiGaming/" },
-  { id: "discord", label: "Discord Bộ tộc", hint: "Server cộng đồng của kênh", href: "https://discord.com/invite/mixigaming" },
+  { id: "fanpage", label: "Fanpage", hint: "Fanpage Kênh MixiGaming", href: "https://www.facebook.com/MixiGaming/" },
+  { id: "group", label: "Group Facebook Bộ Tộc", hint: "facebook.com/groups/mixigaming", href: "https://www.facebook.com/groups/mixigaming/" },
+  { id: "discord", label: "Discord Bộ Tộc", hint: "Server cộng đồng của kênh", href: "https://discord.com/invite/mixigaming" },
 ];

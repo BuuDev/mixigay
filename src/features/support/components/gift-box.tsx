@@ -48,9 +48,9 @@ export function GiftBox() {
           Xem lại các link chính chủ
         </button>
       )}
-      <p className="max-w-sm text-sm text-muted">Trang không nhận tiền. Mọi ủng hộ đi thẳng tới Độ qua kênh chính chủ.</p>
+      <p className="max-w-sm text-sm text-muted">Trang không nhận tiền. Mọi ủng hộ đi thẳng tới anh Độ qua kênh chính chủ.</p>
 
-      <BottomSheet open={sheet} onClose={() => setSheet(false)} title="Ủng hộ Độ – link chính chủ">
+      <BottomSheet open={sheet} onClose={() => setSheet(false)} title="Ủng hộ anh Độ – link chính chủ">
         <ul className="space-y-2 text-left">
           {OFFICIAL_LINKS.map((l, i) => (
             <m.li key={l.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.05 * i } }}>
@@ -72,7 +72,7 @@ export function GiftBox() {
             </m.li>
           ))}
         </ul>
-        <p className="mt-4 text-xs text-muted">Tộc Đêm là trang do fan tự làm, không liên kết chính thức và không nhận tiền dưới bất kỳ hình thức nào.</p>
+        <p className="mt-4 text-xs text-muted">Góc Bộ Tộc là trang do fan tự làm, không liên kết chính thức và không nhận tiền dưới bất kỳ hình thức nào.</p>
       </BottomSheet>
     </div>
   );

@@ -32,6 +32,8 @@
   --animate-td-ping: td-ping 1.6s ease-out infinite;
   --animate-td-neon: td-neon 4s linear infinite;
   --animate-td-flicker: td-flicker 1.4s ease-in-out infinite;
+  --animate-td-kenburns: td-kenburns 18s ease-in-out infinite alternate;
+  --animate-td-sheen: td-sheen 5s ease-in-out infinite;
 }
 
 /* Live badge pulse */
@@ -184,6 +186,25 @@
   }
   66% {
     transform: scale(0.97, 1.04);
+  }
+}
+/* Invitation portrait: a slow push-in, like the photo slideshows of e-invitations. */
+@keyframes td-kenburns {
+  from {
+    transform: scale(1.02) translate(0, 0);
+  }
+  to {
+    transform: scale(1.12) translate(-1.5%, -2%);
+  }
+}
+/* A band of light sweeping across a frame now and then. */
+@keyframes td-sheen {
+  0%,
+  70% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-18deg);
   }
 }
 /* One-shot particle burst: each <i> gets --angle and --dist (see <Burst/>). */

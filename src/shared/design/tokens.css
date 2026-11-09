@@ -1,5 +1,5 @@
 /*
- * "Tộc Đêm" design tokens — source: docs/design/brand.html.
+ * "Góc Bộ Tộc" design tokens — source: docs/design/brand.html.
  * Layer 1: brand tokens (--td-*). Seasonal skins (themes.generated.css) override these.
  * Layer 2: Tailwind theme (@theme inline) exposes them under semantic names, so
  *          components write `bg-surface text-muted border-border`, never hex values.

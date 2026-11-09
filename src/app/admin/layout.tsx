@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { requireAdmin } from "@/features/auth/server/viewer";
 
-export const metadata: Metadata = { title: "Quản trị – Góc Fan Độ", robots: { index: false } };
+export const metadata: Metadata = { title: "Quản trị – Góc Bộ Tộc", robots: { index: false } };
 
 const NAV = [
   { href: "/admin", label: "Tổng quan" },
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/game", label: "Game & từ khóa" },
   { href: "/admin/de-xuat", label: "Đề xuất" },
   { href: "/admin/da-choi", label: "Đã chơi" },
+  { href: "/admin/nhac", label: "Nhạc nịnh" },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

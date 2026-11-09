@@ -9,7 +9,7 @@ import { formatViews } from "@/shared/lib/format";
 import { youtubeUrl } from "@/shared/lib/links";
 import { m, pop, press } from "@/shared/motion";
 import { CountUp } from "@/shared/motion/count-up";
-import { IconUpcoming } from "@/shared/ui/icons.generated";
+import { IconUpcoming } from "@/shared/ui/icons";
 import { useLiveStatus } from "../hooks/use-live-status";
 import type { LiveStatus } from "../types";
 

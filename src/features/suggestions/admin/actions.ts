@@ -12,8 +12,15 @@ export async function updateSuggestion(fd: FormData) {
       status: z.enum(["pending", "played", "rejected"]),
       linked_game_slug: slug.nullable(),
       hidden: z.boolean(),
+      approved: z.boolean(),
     })
-    .parse({ id: str(fd, "id"), status: str(fd, "status"), linked_game_slug: optional(fd, "game"), hidden: fd.get("hidden") === "on" });
+    .parse({
+      id: str(fd, "id"),
+      status: str(fd, "status"),
+      linked_game_slug: optional(fd, "game"),
+      hidden: fd.get("hidden") === "on",
+      approved: fd.get("approved") === "on",
+    });
   const { id, ...patch } = input;
   const supabase = await adminDb();
   fail("updateSuggestion", (await supabase.from("suggestions").update(patch).eq("id", id)).error);

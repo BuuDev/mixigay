@@ -3,13 +3,13 @@ import type { Game } from "@/features/videos/types";
 import { formatDate } from "@/shared/lib/format";
 import { Badge, type BadgeTone } from "@/shared/ui/badge";
 import { Card } from "@/shared/ui/card";
-import { IconCleared, IconDropped, IconLive } from "@/shared/ui/icons.generated";
+import { IconCleared, IconDropped, IconLive } from "@/shared/ui/icons";
 import type { PlayedGame, PlayStatus } from "../types";
 
-const SECTIONS: { status: PlayStatus; title: string; tone: BadgeTone; icon: typeof IconLive }[] = [
-  { status: "playing", title: "Đang chơi", tone: "accent", icon: IconLive },
-  { status: "finished", title: "Đã phá đảo", tone: "cleared", icon: IconCleared },
-  { status: "dropped", title: "Đã drop", tone: "muted", icon: IconDropped },
+const SECTIONS: { status: PlayStatus; title: string; subtitle: string; tone: BadgeTone; icon: typeof IconLive }[] = [
+  { status: "playing", title: "Đang chơi", subtitle: "Đang mở shop, săn kèn Harmonica hoặc cày cùng anh em mỗi tối", tone: "accent", icon: IconLive },
+  { status: "finished", title: "Đã phá đảo", subtitle: "Đã về nước (dù đôi lúc giải đố độ khó thiếu nhi hơi lâu)", tone: "cleared", icon: IconCleared },
+  { status: "dropped", title: "Đã drop", subtitle: "Đã xóa game trên sóng hoặc tạm cất vào kho kỷ niệm", tone: "muted", icon: IconDropped },
 ];
 
 /** "Độ đã chơi", grouped by status; marks games that came from fan suggestions. */
@@ -19,14 +19,17 @@ export function PlayedList({ played, games, suggestions }: { played: PlayedGame[
 
   return (
     <>
-      {SECTIONS.map(({ status, title, tone, icon: Icon }) => {
+      {SECTIONS.map(({ status, title, subtitle, tone, icon: Icon }) => {
         const rows = played.filter((p) => p.status === status);
         if (!rows.length) return null;
         return (
           <section key={status}>
-            <h2 className="flex items-center gap-2 font-bold">
-              <Icon size={18} /> {title}
-            </h2>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="flex items-center gap-2 font-bold">
+                <Icon size={18} /> {title}
+              </h2>
+              <p className="text-xs text-muted">{subtitle}</p>
+            </div>
             <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {rows.map((p) => {
                 const game = bySlug.get(p.gameSlug);

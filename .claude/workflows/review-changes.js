@@ -61,7 +61,7 @@ const REVIEWERS = [
 phase('Review')
 const reviews = await parallel(
   REVIEWERS.map((r) => () =>
-    agent(brief(r.focus), { label: `review:${r.key}`, phase: 'Review', schema: FINDINGS, ...(r.agentType ? { agentType: r.agentType } : {}) })
+    agent(brief(r.focus), { model: 'opus', label: `review:${r.key}`, phase: 'Review', schema: FINDINGS, ...(r.agentType ? { agentType: r.agentType } : {}) })
       .then((res) => (res ? res.findings.map((f) => ({ ...f, dimension: r.key })) : null)),
   ),
 )
@@ -89,7 +89,7 @@ const verified = await parallel(
 Finding (${f.severity}) at ${f.where}: ${f.claim}
 The change under review: ${DIFF}
 Refuted = the claim is false, cannot happen in this code, or is already prevented elsewhere (check RLS in supabase/migrations, requireAdmin, cronRoute, mappers). If you cannot decide, answer refuted=true. Refuter #${n + 1}.`,
-          { label: `refute:${i + 1}.${n + 1}`, phase: 'Verify', schema: VERDICT },
+          { model: 'opus', label: `refute:${i + 1}.${n + 1}`, phase: 'Verify', schema: VERDICT },
         ),
       ),
     ).then((votes) => {

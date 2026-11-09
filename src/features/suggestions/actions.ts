@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateTag, updateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import { TAGS } from "@/shared/lib/cache-tags";
 import { getViewer } from "@/features/auth/server/viewer";
@@ -9,7 +9,8 @@ import { steamAppIdFromUrl, steamStoreUrl } from "./lib/steam";
 import { adminClient } from "@/server/supabase/admin";
 import { publicClient } from "@/server/supabase/public";
 import { serverClient } from "@/server/supabase/server";
-import { safeHttpUrl } from "@/shared/lib/text";
+import { screenText } from "@/shared/lib/moderation/screen";
+import { ALLOWED_SUGGESTION_HOSTS_LABEL, allowedSuggestionUrl } from "./lib/url-policy";
 
 export type FormResult = { ok: true; message: string } | { ok: false; message: string } | null;
 
@@ -27,8 +28,10 @@ export async function createSuggestion(_prev: FormResult, formData: FormData): P
   const parsed = SuggestionInput.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ" };
   const input = parsed.data;
-  const url = safeHttpUrl(input.url);
-  if (input.url && !url) return { ok: false, message: "Link phải bắt đầu bằng http:// hoặc https://" };
+  const url = allowedSuggestionUrl(input.url);
+  if (input.url && !url) return { ok: false, message: `Chỉ nhận link https tới ${ALLOWED_SUGGESTION_HOSTS_LABEL}.` };
+  // Generic on purpose: never tell a spammer which word tripped the filter.
+  if (screenText([input.name, input.reason]).verdict === "block") return { ok: false, message: REJECTED };
 
   const duplicate = { ok: false, message: "Game này đã có người đề xuất rồi – upvote thay vì tạo mới nhé." } as const;
   let name = input.name;
@@ -54,7 +57,8 @@ export async function createSuggestion(_prev: FormResult, formData: FormData): P
     .select("id")
     .single();
   if (error) {
-    if (error.message.includes("rate_limited")) return { ok: false, message: "Bạn đã gửi 5 đề xuất hôm nay, mai quay lại nhé." };
+    const blocked = suggestionInsertError(error);
+    if (blocked) return { ok: false, message: blocked };
     console.error("createSuggestion", error);
     return { ok: false, message: "Có lỗi, thử lại sau." };
   }
@@ -72,11 +76,12 @@ export async function createSuggestion(_prev: FormResult, formData: FormData): P
     }
   }
 
-  // The author's own upvote.
-  await supabase.from("suggestion_votes").insert({ suggestion_id: data.id });
-  updateTag(TAGS.suggestions);
-  return { ok: true, message: `Đã gửi đề xuất “${name}”.` };
+  // Pending until an admin approves it, so the public list does not change yet; only
+  // the author's own "đang chờ duyệt" list (uncached, read per request) shows it.
+  return { ok: true, message: `Đã gửi đề xuất “${name}”. Đề xuất sẽ hiện công khai sau khi được duyệt.` };
 }
+
+const REJECTED = "Nội dung không phù hợp với Góc Bộ Tộc. Viết lại lịch sự, không kèm quảng cáo nhé.";
 
 export async function toggleVote(suggestionId: string): Promise<{ ok: boolean; message?: string }> {
   if (!z.uuid().safeParse(suggestionId).success) return { ok: false };
@@ -91,7 +96,11 @@ export async function toggleVote(suggestionId: string): Promise<{ ok: boolean; m
   const { error } = existing
     ? await supabase.from("suggestion_votes").delete().match({ suggestion_id: suggestionId, user_id: viewer.id })
     : await supabase.from("suggestion_votes").insert({ suggestion_id: suggestionId });
-  if (error) return { ok: false, message: "Có lỗi, thử lại sau." };
+  if (error) {
+    if (error.message.includes("rate_limited")) return { ok: false, message: "Bạn upvote nhanh quá, nghỉ tay một lát nhé." };
+    if (error.code === "42501") return { ok: false, message: "Tài khoản mới cần 24 giờ trước khi upvote (chống clone)." };
+    return { ok: false, message: "Có lỗi, thử lại sau." };
+  }
   // Stale-while-revalidate rather than updateTag: vote spam must not keep emptying the
   // shared cache. The voter already sees their vote through useOptimistic.
   revalidateTag(TAGS.suggestions, "max");
@@ -106,11 +115,32 @@ export interface SimilarItem {
   upvotes: number;
 }
 
-/** "Already suggested?" hint while typing: similar suggestions and games Độ has played. */
+/** "Already suggested?" hint while typing: similar published suggestions and games anh Độ has played. */
 export async function searchSimilar(query: string): Promise<SimilarItem[]> {
   const q = query.trim().slice(0, 120);
   if (q.length < 3) return [];
   const supabase = await serverClient();
   const { data } = await supabase.rpc("search_similar", { q });
   return (data ?? []) as SimilarItem[];
+}
+
+/**
+ * Friendly message for the duplicate/rate guards in the DB trigger
+ * (supabase/migrations/20261110090000_moderation.sql), or null for other errors.
+ */
+function suggestionInsertError(error: { code?: string; message: string; details?: string | null }): string | null {
+  if (error.message.includes("near_duplicate")) {
+    return error.details
+      ? `Đã có đề xuất “${error.details}” rồi – upvote đề xuất đó thay vì gửi bản mới nhé.`
+      : "Game này đã có người đề xuất và đang chờ duyệt – đợi đề xuất đó hiện rồi upvote nhé.";
+  }
+  if (error.code === "42501") return "Tài khoản này đã bị khóa gửi nội dung.";
+  if (error.code === "23505") return "Đề xuất này đã có (hoặc bạn đã từng gửi tên này) – upvote bản đang có nhé.";
+  if (error.message.includes("cooldown")) return "Bạn vừa gửi một đề xuất, đợi 10 phút rồi gửi tiếp nhé.";
+  if (error.message.includes("rate_limited_new")) return "Tài khoản mới gửi tối đa 2 đề xuất trong ngày đầu, mai quay lại nhé.";
+  if (error.message.includes("rate_limited_global")) return "Đang có quá nhiều đề xuất cùng lúc, thử lại sau ít phút nhé.";
+  if (error.message.includes("rate_limited")) return "Bạn đã gửi 5 đề xuất hôm nay, mai quay lại nhé.";
+  if (error.message.includes("too_short")) return "Lý do ít nhất 5 ký tự.";
+  if (error.message.includes("name_key_len")) return "Tên game cần có chữ hoặc số.";
+  return null;
 }

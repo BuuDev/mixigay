@@ -8,7 +8,7 @@ export function SiteFooter() {
     <footer className="relative z-10 border-t border-border py-8 text-center text-sm text-muted">
       <Logo variant="mark" height={28} className="mx-auto opacity-80" />
       <p className="mt-3">
-        Trang do fan tự làm, <strong className="text-foreground">không liên kết chính thức</strong> với Độ Mixi hay MixiGaming.
+        Trang do fan tự làm, <strong className="text-foreground">không liên kết chính thức</strong> với anh Độ Mixi hay Kênh MixiGaming.
       </p>
       <p className="mt-1">
         Muốn ủng hộ? Hãy xem và ủng hộ trực tiếp trên{" "}

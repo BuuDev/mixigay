@@ -1,6 +1,7 @@
 ---
 name: quota-auditor
 description: Read-only auditor of external API cost and scheduled-job safety in mixi-fan-hub — YouTube Data API quota (10,000 units/day), Steam rate limits, cron frequency, idempotency, notification double-sends, free-tier limits of Supabase/Vercel. Use on any diff touching src/server/youtube, src/server/jobs, src/app/api, supabase/cron.sql, src/features/live/server/notify.ts or src/features/suggestions/{lib,server}/steam.ts.
+model: opus
 tools: Read, Grep, Glob, Bash
 ---
 

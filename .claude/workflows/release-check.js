@@ -39,7 +39,7 @@ npm test
 npm run db:check
 npm run smoke
 npm run build`,
-  { label: 'gates', phase: 'Gates', schema: GATES },
+  { model: 'opus', label: 'gates', phase: 'Gates', schema: GATES },
 )
 const gateFails = gates ? gates.results.filter((r) => !r.passed) : [{ command: 'all', evidence: 'gate agent failed' }]
 
@@ -62,7 +62,7 @@ Check and report each as OK / ACTION NEEDED / UNKNOWN, with the reason:
 5. docs/05-roadmap.md reflects what this release contains (no shipped item still unchecked, no unchecked item claimed done).
 6. Fan-site rules: footer disclaimer and /gioi-thieu still present.
 7. The manual production steps the human must do after merging (from docs/06-setup.md), in order.`,
-  { label: 'readiness', phase: 'Readiness' },
+  { model: 'opus', label: 'readiness', phase: 'Readiness' },
 )
 
 const blocking = review && review.confirmed ? review.confirmed.length : 0

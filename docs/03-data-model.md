@@ -219,9 +219,10 @@ create table fan_art (
 | Bảng | select | insert | update | delete |
 |---|---|---|---|---|
 | games, game_keywords, playlist_game_map, schedule_slots, schedule_overrides, played_games, videos, live_status, live_samples | mọi người | admin | admin | admin |
-| suggestions | mọi người (`hidden = false`), tác giả và admin thấy hết | đăng nhập, chỉ 4 cột `name, source, url, reason` (column grant), tối đa 5/24h (trigger có advisory lock) | admin | admin |
-| suggestion_votes | chỉ phiếu của mình | `user_id = auth.uid()`, đề xuất không bị ẩn | – | `user_id = auth.uid()` |
-| profiles | mọi người | trigger khi tạo user | chủ sở hữu, chỉ cột `display_name` (1–50 ký tự) | – |
+| suggestions | mọi người (`approved and not hidden`), tác giả và admin thấy hết | đăng nhập, không bị cấm, chỉ 4 cột `name, source, url, reason` (column grant), giới hạn ở trigger (xem "Chống phá hoại") | admin | admin |
+| suggestion_votes | chỉ phiếu của mình | `user_id = auth.uid()`, tài khoản ≥ 24 giờ (hoặc `trust ≥ 1`), không bị cấm, đề xuất đã duyệt và không bị ẩn, ≤ 60 phiếu/giờ | – | `user_id = auth.uid()` |
+| profiles | mọi người | trigger khi tạo user | chủ sở hữu, chỉ cột `display_name` (trigger làm sạch, cắt 50 ký tự) | – |
+| banned_terms | admin | admin | admin | admin |
 | quotes, fan_art | mọi người (`approved = true`), tác giả thấy của mình, admin thấy hết | đăng nhập, `author_id = auth.uid()`, `approved = false` | admin | admin, tác giả |
 | push_subscriptions | chủ sở hữu | đăng nhập | – | chủ sở hữu |
 | api_usage | admin | – (service role qua `add_api_usage`) | – | – |
@@ -238,10 +239,40 @@ Chỉ bật Realtime cho `live_status`, bằng lệnh `alter publication supabas
 
 - `on auth.users insert` → tạo `profiles` từ `raw_user_meta_data` (name, avatar_url).
 - `suggestion_votes` insert/delete → cập nhật `suggestions.upvotes`.
-- Tác giả tự động upvote đề xuất của mình (giống prototype). Không chặn tự vote.
+- Tác giả **không** còn tự upvote (đề xuất chưa duyệt thì không vote được).
+- `profiles_sanitize_name`: làm sạch `display_name` (xem "Chống phá hoại").
 - Cấp admin chỉ cho email **đã xác nhận** nằm trong `admin_emails`: lúc tạo user, lúc email được xác nhận, hoặc lúc thêm email vào danh sách.
 - Kiểm chứng toàn bộ các quy tắc trên: `npm run db:check` (`scripts/check-sql.mjs`).
 
 ## Seed
 
 `supabase/seed.sql` lấy dữ liệu từ `src/features/*/mock.ts` (games, keywords, lịch mẫu) để môi trường dev giống prototype.
+
+## Chống phá hoại (P0)
+
+Migration `supabase/migrations/20261110090000_moderation.sql`. Postgres là cổng chặn; app (`src/shared/lib/moderation`) chỉ lọc chữ thêm và báo lỗi dễ hiểu. Mọi quy tắc có assert trong `npm run db:check` (mục "Moderation").
+
+| Lớp | Quy tắc |
+|---|---|
+| Duyệt trước | `suggestions.approved` mặc định `false`, fan không ghi được cột này. Chỉ đề xuất đã duyệt mới hiện công khai, có trong `search_similar` và nhận vote. Tác giả thấy bản chờ duyệt của mình trên `/de-xuat`. |
+| Giới hạn | Đề xuất: 5/ngày, cách nhau 10 phút, tài khoản < 24 giờ tối đa 2/ngày, toàn site 40/giờ. Nhạc: 3/ngày, tài khoản mới 1/ngày, toàn site 20/giờ. Vote: 60/giờ. Tuổi tài khoản tính theo `profiles.created_at`. |
+| Chống trùng | Chỉ đề xuất **đã duyệt** (và bản của chính mình) mới giữ tên, để bản rác chờ duyệt không chiếm được tên game sắp ra. Unique index `suggestions_name_key_live` chỉ tính bản đã duyệt, nên admin không duyệt được bản thứ hai. |
+| Ký tự ẩn | `strip_invisible()` xóa zero-width/Hangul filler/bidi rồi gộp khoảng trắng trước khi đếm độ dài (`reason` ≥ 5 thật). |
+| Link | https, ≤ 500 ký tự, không `user@host`, không punycode, không link rút gọn (check trong DB). App chỉ nhận host trong `src/features/suggestions/lib/url-policy.ts` và chỉ render link khi host hợp lệ. |
+| Tên hiển thị | Trigger đổi thành `Fan ####` khi tên rỗng sau khi bỏ ký tự ẩn, chứa URL/tên miền, hoặc chứa từ trong `banned_terms` (so sau khi bỏ dấu và ký tự đặc biệt). Không bao giờ báo lỗi, để đăng nhập không hỏng. `banned_terms` = `NAME_BLOCK_STEMS` trong `lexicon.ts` (test so khớp). |
+| Cấm | `profiles.trust` (API không đọc được cột này; `profiles` chỉ cho đọc `id, display_name, avatar_url, created_at`): −2 cấm ngầm (vẫn gửi được nhưng không ai thấy), −1 cấm (không gửi, không vote), 0 thường, 1–2 tin cậy (dành cho sau này). `moderate_user(uid, 'ban' \| 'shadow' \| 'unban')` và `reset_display_name(uid)`: `security definer`, kiểm tra `is_admin()`; cấm sẽ ẩn mọi đề xuất, gỡ duyệt mọi bài nhạc, xóa mọi vote và reset tên. Người bị cấm ngầm: bài mới sinh ra đã ẩn, vote "thành công" nhưng không lưu, không bị tính vào giới hạn toàn site. Trigger `block_banned_approval` chặn duyệt bài của người có `trust < 0`. |
+| Lọc chữ (app) | `screenText()` chặn cờ bạc/tục tĩu/link rút gọn với thông báo chung chung; tên miền trong chữ và cụm "nạp tiền", "cá độ"… chỉ gắn cờ cho admin. |
+
+## fan_songs (Góc nhạc — "nhạc nịnh")
+
+Migration `supabase/migrations/20261109120000_fan_songs.sql`.
+
+| Cột | Ghi chú |
+|---|---|
+| `title` (2–120), `artist` (1–80), `url`, `note` (≤300) | Fan chỉ được insert 4 cột này (column grant) |
+| `url` | `https://` tới YouTube, youtu.be, SoundCloud, TikTok, Spotify, Zing MP3, NhacCuaTui, có đường dẫn (check trong DB + `songPlatform()` trong app); **unique chỉ trong các bài đã duyệt**, để bản chờ duyệt của người khác không chiếm được link |
+| `approved` | mặc định `false`; chỉ admin đổi |
+
+| select | insert | update | delete |
+|---|---|---|---|
+| `approved`, hoặc tác giả, hoặc admin | đăng nhập, không bị cấm, `author_id = auth.uid()`, giới hạn ở trigger (xem "Chống phá hoại") | admin | **chỉ admin** (nếu tác giả xóa được thì vòng gửi→xóa sẽ lách giới hạn/ngày) |
