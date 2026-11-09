@@ -46,4 +46,14 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 
 **Quyết định:** Thứ tự ưu tiên là `manual_game_slug` > playlist map > từ khóa tiêu đề (game thường trước, vlog sau) > "Chưa phân loại". Vlog là một game có `is_vlog = true`, không phải module riêng.
 
-**Hệ quả:** Admin cần gán tay video chưa nhận diện. Từ khóa nằm trong DB nên sửa không cần deploy lại. Việc bổ sung bước playlist vào `classify.ts` thuộc Giai đoạn 2.
+**Hệ quả:** Admin cần gán tay video chưa nhận diện. Từ khóa nằm trong DB nên sửa không cần deploy lại. Lưu từ khóa/playlist trong admin sẽ phân loại lại toàn bộ (`reclassifyAll`).
+
+## ADR-006 – Chạy được không cần backend (chế độ mock) {#adr-006}
+
+**Trạng thái:** Chấp nhận
+
+**Quyết định:** Khi thiếu `NEXT_PUBLIC_SUPABASE_URL`/`ANON_KEY`, `src/lib/data.ts` trả dữ liệu mẫu, `SuggestionBoard` chạy chế độ demo, auth và admin tắt.
+
+**Lý do:** CI build không cần secret; người mới clone về là chạy được ngay; làm UI không phụ thuộc DB.
+
+**Hệ quả:** Mỗi getter phải giữ cả hai nhánh. Không được import `mock-data.ts` ở chỗ nào khác ngoài `data.ts`.

@@ -10,8 +10,12 @@ Rút từ code hiện có. Khi thấy code lệch với tài liệu này, hoặc
 | Component client có state | `src/components/suggestion-board.tsx`, `src/components/video-browser.tsx` |
 | Component hiển thị thuần | `src/components/video-card.tsx` |
 | Hàm logic thuần (có test) | `src/lib/classify.ts`, `src/lib/schedule.ts` |
-| Getter dữ liệu | `src/lib/data.ts` |
-| Hook client | `src/lib/use-now.ts` |
+| Getter dữ liệu (cache + mock fallback) | `src/lib/data.ts` |
+| Hook client | `src/lib/use-now.ts`, `src/lib/use-live-status.ts` |
+| Server Action cho fan (auth + zod + `updateTag`) | `src/app/de-xuat/actions.ts` |
+| Trang admin (form + action) | `src/app/admin/lich/page.tsx` + `src/app/admin/actions.ts` |
+| Job cron | `src/lib/jobs/poll-live.ts` + `src/app/api/cron/poll-live/route.ts` (bọc bằng `cronRoute`) |
+| Test | `src/lib/live.test.ts` (đặt cạnh file, tên `*.test.ts`) |
 
 ## Cấu trúc thư mục
 
@@ -48,7 +52,11 @@ docs/
 
 - Trang **không** import `mock-data.ts` hay Supabase trực tiếp, mà luôn đi qua `src/lib/data.ts`.
 - Ghi dữ liệu qua Server Actions. Mỗi action tự kiểm tra auth và validate input (dùng `zod` khi bắt đầu có action đầu tiên).
-- Service role client chỉ dùng trong `app/api/cron/**` và `app/api/webhooks/**`.
+- Service role client chỉ dùng trong `app/api/cron/**` và `app/api/webhooks/**` (thông qua `src/lib/jobs/*`). **Ngoại lệ duy nhất:** `createSuggestion` ghi `steam_app_id`/`steam_data` mà chính server lấy từ Steam, sau khi bản ghi đã được insert bằng quyền của user. Muốn thêm ngoại lệ thì phải ghi vào đây.
+- Cột do fan ghi được giới hạn bằng **column grant** (`grant insert (cột…)`), không chỉ bằng RLS. RLS lọc hàng chứ không lọc cột.
+- Dữ liệu `jsonb` phải validate khi map (`src/lib/supabase/map.ts`), để một hàng hỏng không làm sập trang dùng chung cache.
+- Trang admin: **mỗi page tự gọi `await requireAdmin()`** ở dòng đầu. Không dựa vào layout.
+- Đọc dữ liệu trong `"use cache"` thì dùng `publicClient()` (không cookie). Đọc theo user thì dùng `serverClient()` và đặt dưới `<Suspense>`.
 
 ## Next.js 16
 
@@ -66,8 +74,8 @@ docs/
 
 ```bash
 npm run lint
-npm run typecheck   # thêm ở GĐ1
-npm test            # thêm ở GĐ1
+npm run typecheck   # next typegen && tsc --noEmit
+npm test            # vitest
 npm run build
 ```
 

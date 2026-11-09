@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { OFFICIAL_CHANNEL_URL } from "@/lib/links";
 
 export function SiteFooter() {
@@ -12,6 +13,11 @@ export function SiteFooter() {
           kênh chính chủ
         </a>
         . Trang này không nhận tiền dưới bất kỳ hình thức nào.
+      </p>
+      <p className="mt-1">
+        <Link href="/gioi-thieu" className="underline">
+          Giới thiệu & liên hệ gỡ nội dung
+        </Link>
       </p>
     </footer>
   );

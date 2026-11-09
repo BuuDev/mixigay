@@ -68,8 +68,8 @@ YouTube đẩy thông báo khi có video/stream mới tới `POST /api/webhooks/
 
 Trang `/admin/*`, bảo vệ 2 lớp:
 
-1. `proxy.ts` (Next 16 thay cho `middleware.ts`) làm mới session Supabase và chuyển hướng người chưa đăng nhập.
-2. Mỗi Server Action/route admin kiểm tra lại `is_admin()` ở phía DB (RLS). Không được tin vào việc proxy đã chặn.
+1. **Mỗi page** và mỗi Server Action admin gọi `requireAdmin()` (`src/lib/auth.ts`). Ai không phải admin nhận 404. Lưu ý: layout và page render **song song**, nên check ở `admin/layout.tsx` không chặn được page stream nội dung ra. Thiếu check ở page là lỗi bảo mật (đã gặp và sửa khi smoke test).
+2. RLS (`is_admin()`) chặn lại lần nữa ở DB. `src/proxy.ts` chỉ làm mới session, không quyết định quyền.
 
 ## Ngân sách quota YouTube (10.000 đơn vị/ngày)
 

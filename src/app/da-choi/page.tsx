@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getGames, getPlayedGames } from "@/lib/data";
+import { getGames, getPlayedGames, getSuggestions } from "@/lib/data";
 import { formatDate } from "@/lib/format";
 import type { PlayStatus } from "@/lib/types";
 
@@ -12,8 +12,9 @@ const SECTIONS: { status: PlayStatus; title: string }[] = [
 ];
 
 export default async function PlayedPage() {
-  const [played, games] = await Promise.all([getPlayedGames(), getGames()]);
+  const [played, games, suggestions] = await Promise.all([getPlayedGames(), getGames(), getSuggestions()]);
   const bySlug = new Map(games.map((g) => [g.slug, g]));
+  const fromFans = new Map(suggestions.filter((s) => s.linkedGameSlug).map((s) => [s.linkedGameSlug!, s]));
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Độ đã chơi</h1>
@@ -33,8 +34,11 @@ export default async function PlayedPage() {
                     <div>
                       <div className="font-medium">{game?.name ?? p.gameSlug}</div>
                       <div className="text-xs text-muted">
-                        {p.sessions} buổi · lần cuối {formatDate(p.lastPlayed)}
+                        {p.sessions} buổi{p.lastPlayed && ` · lần cuối ${formatDate(p.lastPlayed)}`}
                       </div>
+                      {fromFans.has(p.gameSlug) && (
+                        <div className="text-xs text-accent">Fan đề xuất · {fromFans.get(p.gameSlug)!.upvotes} vote</div>
+                      )}
                     </div>
                   </div>
                 );

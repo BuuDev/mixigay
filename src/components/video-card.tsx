@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { youtubeUrl } from "@/lib/links";
 import { formatDate, formatDuration, formatViews } from "@/lib/format";
 import type { ClassifiedVideo } from "@/lib/data";
@@ -12,6 +13,9 @@ export function VideoCard({ video, game }: { video: ClassifiedVideo; game?: Game
       className="group block overflow-hidden rounded-xl border border-border bg-surface"
     >
       <div className={`relative aspect-video bg-gradient-to-br ${game?.cover ?? "from-zinc-400 to-zinc-700"}`}>
+        {video.thumbnailUrl && (
+          <Image src={video.thumbnailUrl} alt="" fill sizes="(min-width: 1024px) 22rem, (min-width: 640px) 50vw, 100vw" className="object-cover" />
+        )}
         <span className="absolute right-2 bottom-2 rounded bg-black/75 px-1.5 py-0.5 text-xs text-white">
           {formatDuration(video.durationMinutes)}
         </span>

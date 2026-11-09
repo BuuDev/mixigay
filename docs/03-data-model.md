@@ -1,6 +1,6 @@
 # 03 – Mô hình dữ liệu (Supabase / Postgres)
 
-Bản nháp schema cho migration đầu tiên. Khi viết migration thật, để file trong `supabase/migrations/` (tạo bằng `supabase migration new <tên>`). Sau khi migration áp dụng, sửa file này cho khớp.
+**Nguồn sự thật là `supabase/migrations/20261109000000_init.sql`.** Đoạn SQL dưới đây là bản tóm tắt để đọc nhanh. Migration thật còn có thêm: hàm `f_unaccent` (IMMUTABLE, để làm cột generated), bảng `admin_emails` + trigger cấp quyền admin, hàm `search_similar(q)`, `add_api_usage`, `set_auto_game`, `set_playlist_members`, và `playlist_game_map.game_slug` có thể null (job tự thêm playlist mới, admin gán game sau). Migration mới tạo bằng `supabase migration new <tên>`.
 
 Kiểu TypeScript tương ứng hiện có ở `src/lib/types.ts`. Sau khi có DB, sinh type bằng `supabase gen types typescript` ra `src/lib/supabase/database.types.ts`, và để `types.ts` map từ đó.
 
@@ -219,12 +219,14 @@ create table fan_art (
 | Bảng | select | insert | update | delete |
 |---|---|---|---|---|
 | games, game_keywords, playlist_game_map, schedule_slots, schedule_overrides, played_games, videos, live_status, live_samples | mọi người | admin | admin | admin |
-| suggestions | mọi người (`hidden = false`), admin thấy hết | đăng nhập, `author_id = auth.uid()` | admin (status, hidden, linked_game_slug); tác giả sửa `reason` trong 15 phút | admin |
-| suggestion_votes | mọi người | `user_id = auth.uid()` | – | `user_id = auth.uid()` |
-| profiles | mọi người | trigger khi tạo user | chủ sở hữu | – |
+| suggestions | mọi người (`hidden = false`), tác giả và admin thấy hết | đăng nhập, chỉ 4 cột `name, source, url, reason` (column grant), tối đa 5/24h (trigger có advisory lock) | admin | admin |
+| suggestion_votes | chỉ phiếu của mình | `user_id = auth.uid()`, đề xuất không bị ẩn | – | `user_id = auth.uid()` |
+| profiles | mọi người | trigger khi tạo user | chủ sở hữu, chỉ cột `display_name` (1–50 ký tự) | – |
 | quotes, fan_art | mọi người (`approved = true`), tác giả thấy của mình, admin thấy hết | đăng nhập, `author_id = auth.uid()`, `approved = false` | admin | admin, tác giả |
 | push_subscriptions | chủ sở hữu | đăng nhập | – | chủ sở hữu |
-| api_usage, notifications_log, admins | – (chỉ service role) | – | – | – |
+| api_usage | admin | – (service role qua `add_api_usage`) | – | – |
+| admins | chính mình | – | – | – |
+| admin_emails, notifications_log | – (chỉ service role) | – | – | – |
 
 Job cron dùng service role nên bỏ qua RLS. Vì vậy mọi kiểm tra quyền của job phải nằm ở phía route (`CRON_SECRET`).
 
@@ -236,7 +238,9 @@ Chỉ bật Realtime cho `live_status`, bằng lệnh `alter publication supabas
 
 - `on auth.users insert` → tạo `profiles` từ `raw_user_meta_data` (name, avatar_url).
 - `suggestion_votes` insert/delete → cập nhật `suggestions.upvotes`.
-- Chặn tự vote cho đề xuất của mình (tùy chọn, quyết định ở P0).
+- Tác giả tự động upvote đề xuất của mình (giống prototype). Không chặn tự vote.
+- Cấp admin chỉ cho email **đã xác nhận** nằm trong `admin_emails`: lúc tạo user, lúc email được xác nhận, hoặc lúc thêm email vào danh sách.
+- Kiểm chứng toàn bộ các quy tắc trên: `npm run db:check` (`scripts/check-sql.mjs`).
 
 ## Seed
 

@@ -26,7 +26,11 @@ supabase migration new <ten>   # tạo migration mới trong supabase/migrations
 supabase gen types typescript --local > src/lib/supabase/database.types.ts
 ```
 
-Bật Google login local: thêm `[auth.external.google]` vào `supabase/config.toml` với `client_id` / `secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"`.
+Google login local đã cấu hình sẵn trong `supabase/config.toml`, đọc `SUPABASE_AUTH_GOOGLE_CLIENT_ID` / `SUPABASE_AUTH_GOOGLE_SECRET` từ môi trường.
+
+**Chế độ mock:** khi `NEXT_PUBLIC_SUPABASE_URL` trống, mọi trang dùng `src/lib/mock-data.ts`, đề xuất chỉ lưu trên trình duyệt, admin trả 404. CI build theo chế độ này.
+
+**Cấp quyền admin:** chạy SQL `insert into public.admin_emails (email) values ('ban@gmail.com');`. Nếu tài khoản đã tồn tại thì được cấp ngay; nếu chưa thì được cấp lúc đăng nhập lần đầu.
 
 ## Biến môi trường
 
@@ -40,7 +44,9 @@ Copy `.env.example` → `.env.local` rồi điền. **Không commit `.env.local`
 | `CRON_SECRET` | server | `openssl rand -hex 32` | 2 |
 | `YOUTUBE_API_KEY` | server | Google Cloud → APIs → YouTube Data API v3 → Credentials | 2 |
 | `YOUTUBE_CHANNEL_ID` | server | `channels.list?forHandle=` (xem 04) | 2 |
-| `ADMIN_EMAILS` | server | danh sách email cách nhau dấu phẩy, dùng để seed bảng `admins` | 3 |
+| `NEXT_PUBLIC_SITE_URL` | client + server | domain production, dùng cho sitemap/robots/metadata | 3 |
+| `NEXT_PUBLIC_CONTACT_URL` | client | link liên hệ/gỡ nội dung trên trang Giới thiệu | 3 |
+| `SUPABASE_AUTH_GOOGLE_CLIENT_ID`, `SUPABASE_AUTH_GOOGLE_SECRET` | chỉ Supabase CLI local | OAuth client (xem dưới) | 1 |
 | `WEBSUB_SECRET` | server | `openssl rand -hex 32` | 4 |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID` | server | @BotFather | 4 |
 | `DISCORD_WEBHOOK_URL` | server | Discord → Kênh → Integrations → Webhooks | 4 |
@@ -56,20 +62,16 @@ Copy `.env.example` → `.env.local` rồi điền. **Không commit `.env.local`
 1. Tạo project Supabase (region Singapore gần VN nhất). Có thể tạo qua **Vercel Marketplace → Supabase** để env tự đồng bộ sang Vercel.
 2. `supabase link --project-ref <ref>` rồi `supabase db push`.
 3. Import repo vào Vercel (framework Next.js, mặc định). Thêm env cho Production + Preview.
-4. Supabase → Database → Extensions: bật `pg_cron`, `pg_net`. Chạy SQL lên lịch (đặt trong migration):
+4. Lưu URL app và `CRON_SECRET` vào Supabase Vault, rồi chạy `supabase/cron.sql` trong SQL editor. File này bật `pg_cron` + `pg_net` và lên lịch poll-live (mỗi phút) cùng sync-videos (mỗi 6 giờ). Nó cố ý **không** phải migration, để `supabase db reset` ở local không bắt đầu poll:
 
    ```sql
-   select cron.schedule('poll-live', '* * * * *', $$
-     select net.http_post(
-       url := 'https://<domain>/api/cron/poll-live',
-       headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret'))
-     );
-   $$);
-   select cron.schedule('sync-videos', '0 */6 * * *', $$ ... '/api/cron/sync-videos' ... $$);
+   select vault.create_secret('https://<domain>', 'app_url');
+   select vault.create_secret('<giá trị CRON_SECRET>', 'cron_secret');
    ```
 
-   Lưu `CRON_SECRET` vào Supabase Vault (`select vault.create_secret('<giá trị>', 'cron_secret');`), không viết thẳng vào SQL.
-5. Supabase Auth → URL Configuration: Site URL = domain production. Thêm `https://*-<team>.vercel.app/**` cho preview.
+5. Backfill toàn kênh một lần (~120 đơn vị quota): `curl -X POST -H "Authorization: Bearer $CRON_SECRET" "https://<domain>/api/cron/sync-videos?full=1"`. Sau đó vào `/admin/game` gán playlist chính chủ cho game.
+6. Supabase Auth → Providers → **Email: tắt** (chỉ dùng Google). DB cũng chỉ cấp admin cho email đã xác nhận, nhưng không nên để mở cửa đăng ký bằng email.
+7. Supabase Auth → URL Configuration: Site URL = domain production. Thêm `https://*-<team>.vercel.app/**` cho preview.
 
 ## Kiểm tra nhanh sau khi deploy
 

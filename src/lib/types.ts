@@ -7,6 +7,7 @@ export interface LiveStatus {
   /** ISO time; for "upcoming" it is the scheduled start, for "live" the actual start. */
   startTime?: string;
   concurrentViewers?: number;
+  thumbnailUrl?: string;
   /** ISO time of the last poll against YouTube. */
   checkedAt: string;
 }
@@ -40,6 +41,9 @@ export interface Video {
   viewCount: number;
   durationMinutes: number;
   wasLive: boolean;
+  thumbnailUrl?: string;
+  /** Official channel playlists this video belongs to; mapped to games by an admin. */
+  playlistIds?: string[];
   /** Set by an admin; overrides keyword classification. */
   manualGameSlug?: string;
 }
@@ -63,9 +67,27 @@ export interface Suggestion {
   url?: string;
   reason: string;
   author: string;
+  authorAvatar?: string;
   createdAt: string;
   upvotes: number;
   status: SuggestionStatus;
   /** Filled from the Steam Store API when source = "steam". */
-  steam?: { appId: number; price: string; genres: string[] };
+  steam?: SteamInfo;
+  /** Game slug in "Đã chơi" once status = "played". */
+  linkedGameSlug?: string;
+}
+
+export interface SteamInfo {
+  appId: number;
+  price: string;
+  genres: string[];
+  headerImage?: string;
+}
+
+export interface Viewer {
+  id: string;
+  email?: string;
+  name: string;
+  avatarUrl?: string;
+  isAdmin: boolean;
 }

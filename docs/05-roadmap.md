@@ -4,9 +4,9 @@ Mỗi giai đoạn kết thúc bằng một bản **deploy được**. Ước l�
 
 ```
 Giai đoạn 0  Prototype UI                    ✅ xong
-Giai đoạn 1  Nền móng (Supabase, auth, CI)   ~1 tuần
-Giai đoạn 2  Dữ liệu YouTube thật            ~1–2 tuần
-Giai đoạn 3  Đề xuất game thật + admin       ~1–2 tuần   → 🚀 MVP ra mắt
+Giai đoạn 1  Nền móng (Supabase, auth, CI)   ✅ code xong – chờ tạo project thật
+Giai đoạn 2  Dữ liệu YouTube thật            ✅ code xong – chờ API key + channel ID
+Giai đoạn 3  Đề xuất game thật + admin       🟡 thiếu E2E, OG image, domain → 🚀 MVP ra mắt
 Giai đoạn 4  Thông báo + PWA                 ~1 tuần
 Giai đoạn 5  Thống kê stream                 ~1 tuần
 Giai đoạn 6  Quote & fan art                 ~2 tuần
@@ -25,14 +25,14 @@ Giai đoạn 6  Quote & fan art                 ~2 tuần
 
 **Mục tiêu:** repo có test, CI, Supabase chạy local, đăng nhập Google được.
 
-- [ ] Thêm Vitest + script `test`. Viết test cho `classify.ts` và `schedule.ts`: biên qua nửa đêm, slot đúng giờ hiện tại, Chủ nhật, nhãn tay ghi đè, vlog không cướp tiêu đề game.
-- [ ] Thêm script `typecheck` (`tsc --noEmit`)
-- [ ] GitHub Actions: `lint` + `typecheck` + `test` + `build` trên mỗi PR
-- [ ] `supabase init`, migration đầu tiên theo [03-data-model.md](03-data-model.md), `seed.sql` từ mock-data
-- [ ] `src/lib/supabase/{server,client,admin}.ts`, `proxy.ts` làm mới session
-- [ ] Đăng nhập/đăng xuất Google trong `SiteHeader`, trigger tạo `profiles`
-- [ ] Chuyển các getter đọc-only trong `data.ts` (games, schedule, played) sang Supabase, giữ nguyên chữ ký
-- [ ] Tạo project Vercel + Supabase production, cấu hình env (xem [06-setup.md](06-setup.md))
+- [x] Thêm Vitest + script `test`. Viết test cho `classify.ts` và `schedule.ts`: biên qua nửa đêm, slot đúng giờ hiện tại, Chủ nhật, nhãn tay ghi đè, vlog không cướp tiêu đề game.
+- [x] Thêm script `typecheck` (`tsc --noEmit`)
+- [x] GitHub Actions: `lint` + `typecheck` + `test` + `build` trên mỗi PR
+- [x] `supabase init`, migration đầu tiên theo [03-data-model.md](03-data-model.md), `seed.sql` từ mock-data
+- [x] `src/lib/supabase/{server,client,admin}.ts`, `proxy.ts` làm mới session
+- [x] Đăng nhập/đăng xuất Google trong `SiteHeader`, trigger tạo `profiles`
+- [x] Chuyển các getter đọc-only trong `data.ts` (games, schedule, played) sang Supabase, giữ nguyên chữ ký
+- [ ] **(cần bạn)** Tạo project Vercel + Supabase production, cấu hình env (xem [06-setup.md](06-setup.md))
 
 **Hoàn thành khi:** `npm run build` xanh trên CI. Đăng nhập Google chạy trên preview deploy. Trang `/lich` đọc từ DB.
 
@@ -40,35 +40,37 @@ Giai đoạn 6  Quote & fan art                 ~2 tuần
 
 **Mục tiêu:** trang hiển thị video thật, trạng thái live thật, lệch tối đa 2 phút.
 
-- [ ] Lấy `YOUTUBE_CHANNEL_ID` thật (xem [04-integrations.md](04-integrations.md))
-- [ ] `src/lib/youtube/`: client `fetch` + parse duration + ghi `api_usage`
-- [ ] Route `/api/cron/sync-videos`: backfill lần đầu, sau đó chạy tăng dần. Phân loại `auto_game_slug` bằng `classify.ts` + `playlist_game_map`.
-- [ ] Route `/api/cron/poll-live`: RSS + DB → `videos.list`, cập nhật `live_status`, `live_samples`. Có logic thưa/dày theo lịch.
-- [ ] Bảo vệ cron bằng `CRON_SECRET`. Lên lịch `pg_cron` + `pg_net` trong Supabase (SQL trong `supabase/migrations/`).
-- [ ] `LiveBanner` subscribe Realtime `live_status`
-- [ ] Áp dụng `"use cache"` / `cacheTag` / `revalidateTag` theo bảng trong [02-architecture.md](02-architecture.md)
-- [ ] `next/image` cho thumbnail `i.ytimg.com`
-- [ ] Test: parse duration, chuyển trạng thái live (offline → upcoming → live → offline), chặn quota khi vượt 8.000
+- [ ] **(cần bạn)** Lấy `YOUTUBE_CHANNEL_ID` thật (xem [04-integrations.md](04-integrations.md))
+- [x] `src/lib/youtube/`: client `fetch` + parse duration + ghi `api_usage`
+- [x] Route `/api/cron/sync-videos`: backfill lần đầu, sau đó chạy tăng dần. Phân loại `auto_game_slug` bằng `classify.ts` + `playlist_game_map`.
+- [x] Route `/api/cron/poll-live`: RSS + DB → `videos.list`, cập nhật `live_status`, `live_samples`. Có logic thưa/dày theo lịch.
+- [x] Bảo vệ cron bằng `CRON_SECRET`. Lên lịch `pg_cron` + `pg_net` trong Supabase (`supabase/cron.sql`, chạy tay ở production).
+- [x] `LiveBanner` subscribe Realtime `live_status`
+- [x] Áp dụng `"use cache"` / `cacheTag` / `revalidateTag` theo bảng trong [02-architecture.md](02-architecture.md)
+- [x] `next/image` cho thumbnail `i.ytimg.com`
+- [x] Test: parse duration, chuyển trạng thái live, quyết định poll dày/thưa, map dữ liệu YouTube → hàng DB
+- [ ] Test tích hợp job với Supabase thật (cần `supabase start`); hiện mới kiểm chứng SQL trên PGlite và route trên stub
 
 **Hoàn thành khi:** chạy 48 giờ trên production, `api_usage` < 3.000 đơn vị/ngày, banner tự chuyển trạng thái khi Độ lên sóng mà không cần reload.
 
 ## Giai đoạn 3 – Đề xuất game thật + Admin → 🚀 MVP
 
-- [ ] Server Actions: `createSuggestion`, `toggleVote`, `searchSuggestions` (pg_trgm), rate limit
-- [ ] `/api/steam/[appId]` có cache. Tự điền ảnh/giá/thể loại. Chặn trùng theo `steam_app_id`.
-- [ ] `SuggestionBoard` bỏ localStorage, đọc/ghi Supabase. Hiển thị "đã vote" theo user.
-- [ ] `/admin`: sửa lịch tuần, gán game cho video "Chưa phân loại", quản lý từ khóa, đổi trạng thái đề xuất (+ liên kết `linked_game_slug`), cập nhật "Đã chơi", ẩn đề xuất spam
-- [ ] Trang `/da-choi` liên kết với đề xuất đã `played`
+- [x] Server Actions: `createSuggestion`, `toggleVote`, `searchSimilar` (pg_trgm, gồm cả game đã chơi), rate limit 5/ngày bằng RLS
+- [x] `/api/steam/[appId]` có cache. Tự điền ảnh/giá/thể loại. Chặn trùng theo `steam_app_id`.
+- [x] `SuggestionBoard` bỏ localStorage, đọc/ghi Supabase. Hiển thị "đã vote" theo user.
+- [x] `/admin`: sửa lịch tuần, gán game cho video "Chưa phân loại", quản lý từ khóa, đổi trạng thái đề xuất (+ liên kết `linked_game_slug`), cập nhật "Đã chơi", ẩn đề xuất spam
+- [x] Trang `/da-choi` liên kết với đề xuất đã `played`
 - [ ] Playwright E2E: xem lịch, lọc video theo game, đăng nhập giả lập → gửi đề xuất → vote
-- [ ] Trang "Giới thiệu" ghi rõ không chính thức, cách liên hệ để gỡ nội dung
-- [ ] Metadata/OG image, `sitemap.ts`, `robots.ts`
-- [ ] Gắn domain, bật Vercel Analytics
+- [x] Trang "Giới thiệu" ghi rõ không chính thức, cách liên hệ để gỡ nội dung
+- [x] `sitemap.ts`, `robots.ts`, `metadataBase`
+- [ ] OG image
+- [ ] **(cần bạn)** Gắn domain, bật Vercel Analytics
 
 **Hoàn thành khi:** checklist trên xong, E2E xanh, mời 10–20 fan dùng thử và không có lỗi chặn.
 
 ## Giai đoạn 4 – Thông báo + PWA (P1)
 
-- [ ] Bot Telegram channel + Discord webhook, chống gửi trùng bằng `notifications_log`
+- [x] Bot Telegram channel + Discord webhook, chống gửi trùng bằng `notifications_log`
 - [ ] PWA: `app/manifest.ts`, icon riêng (không dùng logo MixiGaming), service worker
 - [ ] Dark mode (Tailwind `dark:` + `prefers-color-scheme`, có nút chuyển)
 - [ ] Web Push: đăng ký/hủy, gửi khi live

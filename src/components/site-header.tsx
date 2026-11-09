@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
 const NAV = [
   { href: "/", label: "Trang chủ" },
@@ -12,7 +13,7 @@ const NAV = [
   { href: "/de-xuat", label: "Đề xuất game" },
 ];
 
-export function SiteHeader() {
+export function SiteHeader({ account }: { account?: ReactNode }) {
   const pathname = usePathname();
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur">
@@ -34,6 +35,7 @@ export function SiteHeader() {
             );
           })}
         </nav>
+        <div className="ml-auto">{account}</div>
       </div>
     </header>
   );
