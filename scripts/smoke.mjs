@@ -99,7 +99,7 @@ try {
   for (const path of ["/", "/lich", "/video", "/vlog", "/da-choi", "/de-xuat", "/gioi-thieu", "/robots.txt", "/sitemap.xml"]) {
     await expectStatus(path, path, 200);
   }
-  await expectBody("/", "/", { has: ["SMOKE live title", "SMOKE PUBG video", "Đăng nhập Google", "không liên kết chính thức"] });
+  await expectBody("/", "/", { has: ["SMOKE live title", "SMOKE PUBG video", "Đăng nhập Google", "không liên kết chính thức", "Đếm ngược", "Chạm để mở", "Trang không nhận tiền"] });
   await expectBody("/lich", "/lich", { has: ["SMOKE slot"] });
   await expectBody("/de-xuat", "/de-xuat", { has: ["SMOKE suggestion", "để gửi đề xuất"] });
 

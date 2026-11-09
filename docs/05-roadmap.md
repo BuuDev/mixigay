@@ -99,14 +99,16 @@ Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mas
 - [x] Kiến trúc `src/features/*`, `src/shared/*`, `src/server/*` + luật ESLint phân tầng (ADR-007)
 - [x] Design system Tộc Đêm, chỉ nền tối, `npm run brand` (ADR-009)
 - [x] Nền animation: `@/shared/motion`, `motion.css`, skill `motion` (ADR-008)
+- [x] Trang chủ dạng thiệp cuộn: mỗi khối ≈ 1 màn hình, hiện dần khi cuộn; hero khung vòm + HUD (giờ, bộ đếm người xem, sao hype); video dạng rail vuốt ngang
 - [x] §10 Tàn lửa nền (trang chủ, đổi đỏ khi live, tắt khi reduced-motion/pin yếu)
 - [ ] **(cần designer)** Icon spec nhắc nhưng brand.html chưa có: `external`, `kindle`, `calendar-add`, `countdown`, `event`, `attend`, `tribe`, `wall`, `shop`, `bell`, `skin`, `timeline`, `expand`, `close`
-- [ ] §1 Màn nhóm lửa (`features/intro`): unlit → lighting → status, 1 lần/ngày/thiết bị, nút bỏ qua
-- [ ] §2 Đếm ngược vòng tròn + lịch tháng + "Thêm vào lịch" (Google Calendar link) + lịch đặc biệt do admin ghi đè (`schedule_overrides`)
-- [ ] §3 Nút nổi "Đang live" (live / idle)
+- [x] §1 Màn nhóm lửa (`features/intro`): unlit → lighting → status, 1 lần/ngày/thiết bị, nút bỏ qua, reduced-motion nhảy thẳng
+- [x] §2 Đếm ngược vòng tròn + khối ngày kiểu poster + lịch tháng (popover) + "Thêm vào lịch" (Google Calendar)
+- [ ] §2 Lịch đặc biệt do admin ghi đè (`schedule_overrides` chưa nối vào lịch tháng)
+- [x] §3 Nút nổi "Đang live" (live: equalizer + ping + số người xem; idle: đếm ngược rút gọn), ẩn khi có overlay
 - [ ] §4 "Tối nay tôi có mặt" (RSVP) — bảng `attendance`, skill `fan-content`
 - [ ] §5 Bức tường Bộ tộc (lưu bút ≤140 ký tự, duyệt trước, 3 tin/ngày)
-- [ ] §6 Hộp ủng hộ (mở nắp → link chính chủ)
+- [x] §6 Hộp ủng hộ (nhún, gợi ý chạm, bật nắp + confetti, sheet link chính chủ: donate ZyPage/Streamlabs, YouTube, shop, fanpage, Discord — xác minh từ kênh YouTube chính chủ 2026-11-09, có test chặn host lạ)
 - [ ] §7 Timeline buổi stream (từ chapters trong mô tả video)
 - [ ] §8 Gallery fan art + lightbox (gộp với GĐ6)
 - [ ] §9 Skin theo dịp: admin bật theo khoảng ngày → `data-theme` trên `<html>`

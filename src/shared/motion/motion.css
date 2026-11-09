@@ -25,6 +25,13 @@
 /* Use as `motion-safe:animate-td-pulse` so reduced-motion users get a static dot. */
 @theme {
   --animate-td-pulse: td-pulse 1.6s ease-out infinite;
+  --animate-td-bob: td-bob 3s ease-in-out infinite;
+  --animate-td-shadow: td-shadow-pulse 3s ease-in-out infinite;
+  --animate-td-hint: td-hint 2s ease-in-out infinite;
+  --animate-td-eq: td-eq 0.8s ease-in-out infinite;
+  --animate-td-ping: td-ping 1.6s ease-out infinite;
+  --animate-td-neon: td-neon 4s linear infinite;
+  --animate-td-flicker: td-flicker 1.4s ease-in-out infinite;
 }
 
 /* Live badge pulse */
@@ -87,8 +94,132 @@
   }
 }
 
+/* ---- Interaction feedback & ambient loops (use with motion-safe:) ---- */
+
+/* Idle "pick me up" bob for the gift box and similar objects. */
+@keyframes td-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+/* Ground shadow that shrinks as the object rises. */
+@keyframes td-shadow-pulse {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scaleX(0.75);
+    opacity: 0.25;
+  }
+}
+/* "Chạm để mở" hint. */
+@keyframes td-hint {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+/* Equalizer bars on the floating live button. */
+@keyframes td-eq {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+/* Expanding ring behind a live control. */
+@keyframes td-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.12, 1.35);
+    opacity: 0;
+  }
+}
+/* Neon sign: mostly steady, with two short flickers. */
+@keyframes td-neon {
+  0%,
+  18%,
+  22%,
+  25%,
+  53%,
+  57%,
+  100% {
+    opacity: 1;
+    text-shadow:
+      0 0 4px var(--td-ember-glow),
+      0 0 14px var(--td-ember),
+      0 0 32px var(--td-ember);
+  }
+  20%,
+  24%,
+  55% {
+    opacity: 0.55;
+    text-shadow: none;
+  }
+}
+/* Flame breathing in the intro ritual. */
+@keyframes td-flicker {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  33% {
+    transform: scale(1.03, 0.97);
+  }
+  66% {
+    transform: scale(0.97, 1.04);
+  }
+}
+/* One-shot particle burst: each <i> gets --angle and --dist (see <Burst/>). */
+@keyframes td-burst {
+  0% {
+    transform: rotate(var(--angle)) translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--angle)) translateY(calc(var(--dist) * -1)) scale(0.3);
+    opacity: 0;
+  }
+}
+.td-burst {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  pointer-events: none;
+}
+.td-burst i {
+  position: absolute;
+  width: 6px;
+  height: 10px;
+  margin: -5px 0 0 -3px;
+  border-radius: 2px;
+  background: var(--c, var(--td-ember-glow));
+  animation: td-burst var(--td-dur-ritual) var(--td-ease-out) forwards;
+}
+
+/* Floating UI (live dock) hides while an overlay is open — intro ritual (spec §3), sheets. */
+html[data-overlay] .td-dock {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .td-embers {
+  .td-embers,
+  .td-burst {
     display: none;
   }
   html {

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import { Suspense } from "react";
 import { AuthButton } from "@/features/auth/components/auth-button";
+import { LiveDockSlot } from "@/features/live/components/live-dock-slot";
 import { SiteFooter } from "@/shared/layout/site-footer";
 import { SiteHeader } from "@/shared/layout/site-header";
 import { SITE_URL } from "@/shared/lib/links";
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           />
           <main className="relative z-10 mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
           <SiteFooter />
+          <LiveDockSlot />
         </MotionProvider>
       </body>
     </html>
