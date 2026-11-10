@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="Cú Tộc — sleep">
+<ellipse cx="80" cy="150" rx="46" ry="6" fill="#4E3F62" opacity=".6"/>
+<path d="M36 70c0-26 20-42 44-42s44 16 44 42v44c0 18-20 30-44 30s-44-12-44-30V70Z" fill="#3B2F4A"/>
+<path d="M44 36 36 20l16 10M116 36l8-16-16 10" fill="#3B2F4A"/>
+<path d="M32 66h96" stroke="#FF6A1F" stroke-width="6"/><path d="M104 60l10-14 4 16" fill="#FFB15C"/>
+<ellipse cx="62" cy="78" rx="22" ry="24" fill="#F3E9D7"/><ellipse cx="98" cy="78" rx="22" ry="24" fill="#F3E9D7"/>
+<path d="M58 108c8 6 36 6 44 0v20c0 6-10 10-22 10s-22-4-22-10v-20Z" fill="#F3E9D7" opacity=".9"/>
+<path d="M62 118h36M62 126h36" stroke="#4E3F62" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+<path d="M51 78c4-5 18-5 22 0M87 78c4-5 18-5 22 0" stroke="#121018" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M80 86l-6 8h12l-6-8Z" fill="#FF6A1F"/>
+<path d="M66 144l-6 8M74 144v8M86 144v8M94 144l6 8" stroke="#FF6A1F" stroke-width="4" stroke-linecap="round"/>
+<text x="118" y="46" font-family="Be Vietnam Pro,system-ui,sans-serif" font-weight="900" font-size="22" fill="#8E86A0">z</text><text x="132" y="34" font-family="Be Vietnam Pro,system-ui,sans-serif" font-weight="900" font-size="16" fill="#8E86A0">z</text>
+</svg>

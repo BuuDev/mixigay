@@ -1,0 +1,302 @@
+/*
+ * Motion foundation. Rules (docs/design/COMPONENTS.md):
+ *  - one big moment only: the intro ritual; everything else answers a user action;
+ *  - ambient loops (embers, live pulse) are CSS, so they cost no JS;
+ *  - prefers-reduced-motion turns ambient motion off entirely.
+ * Durations/easings mirror src/shared/motion/tokens.ts (used by Motion components).
+ */
+:root {
+  --td-dur-instant: 120ms;
+  --td-dur-fast: 180ms;
+  --td-dur-base: 260ms;
+  --td-dur-slow: 420ms;
+  --td-dur-ritual: 800ms;
+  --td-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --td-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --td-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@theme inline {
+  --ease-out: var(--td-ease-out);
+  --ease-in-out: var(--td-ease-in-out);
+  --ease-spring: var(--td-ease-spring);
+}
+
+/* Use as `motion-safe:animate-td-pulse` so reduced-motion users get a static dot. */
+@theme {
+  --animate-td-pulse: td-pulse 1.6s ease-out infinite;
+  --animate-td-bob: td-bob 3s ease-in-out infinite;
+  --animate-td-shadow: td-shadow-pulse 3s ease-in-out infinite;
+  --animate-td-hint: td-hint 2s ease-in-out infinite;
+  --animate-td-eq: td-eq 0.8s ease-in-out infinite;
+  --animate-td-ping: td-ping 1.6s ease-out infinite;
+  --animate-td-neon: td-neon 4s linear infinite;
+  --animate-td-flicker: td-flicker 1.4s ease-in-out infinite;
+  --animate-td-kenburns: td-kenburns 18s ease-in-out infinite alternate;
+  --animate-td-sheen: td-sheen 5s ease-in-out infinite;
+}
+
+/* Live badge pulse */
+@keyframes td-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--td-live) 60%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+/* Background embers: <Embers/> renders 12–18 <i> with --x, --d, --delay, --sway. */
+.td-embers {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+.td-embers i {
+  position: absolute;
+  bottom: -10px;
+  left: var(--x, 50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--td-ember-glow);
+  opacity: 0;
+  filter: blur(0.3px);
+  animation: td-rise var(--d, 9s) linear var(--delay, 0s) infinite;
+}
+.td-embers i:nth-child(3n) {
+  width: 3px;
+  height: 3px;
+}
+.td-embers i:nth-child(4n) {
+  width: 5px;
+  height: 5px;
+  background: var(--td-ember);
+}
+.td-embers[data-live="true"] i {
+  background: var(--td-live);
+}
+@keyframes td-rise {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(var(--sway, 20px), -50vh) scale(0.9);
+  }
+  100% {
+    transform: translate(calc(var(--sway, 20px) * -1), -105vh) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* ---- Interaction feedback & ambient loops (use with motion-safe:) ---- */
+
+/* Idle "pick me up" bob for the gift box and similar objects. */
+@keyframes td-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+/* Ground shadow that shrinks as the object rises. */
+@keyframes td-shadow-pulse {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scaleX(0.75);
+    opacity: 0.25;
+  }
+}
+/* "Chạm để mở" hint. */
+@keyframes td-hint {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+/* Equalizer bars on the floating live button. */
+@keyframes td-eq {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+/* Expanding ring behind a live control. */
+@keyframes td-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.12, 1.35);
+    opacity: 0;
+  }
+}
+/* Neon sign: mostly steady, with two short flickers. */
+@keyframes td-neon {
+  0%,
+  18%,
+  22%,
+  25%,
+  53%,
+  57%,
+  100% {
+    opacity: 1;
+    text-shadow:
+      0 0 4px var(--td-ember-glow),
+      0 0 14px var(--td-ember),
+      0 0 32px var(--td-ember);
+  }
+  20%,
+  24%,
+  55% {
+    opacity: 0.55;
+    text-shadow: none;
+  }
+}
+/* Flame breathing in the intro ritual. */
+@keyframes td-flicker {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  33% {
+    transform: scale(1.03, 0.97);
+  }
+  66% {
+    transform: scale(0.97, 1.04);
+  }
+}
+/* Invitation portrait: a slow push-in, like the photo slideshows of e-invitations. */
+@keyframes td-kenburns {
+  from {
+    transform: scale(1.02) translate(0, 0);
+  }
+  to {
+    transform: scale(1.12) translate(-1.5%, -2%);
+  }
+}
+/* A band of light sweeping across a frame now and then. */
+@keyframes td-sheen {
+  0%,
+  70% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-18deg);
+  }
+}
+/* One-shot particle burst: each <i> gets --angle and --dist (see <Burst/>). */
+@keyframes td-burst {
+  0% {
+    transform: rotate(var(--angle)) translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--angle)) translateY(calc(var(--dist) * -1)) scale(0.3);
+    opacity: 0;
+  }
+}
+.td-burst {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  pointer-events: none;
+}
+.td-burst i {
+  position: absolute;
+  width: 6px;
+  height: 10px;
+  margin: -5px 0 0 -3px;
+  border-radius: 2px;
+  background: var(--c, var(--td-ember-glow));
+  animation: td-burst var(--td-dur-ritual) var(--td-ease-out) forwards;
+}
+
+/* Floating UI (live dock) hides while an overlay is open — intro ritual (spec §3), sheets. */
+html[data-overlay] .td-dock,
+html[data-overlay] .td-bottom-nav {
+  display: none;
+}
+/* "Thêm" menu of the phone tab bar rises from the bar (native popover). */
+.td-nav-more {
+  position: fixed;
+  opacity: 0;
+  translate: 0 8px;
+  transition:
+    opacity var(--td-dur-fast) var(--td-ease-out),
+    translate var(--td-dur-fast) var(--td-ease-out),
+    display var(--td-dur-fast) allow-discrete,
+    overlay var(--td-dur-fast) allow-discrete;
+}
+.td-nav-more:popover-open {
+  opacity: 1;
+  translate: 0 0;
+}
+@starting-style {
+  .td-nav-more:popover-open {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+/* React <ViewTransition> classes (album polaroid → lightbox). Durations mirror tokens. */
+::view-transition-group(.td-morph) {
+  animation-duration: var(--td-dur-slow);
+  animation-timing-function: var(--td-ease-out);
+}
+::view-transition-image-pair(.td-morph) {
+  isolation: isolate;
+}
+::view-transition-new(.td-fade-in) {
+  animation: var(--td-dur-base) var(--td-ease-out) both td-vt-fade-in;
+}
+::view-transition-old(.td-fade-out) {
+  animation: var(--td-dur-fast) var(--td-ease-in-out) both td-vt-fade-out;
+}
+@keyframes td-vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes td-vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+  .td-embers,
+  .td-burst {
+    display: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

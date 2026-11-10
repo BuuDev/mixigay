@@ -1,0 +1,87 @@
+/*
+ * "Góc Bộ Tộc" design tokens — source: docs/design/brand.html.
+ * Layer 1: brand tokens (--td-*). Seasonal skins (themes.generated.css) override these.
+ * Layer 2: Tailwind theme (@theme inline) exposes them under semantic names, so
+ *          components write `bg-surface text-muted border-border`, never hex values.
+ * Dark only, by design (brand: color-scheme dark).
+ */
+:root {
+  --td-ember: #ff6a1f;
+  --td-ember-glow: #ffb15c;
+  --td-night: #121018;
+  --td-panel: #1c1926;
+  --td-panel-raised: #262233;
+  --td-line: #332e42;
+  --td-cream: #f3e9d7;
+  /* ≥ 4.5:1 on every surface up to --td-line (#8e86a0 was 4.4:1 on raised panels). */
+  --td-muted: #a39cb3;
+  --td-live: #ff3a4a;
+  /* Live as a fill under white text: --td-live is only 3.5:1 with white (WCAG AA needs 4.5). */
+  --td-live-fill: #d8202f;
+  /* Live as text on dark/tinted surfaces (5.3:1 on a live/15 tint). */
+  --td-live-text: #ff6b76;
+  --td-cleared: #35c8a0;
+  --td-wood: #6b4a2e;
+  --td-steam: #66c0f4;
+  --td-viewer: #f472b6;
+  --td-misc: #a78bfa;
+  --td-radius-sm: 6px;
+  --td-radius-md: 10px;
+  --td-radius-lg: 16px;
+  --td-radius-pill: 999px;
+  --td-shadow-card: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 8px 24px rgb(0 0 0 / 0.35);
+  --td-shadow-glow: 0 0 0 3px color-mix(in srgb, var(--td-ember) 35%, transparent);
+  color-scheme: dark;
+}
+
+@theme inline {
+  /* Surfaces & text */
+  --color-background: var(--td-night);
+  --color-surface: var(--td-panel);
+  --color-surface-raised: var(--td-panel-raised);
+  --color-border: var(--td-line);
+  --color-foreground: var(--td-cream);
+  --color-muted: var(--td-muted);
+  /* Roles — accent for primary actions, live only for broadcast state (brand rules) */
+  --color-accent: var(--td-ember);
+  --color-accent-glow: var(--td-ember-glow);
+  --color-live: var(--td-live);
+  --color-live-fill: var(--td-live-fill);
+  --color-live-text: var(--td-live-text);
+  --color-cleared: var(--td-cleared);
+  --color-wood: var(--td-wood);
+  /* Game sources */
+  --color-steam: var(--td-steam);
+  --color-viewer: var(--td-viewer);
+  --color-misc: var(--td-misc);
+
+  --radius-sm: var(--td-radius-sm);
+  --radius-md: var(--td-radius-md);
+  --radius-lg: var(--td-radius-lg);
+  --radius-pill: var(--td-radius-pill);
+  --shadow-card: var(--td-shadow-card);
+  --shadow-glow: var(--td-shadow-glow);
+  --font-sans: var(--font-be-vietnam), system-ui, sans-serif;
+  --font-script: var(--font-dancing), cursive;
+}
+
+@layer base {
+  body {
+    background: var(--td-night);
+    color: var(--td-cream);
+  }
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--td-shadow-glow);
+    border-radius: var(--td-radius-sm);
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--td-ember) 40%, transparent);
+  }
+}
+
+/* Side padding that also clears the notch / rounded corners in landscape (viewport-fit=cover). */
+@utility px-safe {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}

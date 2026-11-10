@@ -1,0 +1,31 @@
+# Local Supabase (`supabase start`) and, via `supabase config push`, the linked cloud
+# project's Auth settings. Unlisted settings use the CLI defaults.
+project_id = "mixi-fan-hub"
+
+[db]
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/**"]
+# Private accounts (ADR-013): nobody signs up through the Auth API. Users are created
+# only by the app's server (service role) with a synthetic address; fans and anh Độ
+# give no email, phone or Google account.
+enable_signup = false
+enable_anonymous_sign_ins = false
+# Passphrases: Supabase's own minimum; the app enforces stronger rules (src/features/auth/lib/handle.ts).
+minimum_password_length = 8
+
+# Email/password is the internal mechanism behind "tên Bộ Tộc + mã khóa" (sign-in only;
+# sign-up stays off above). Addresses are synthetic (*.invalid), so no confirmations.
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+# Every sign-in reaches Supabase from the app server, so Supabase sees the server's IP,
+# not the user's: raise its per-IP limit and let the app limit per handle + network.
+[auth.rate_limit]
+sign_in_sign_ups = 300

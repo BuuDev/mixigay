@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Góc Fan Độ (mixi-fan-hub)
 
-## Getting Started
+Web fan cho Độ Mixi: lịch stream, link live, video theo game, vlog, danh sách game đã chơi và fan đề xuất game.
+**Trang do fan làm, không liên kết chính thức.** Mọi link ủng hộ trỏ về kênh chính chủ; trang không nhận tiền.
 
-First, run the development server:
+Stack: Next.js 16 (App Router, TS, Cache Components) + Tailwind v4, Supabase (Postgres, RLS, Realtime, Google auth, pg_cron), deploy trên Vercel.
+
+## Chạy
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Hai chế độ chạy
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Mock (mặc định, không cần cấu hình):** không có `NEXT_PUBLIC_SUPABASE_URL` thì mọi trang đọc `src/features/*/mock.ts` (videoId giả), đề xuất chỉ lưu trên trình duyệt, đăng nhập và admin tắt. CI build theo chế độ này.
+- **Supabase:** điền `.env.local` theo [docs/06-setup.md](docs/06-setup.md). Khi đó có dữ liệu thật, đăng nhập Google, upvote, trang `/admin`, và job cron lấy dữ liệu YouTube.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Trang | Đường dẫn | Ghi chú |
+|---|---|---|
+| Trang chủ | `/` | Banner live / sắp live / đếm ngược (realtime), video mới |
+| Lịch stream | `/lich` | Lịch tuần theo giờ VN + giờ địa phương người xem |
+| Video theo game | `/video` | Lọc theo game, sắp theo lượt xem / mới nhất, mục "Chưa phân loại" |
+| Vlog | `/vlog` | Một "game" đặc biệt (`isVlog`) trong cùng hệ phân loại |
+| Đã chơi | `/da-choi` | Đang chơi / phá đảo / drop, đánh dấu game do fan đề xuất |
+| Đề xuất game | `/de-xuat` | Đăng nhập Google, upvote, gợi ý trùng, tự lấy thông tin từ link Steam |
+| Giới thiệu | `/gioi-thieu` | Ghi rõ không chính thức, liên hệ gỡ nội dung |
+| Quản trị | `/admin` | Lịch, gán game cho video, từ khóa, playlist, đề xuất, "Đã chơi", quota |
+| Job | `POST /api/cron/poll-live`, `POST /api/cron/sync-videos` | Gọi bởi Supabase `pg_cron` (`supabase/cron.sql`), cần `CRON_SECRET` |
 
-## Learn More
+```bash
+npm test          # vitest
+npm run typecheck # next typegen && tsc
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Tài liệu & lộ trình
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Toàn bộ kế hoạch nằm trong [`docs/`](docs/README.md):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [Sản phẩm & ưu tiên tính năng](docs/01-product.md)
+- [Kiến trúc, poll YouTube, ngân sách quota, cache](docs/02-architecture.md)
+- [Schema Supabase + RLS](docs/03-data-model.md)
+- [Tích hợp: YouTube, WebSub, Steam, Google OAuth, Telegram/Discord/Web Push](docs/04-integrations.md)
+- [Lộ trình theo giai đoạn (checklist)](docs/05-roadmap.md)
+- [Cài đặt môi trường & biến môi trường](docs/06-setup.md) (mẫu: `.env.example`)
+- [Quy ước code](docs/07-conventions.md)
+- [Nhật ký quyết định (ADR)](docs/08-decisions.md)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Trạng thái: code GĐ1–3 đã xong và Telegram/Discord của GĐ4 đã có. Việc còn lại xem [lộ trình](docs/05-roadmap.md). Các mục cần bạn làm tay được đánh dấu **(cần bạn)**.

@@ -1,0 +1,10 @@
+import type { Suggestion } from "./types";
+
+export const suggestions: Suggestion[] = [
+  { id: "g1", name: "Mixi Stream Escape 4: Đường Tới Thượng Hải", source: "viewer-made", url: "https://itch.io/", reason: "Phần 3 độ khó thiếu nhi mà giải đố gần hai tiếng, bản 4 thêm màn né kèo bùng off fan của bạn thân Pewpew", author: "dev_yen_lang", createdAt: "2026-11-06T12:00:00Z", upvotes: 1642, status: "pending" },
+  { id: "g2", name: "Liar's Bar", source: "steam", url: "https://store.steampowered.com/app/3097560/", reason: "Đấu trí lật bài giữa đạo diễn Độ Mixi và diễn viên hạng S Pewpew xem ai thao túng tâm lý đỉnh hơn", author: "chim_ac_la_86", createdAt: "2026-11-04T10:00:00Z", upvotes: 1380, status: "played", linkedGameSlug: "party-games", steam: { appId: 3097560, price: "102.000₫", genres: ["Nhiều người chơi", "Chiến thuật"] } },
+  { id: "g3", name: "R.E.P.O.", source: "steam", url: "https://store.steampowered.com/app/3241660/", reason: "Khiêng đồ cổ trả nợ cùng bộ ba nghịch tử Bô, Ben, Nhism — đảm bảo bể bình từ phòng đầu tiên", author: "tocdo_mixi", createdAt: "2026-11-04T09:00:00Z", upvotes: 1120, status: "pending", steam: { appId: 3241660, price: "120.000₫", genres: ["Co-op", "Kinh dị"] } },
+  { id: "g4", name: "Tiệm Nhuộm Tóc Yên Lãng Simulator", source: "viewer-made", url: "https://itch.io/", reason: "Lấy cảm hứng từ trải nghiệm nhuộm tóc kinh hoàng hôm 10/10 và tiệm túi mù NeNe Shop", author: "tho_cat_toc_rf", createdAt: "2026-11-02T08:00:00Z", upvotes: 894, status: "pending" },
+  { id: "g5", name: "Supermarket Together", source: "steam", url: "https://store.steampowered.com/app/2709570/", reason: "Để Ông chủ Moi mở thêm chuỗi siêu thị cạnh tranh trực tiếp với tiệm mì Ramen và shop túi mù", author: "khach_ruot_nene", createdAt: "2026-10-29T08:00:00Z", upvotes: 645, status: "played", linkedGameSlug: "business-sim", steam: { appId: 2709570, price: "Miễn phí", genres: ["Giả lập", "Co-op"] } },
+  { id: "g6", name: "Genshin Impact", source: "other", reason: "Đổi gió gacha thay vì xé túi mù xem nhân phẩm cỡ nào", author: "anonymous_88", createdAt: "2026-10-20T08:00:00Z", upvotes: 37, status: "rejected" },
+];
