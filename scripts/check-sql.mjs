@@ -796,6 +796,51 @@ await allowed("song cover from SoundCloud CDN accepted", () => coverSong("https:
 await denied("song cover from another host rejected", () => coverSong("https://evil.example/pixel.gif"));
 await denied("song cover look-alike host rejected", () => coverSong("https://i1.sndcdn.com.evil.example/x.jpg"));
 
+console.log("Game art (20261110190000)");
+const artFan = await serverCreateUser("artfan1", "Art Fan");
+await q(`update public.profiles set created_at = now() - interval '3 days' where id = $1`, [artFan.id]);
+const artPath = "suggestions/0b6f3c1e-2d4a-4e8b-9c7d-1a2b3c4d5e6f.webp";
+await denied("fan sets thumbnail_path on insert", () =>
+  as(artFan.id, () =>
+    q(`insert into public.suggestions (name, source, reason, thumbnail_path) values ('Game Có Ảnh', 'viewer-made', 'abcdef', $1)`, [artPath]),
+  ),
+);
+const [artSug] = await as(artFan.id, () =>
+  q(`insert into public.suggestions (name, source, reason) values ('Game Có Ảnh', 'viewer-made', 'abcdef') returning id`),
+);
+await denied("author sets thumbnail_path on own pending suggestion", () =>
+  as(artFan.id, () => q(`update public.suggestions set thumbnail_path = $2 where id = $1 returning id`, [artSug.id, artPath])),
+);
+await allowed("server (service role) sets a well-formed thumbnail_path", () =>
+  q(`update public.suggestions set thumbnail_path = $2 where id = $1`, [artSug.id, artPath]),
+);
+await q(`insert into public.suggestion_art_reviews (suggestion_id, review) values ($1, '{"verdict":"review","sha256":"x"}')`, [artSug.id]);
+eq("anon cannot read art reviews (hashes)", (await as(null, () => q(`select * from public.suggestion_art_reviews`).catch(() => []))).length, 0);
+eq("author cannot read own art review", (await as(artFan.id, () => q(`select * from public.suggestion_art_reviews`).catch(() => []))).length, 0);
+eq("admin reads art reviews", (await as(adm.id, () => q(`select * from public.suggestion_art_reviews where suggestion_id = $1`, [artSug.id]))).length, 1);
+await denied("fan writes an art review", () =>
+  as(artFan.id, () => q(`insert into public.suggestion_art_reviews (suggestion_id, review) values ($1, '{}')`, [artSug.id])),
+);
+for (const badPath of [
+  "suggestions/../secret.webp",
+  "other/0b6f3c1e-2d4a-4e8b-9c7d-1a2b3c4d5e6f.webp",
+  "suggestions/0b6f3c1e-2d4a-4e8b-9c7d-1a2b3c4d5e6f.png",
+]) {
+  await denied(`bad thumbnail_path rejected: ${badPath}`, () => q(`update public.suggestions set thumbnail_path = $2 where id = $1`, [artSug.id, badPath]));
+}
+const sha = "a".repeat(64);
+await denied("anon reads banned_image_hashes", () => as(null, () => q(`select * from public.banned_image_hashes`)));
+await denied("fan inserts into banned_image_hashes", () => as(fan.id, () => q(`insert into public.banned_image_hashes (sha256) values ($1)`, [sha])));
+await allowed("admin bans an image hash", () => as(adm.id, () => q(`insert into public.banned_image_hashes (sha256, reason) values ($1, 'test')`, [sha])));
+eq("ban records the admin", (await q(`select created_by from public.banned_image_hashes where sha256 = $1`, [sha]))[0]?.created_by, adm.id);
+eq("fan cannot read banned_image_hashes", await as(fan.id, () => q(`select sha256 from public.banned_image_hashes`)), []);
+eq("admin reads banned_image_hashes", (await as(adm.id, () => q(`select sha256 from public.banned_image_hashes`))).length, 1);
+await denied("fan deletes a banned hash", () => as(fan.id, () => q(`delete from public.banned_image_hashes where sha256 = $1 returning sha256`, [sha])));
+await denied("malformed hash rejected", () => as(adm.id, () => q(`insert into public.banned_image_hashes (sha256) values ('not-a-hash')`)));
+await allowed("admin lifts a ban", async () => {
+  const rows = await as(adm.id, () => q(`delete from public.banned_image_hashes where sha256 = $1 returning sha256`, [sha]));
+  if (rows.length !== 1) throw new Error("not deleted");
+});
 
 console.log(failures ? `\nDB_CHECK=fail (${failures})` : "\nDB_CHECK=pass");
 process.exit(failures ? 1 : 0);

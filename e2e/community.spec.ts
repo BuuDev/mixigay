@@ -1,5 +1,6 @@
 import type { Browser, BrowserContextOptions, Page } from "@playwright/test";
 import { expect, hasSupabase, signUpThroughDialog, test } from "./fixtures";
+import sharp from "sharp";
 import { createAdminClient, E2E_PREFIX, uniqueTag, userIdForHandle } from "./supabase";
 
 // Real accounts against the DEV Supabase project (needs a build made with the dev env).
@@ -136,10 +137,100 @@ test("fan suggests a game → pending for the author only → approved → anoth
   for (const p of [anon, admin, fan2]) await p.context().close();
 });
 
+// Cleanup state for the game-art test (Storage objects and banned hashes outlive accounts).
+const artCleanup = { paths: [] as string[], hashes: [] as string[] };
+
+test("fan uploads a game thumbnail → sanitised into Storage → shown after approval → removed and banned", async ({ page, browser, supabaseAdmin }) => {
+  expect(adminState, "admin session from the invite test").toBeDefined();
+  const gameName = `E2E Art ${tag}`;
+  // A unique PNG per run (random noise) so the ban list of earlier runs never matches.
+  const raw = Buffer.from(Array.from({ length: 64 * 36 * 3 }, () => Math.floor(Math.random() * 256)));
+  const png = await sharp(raw, { raw: { width: 64, height: 36, channels: 3 } })
+    .png()
+    .toBuffer();
+
+  // 1. Submit a non-Steam suggestion with a thumbnail.
+  await page.goto("/de-xuat");
+  await signUpThroughDialog(page, `${E2E_PREFIX}artfan${tag}`, `E2E Art Fan ${tag}`);
+  const form = page.locator("form", { has: page.getByRole("heading", { name: "Đề xuất game cho anh Độ" }) });
+  await form.getByLabel("Nguồn").selectOption({ label: "Khác" });
+  await form.getByLabel("Tên game").fill(gameName);
+  await form.getByLabel("Lý do ngắn").fill(`Thử ảnh thumbnail tự động ${tag}, xin bỏ qua.`);
+  await form.locator("input[name=thumbnail]").setInputFiles({ name: "thumb.png", mimeType: "image/png", buffer: png });
+  await expect(form.getByAltText("Xem trước ảnh thumbnail")).toBeVisible();
+  await form.getByRole("button", { name: "Gửi đề xuất" }).click();
+  await expect(page.locator("div", { has: page.getByRole("heading", { name: "Đề xuất của bạn đang chờ duyệt" }) }).last()).toContainText(gameName, {
+    timeout: 20_000,
+  });
+
+  // 2. Stored as a sanitised WebP; the verdict sits in the admin-only review table.
+  const { data: row } = await supabaseAdmin.from("suggestions").select("id, thumbnail_path, approved").eq("name", gameName).single();
+  expect(row?.approved).toBe(false);
+  expect(row?.thumbnail_path).toMatch(/^suggestions\/[0-9a-f-]{36}\.webp$/);
+  artCleanup.paths.push(row!.thumbnail_path!);
+  const { data: file } = await supabaseAdmin.storage.from("game-art").download(row!.thumbnail_path!);
+  const meta = await sharp(Buffer.from(await file!.arrayBuffer())).metadata();
+  expect({ format: meta.format, width: meta.width, height: meta.height, exif: meta.exif }).toEqual({
+    format: "webp",
+    width: 640,
+    height: 360,
+    exif: undefined,
+  });
+  const { data: review } = await supabaseAdmin.from("suggestion_art_reviews").select("review").eq("suggestion_id", row!.id).single();
+  const r = review?.review as { verdict: string; sha256: string; originalSha256: string };
+  expect(["review", "ok"]).toContain(r.verdict);
+  artCleanup.hashes.push(r.sha256, r.originalSha256);
+
+  // 3. Admin approves; the public card shows our own Storage image.
+  const admin = await newPage(browser, { storageState: adminState });
+  await admin.goto("/admin/de-xuat");
+  const item = admin.locator("li", { hasText: gameName });
+  await expect(item.locator(`img[src*="${row!.thumbnail_path}"]`)).toBeVisible();
+  await item.getByRole("checkbox", { name: "duyệt" }).check();
+  await item.getByRole("button", { name: "Lưu" }).click();
+  await expect
+    .poll(async () => (await supabaseAdmin.from("suggestions").select("approved").eq("id", row!.id).single()).data?.approved, { timeout: 15_000 })
+    .toBe(true);
+  const anon = await newPage(browser);
+  await expect(async () => {
+    await anon.goto("/de-xuat");
+    const img = anon
+      .locator("div", { has: anon.getByText(gameName, { exact: true }) })
+      .locator(`img[src*="${encodeURIComponent(row!.thumbnail_path!)}"]`)
+      .first();
+    await expect(img).toBeVisible({ timeout: 5000 });
+    expect(await img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+  }).toPass({ timeout: 30_000 });
+
+  // 4. "Gỡ ảnh + chặn vĩnh viễn": the image is gone and both hashes are banned.
+  await admin.reload();
+  await admin.locator("li", { hasText: gameName }).getByRole("button", { name: "Gỡ ảnh + chặn vĩnh viễn" }).click();
+  await expect
+    .poll(async () => (await supabaseAdmin.from("suggestions").select("thumbnail_path").eq("id", row!.id).single()).data?.thumbnail_path, { timeout: 15_000 })
+    .toBeNull();
+  const { count } = await supabaseAdmin.from("banned_image_hashes").select("sha256", { count: "exact", head: true }).in("sha256", artCleanup.hashes);
+  expect(count).toBe(new Set(artCleanup.hashes).size);
+
+  // 5. Uploading the same picture again is refused with the generic message, and nothing is saved.
+  const again = `${gameName} lần 2`;
+  await page.goto("/de-xuat");
+  await form.getByLabel("Nguồn").selectOption({ label: "Khác" });
+  await form.getByLabel("Tên game").fill(again);
+  await form.getByLabel("Lý do ngắn").fill(`Thử tải lại ảnh đã bị chặn ${tag}.`);
+  await form.locator("input[name=thumbnail]").setInputFiles({ name: "thumb.png", mimeType: "image/png", buffer: png });
+  await form.getByRole("button", { name: "Gửi đề xuất" }).click();
+  await expect(page.getByText("Ảnh này không phù hợp với Góc Bộ Tộc, chọn ảnh khác nhé.")).toBeVisible({ timeout: 20_000 });
+  expect((await supabaseAdmin.from("suggestions").select("id").eq("name", again)).data).toEqual([]);
+
+  for (const p of [anon, admin]) await p.context().close();
+});
+
 // Belt and braces when a single spec is run without the global teardown.
 test.afterAll(async () => {
   if (!hasSupabase) return;
   const admin = createAdminClient();
+  if (artCleanup.paths.length) await admin.storage.from("game-art").remove(artCleanup.paths);
+  if (artCleanup.hashes.length) await admin.from("banned_image_hashes").delete().in("sha256", artCleanup.hashes);
   const { data } = await admin.from("account_logins").select("user_id").like("handle_key", `%${tag}`);
   for (const l of data ?? []) await admin.auth.admin.deleteUser(l.user_id as string);
   await admin.from("invites").delete().like("handle_key", `%${tag}`);

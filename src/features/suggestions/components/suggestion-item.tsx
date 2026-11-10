@@ -24,11 +24,12 @@ export function SuggestionItem({ suggestion: s, voted, onVote, gameCover }: Prop
     <div className="flex gap-4 rounded-lg border border-border bg-surface p-4 shadow-card">
       <VoteButton name={s.name} count={s.upvotes} voted={voted} onVote={onVote} />
       {/* Shown on phones too (it used to be hidden below sm). */}
+      {/* Our own Storage copy first (reachable where Steam is blocked), then Steam, then the stream thumbnail. */}
       <GameThumb
-        sources={[s.steam?.headerImage, gameCover?.thumbnailUrl]}
+        sources={[s.thumbnailUrl, s.steam?.headerImage, gameCover?.thumbnailUrl]}
         name={s.name}
         sizes="(min-width: 640px) 9rem, 5rem"
-        className={cn("w-20 sm:w-36", s.steam?.headerImage ? "aspect-[460/215]" : "aspect-video")}
+        className={cn("w-20 sm:w-36", !s.thumbnailUrl && s.steam?.headerImage ? "aspect-[460/215]" : "aspect-video")}
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">

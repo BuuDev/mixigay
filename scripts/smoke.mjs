@@ -110,6 +110,7 @@ const tables = {
       linked_game_slug: "pubg",
       steam_app_id: null,
       steam_data: null,
+      thumbnail_path: null,
       upvotes: 7,
       hidden: false,
       created_at: now,

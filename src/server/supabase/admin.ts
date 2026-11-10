@@ -3,8 +3,9 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { SUPABASE_URL } from "@/shared/lib/env";
 
 /**
- * Service-role client: bypasses RLS. Only for src/app/api/cron/** and
- * src/app/api/webhooks/**, which authenticate the caller themselves.
+ * Service-role client: bypasses RLS. For src/app/api/cron/** and src/app/api/webhooks/**
+ * (they authenticate the caller themselves) and the few documented exceptions in
+ * docs/07-conventions.md ("Service role"), e.g. writing sanitised game art to Storage.
  */
 export function adminClient(): SupabaseClient {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;

@@ -47,6 +47,17 @@ Viết client mỏng tự làm trong `src/server/youtube/` bằng `fetch` (khôn
 - Trường dùng: `data.name`, `data.header_image`, `data.is_free`, `data.price_overview.final_formatted`, `data.genres[].description`.
 - Gọi qua route `/api/steam/[appId]` có `"use cache"` + `cacheLife('weeks')`. Client không gọi thẳng Steam (CORS + để cache chung).
 - Ảnh `header_image` hiển thị bằng `next/image`, thêm `shared.akamai.steamstatic.com` / `cdn.akamai.steamstatic.com` vào `images.remotePatterns`.
+- Ảnh header được tải về Supabase Storage (bucket `game-art`) một lần, sau khi fan gửi và khi admin duyệt (hoặc nút "Lưu ảnh Steam về" ở `/admin/de-xuat`), vì một số nhà mạng ở VN chặn DNS mọi host của Steam. Máy dev ở VN không tải được thì bỏ qua, production (Vercel) tải được. Xem `docs/03-data-model.md` "Ảnh game".
+
+## Google Cloud Vision (tùy chọn)
+
+Quét tự động thumbnail game fan tải lên (`src/features/suggestions/server/game-art.ts`, `checkImage`): `SAFE_SEARCH_DETECTION` (18+, bạo lực, khiêu gợi: LIKELY/VERY_LIKELY → chặn, POSSIBLE → admin xem kỹ) và `TEXT_DETECTION` (chữ trong ảnh chạy qua bộ lọc `screenText`, ví dụ quảng cáo cờ bạc).
+
+- Bật **Cloud Vision API** trong cùng Google Cloud project với YouTube Data API. Project phải bật **billing** thì Vision mới chạy, dù dùng trong hạn mức miễn phí: 1.000 đơn vị/tháng đầu tiên cho mỗi tính năng (SafeSearch và Text Detection tính riêng, mỗi ảnh tốn 1 đơn vị mỗi tính năng).
+- Tạo API key, giới hạn key chỉ cho Cloud Vision API, rồi đặt env `GOOGLE_VISION_API_KEY` (server-only, gửi qua header `X-Goog-Api-Key`).
+- Gọi một lần mỗi ảnh tải lên, sau khi đề xuất đã qua giới hạn gửi của DB (nên spam không đốt được hạn mức), timeout 5 s, gửi ảnh WebP 640×360 đã làm sạch (không có EXIF/GPS).
+- Không có key, hoặc Vision lỗi/hết hạn mức: ảnh được đánh dấu "cần xem" (không bao giờ "ổn"). Mọi đề xuất vẫn chờ admin duyệt, nên không có key thì chỉ mất lớp quét tự động.
+- Ảnh Steam lưu về không qua Vision.
 
 ## Tài khoản (Supabase Auth, không OAuth)
 

@@ -25,6 +25,8 @@ export interface Suggestion {
   status: SuggestionStatus;
   /** Filled from the Steam Store API when source = "steam". */
   steam?: SteamInfo;
+  /** Game art served from our own Storage (mirrored Steam header or a fan upload); tried first. */
+  thumbnailUrl?: string;
   /** Game slug in "Đã chơi" once status = "played". */
   linkedGameSlug?: string;
 }

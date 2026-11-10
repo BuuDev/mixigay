@@ -1,4 +1,6 @@
+import { SUPABASE_URL } from "@/shared/lib/env";
 import type { Suggestion } from "../types";
+import { publicArtUrl } from "./image-policy";
 
 export interface SuggestionRow {
   id: string;
@@ -11,6 +13,8 @@ export interface SuggestionRow {
   linked_game_slug: string | null;
   steam_app_id: number | null;
   steam_data: { price: string; genres: string[]; headerImage?: string } | null;
+  /** Optional so older fixtures stay valid; selected by SUGGESTION_SELECT. */
+  thumbnail_path?: string | null;
   upvotes: number;
   hidden: boolean;
   created_at: string;
@@ -18,7 +22,7 @@ export interface SuggestionRow {
 }
 
 export const SUGGESTION_SELECT =
-  "id,author_id,name,source,url,reason,status,linked_game_slug,steam_app_id,steam_data,upvotes,hidden,created_at,profiles!author_id(display_name,avatar_url,verified)";
+  "id,author_id,name,source,url,reason,status,linked_game_slug,steam_app_id,steam_data,thumbnail_path,upvotes,hidden,created_at,profiles!author_id(display_name,avatar_url,verified)";
 
 /** steam_data is jsonb: accept it only in the expected shape so one bad row cannot crash the page. */
 function steamInfo(appId: number, data: unknown): Suggestion["steam"] {
@@ -27,6 +31,11 @@ function steamInfo(appId: number, data: unknown): Suggestion["steam"] {
   if (typeof d.price !== "string" || !Array.isArray(d.genres) || !d.genres.every((g) => typeof g === "string")) return undefined;
   const headerImage = typeof d.headerImage === "string" && d.headerImage.startsWith("https://") ? d.headerImage : undefined;
   return { appId, price: d.price, genres: d.genres as string[], headerImage };
+}
+
+/** Public URL of a suggestion's stored art; `base` is the Supabase project URL. */
+export function thumbnailUrlFor(path: string | null | undefined, base: string = SUPABASE_URL): string | undefined {
+  return publicArtUrl(base, path);
 }
 
 export function mapSuggestion(r: SuggestionRow): Suggestion {
@@ -45,5 +54,6 @@ export function mapSuggestion(r: SuggestionRow): Suggestion {
     status: r.status,
     linkedGameSlug: r.linked_game_slug ?? undefined,
     steam: r.steam_app_id ? steamInfo(r.steam_app_id, r.steam_data) : undefined,
+    thumbnailUrl: thumbnailUrlFor(r.thumbnail_path),
   };
 }

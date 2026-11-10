@@ -8,6 +8,7 @@ import { Card } from "@/shared/ui/card";
 import { cn } from "@/shared/ui/cn";
 import { createSuggestion, searchSimilar, type SimilarItem } from "../actions";
 import { steamAppIdFromUrl, type SteamDetails } from "../lib/steam";
+import { ACCEPT_ATTR, MAX_UPLOAD_BYTES } from "../lib/image-policy";
 import type { SuggestionSource, SuggestionStatus } from "../types";
 import { fieldClass, PLAY_LABEL, SOURCE, STATUS } from "./labels";
 import { SimilarHint } from "./similar-hint";
@@ -26,7 +27,15 @@ export function SuggestionForm() {
   const [url, setUrl] = useState("");
   const [similar, setSimilar] = useState<SimilarItem[]>([]);
   const [steam, setSteam] = useState<SteamDetails | null>(null);
+  const [preview, setPreview] = useState<{ url: string; tooBig: boolean } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Local preview of the chosen thumbnail; the object URL is released when it changes.
+  useEffect(() => {
+    if (!preview) return;
+    const { url } = preview;
+    return () => URL.revokeObjectURL(url);
+  }, [preview]);
 
   const debouncedName = useDebounced(name, 350);
   useEffect(() => {
@@ -56,6 +65,7 @@ export function SuggestionForm() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setName("");
     setUrl("");
+    setPreview(null);
   }, [result]);
 
   return (
@@ -110,6 +120,30 @@ export function SuggestionForm() {
             className={fieldClass}
           />
         </label>
+        {source !== "steam" && (
+          <div className="space-y-2">
+            <label className="block text-sm">
+              Ảnh thumbnail game (JPG/PNG/WebP, ≤ 3 MB)
+              <input
+                name="thumbnail"
+                type="file"
+                accept={ACCEPT_ATTR}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  setPreview(file ? { url: URL.createObjectURL(file), tooBig: file.size > MAX_UPLOAD_BYTES } : null);
+                }}
+                className={cn(fieldClass, "file:mr-3 file:rounded file:border-0 file:bg-surface-raised file:px-2 file:py-1 file:text-sm")}
+              />
+            </label>
+            {preview && (
+              // A blob: URL of the fan's own file, so next/image (remote optimizer) does not apply.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={preview.url} alt="Xem trước ảnh thumbnail" className="aspect-video w-40 rounded-sm border border-border object-cover" />
+            )}
+            {preview?.tooBig && <p className="text-xs text-live-text">Ảnh lớn hơn 3 MB, chọn ảnh nhỏ hơn nhé.</p>}
+            <p className="text-xs text-muted">Ảnh sẽ được kiểm tra và chỉ hiện sau khi admin duyệt.</p>
+          </div>
+        )}
         <SimilarHint items={similar.map((s) => ({ key: `${s.kind}-${s.ref}`, label: similarLabel(s) }))} />
         <label className="block text-sm">
           Lý do ngắn

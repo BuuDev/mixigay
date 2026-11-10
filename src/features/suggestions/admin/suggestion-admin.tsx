@@ -1,9 +1,12 @@
+import Image from "next/image";
 import { getGames } from "@/features/videos/server/queries";
 import { ScreenFlags, UserModeration } from "@/features/admin/components/user-moderation";
 import { formatDate } from "@/shared/lib/format";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { serverClient } from "@/server/supabase/server";
-import { deleteSuggestion, updateSuggestion } from "./actions";
+import { deleteSuggestion, mirrorSuggestionArt, removeSuggestionArt, updateSuggestion } from "./actions";
+import { thumbnailUrlFor } from "../lib/mapper";
+import { parseThumbnailReview } from "../lib/image-policy";
 import { button, GameSelect, input, primary, Section } from "@/features/admin/ui";
 
 export async function SuggestionAdmin() {
@@ -11,7 +14,9 @@ export async function SuggestionAdmin() {
   const [{ data }, games] = await Promise.all([
     supabase
       .from("suggestions")
-      .select("id,author_id,name,url,status,upvotes,hidden,approved,reason,linked_game_slug,created_at,profiles!author_id(display_name)")
+      .select(
+        "id,author_id,name,url,source,status,upvotes,hidden,approved,reason,linked_game_slug,steam_app_id,steam_data,thumbnail_path,created_at,profiles!author_id(display_name),suggestion_art_reviews(review)",
+      )
       .order("approved")
       .order("hidden")
       .order("created_at", { ascending: false })
@@ -29,6 +34,11 @@ export async function SuggestionAdmin() {
     hidden: boolean;
     reason: string;
     linked_game_slug: string | null;
+    source: string;
+    steam_app_id: number | null;
+    steam_data: { headerImage?: unknown } | null;
+    thumbnail_path: string | null;
+    suggestion_art_reviews: { review: unknown } | null;
     created_at: string;
     profiles: { display_name: string } | null;
   }[];
@@ -48,6 +58,7 @@ export async function SuggestionAdmin() {
             </div>
             <p className="text-muted">{s.reason}</p>
             {s.url && <p className="text-xs break-all text-muted">{s.url}</p>}
+            <ArtReview row={s} />
             <UserModeration userId={s.author_id} />
             <form action={updateSuggestion} className="flex flex-wrap items-center gap-2">
               <input type="hidden" name="id" value={s.id} />
@@ -76,5 +87,65 @@ export async function SuggestionAdmin() {
         ))}
       </ul>
     </Section>
+  );
+}
+
+const VERDICT = { ok: "quét: ổn", review: "quét: cần xem", block: "quét: chặn" } as const;
+
+/** Stored game art, big enough to judge, with the automated verdict and the art actions. */
+function ArtReview({
+  row,
+}: {
+  row: {
+    id: string;
+    name: string;
+    steam_app_id: number | null;
+    steam_data: { headerImage?: unknown } | null;
+    thumbnail_path: string | null;
+    suggestion_art_reviews: { review: unknown } | null;
+  };
+}) {
+  const url = thumbnailUrlFor(row.thumbnail_path);
+  const review = parseThumbnailReview(row.suggestion_art_reviews?.review);
+  const canMirror = Boolean(row.steam_app_id && typeof row.steam_data?.headerImage === "string");
+  if (!url && !canMirror) return null;
+  return (
+    <div className="flex flex-wrap items-start gap-3">
+      {url && (
+        // unoptimized: show the exact stored bytes, not an optimizer copy that outlives "Gỡ ảnh".
+        <Image
+          src={url}
+          alt={`Ảnh của ${row.name}`}
+          width={320}
+          height={180}
+          unoptimized
+          className="aspect-video w-80 rounded-sm border border-border object-cover"
+        />
+      )}
+      <div className="space-y-1 text-xs">
+        {review && (
+          <div className={review.verdict === "ok" ? "text-cleared" : "text-live-text"}>
+            {VERDICT[review.verdict]} ({review.source === "steam" ? "ảnh Steam" : "fan tải lên"}){review.reasons.length > 0 && `: ${review.reasons.join("; ")}`}
+          </div>
+        )}
+        <form className="flex flex-wrap gap-2">
+          {canMirror && (
+            <button formAction={mirrorSuggestionArt.bind(null, row.id)} className={button}>
+              Lưu ảnh Steam về
+            </button>
+          )}
+          {url && (
+            <button formAction={removeSuggestionArt.bind(null, row.id, false)} className={button}>
+              Gỡ ảnh
+            </button>
+          )}
+          {url && review && (
+            <button formAction={removeSuggestionArt.bind(null, row.id, true)} className={button} title="Gỡ ảnh và từ chối mọi lần tải lại đúng ảnh này">
+              Gỡ ảnh + chặn vĩnh viễn
+            </button>
+          )}
+        </form>
+      </div>
+    </div>
   );
 }

@@ -1,10 +1,13 @@
 "use server";
 
 import { refresh, revalidateTag } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { TAGS } from "@/shared/lib/cache-tags";
 import { getViewer } from "@/features/auth/server/viewer";
 import { getSteamDetails } from "./server/steam";
+import { attachArt, checkImage, isBannedImage, mirrorSteamArt, sanitizeImage, type Sanitized } from "./server/game-art";
+import { MAX_UPLOAD_BYTES, sniffImageType } from "./lib/image-policy";
 import { steamAppIdFromUrl, steamStoreUrl } from "./lib/steam";
 import { adminClient } from "@/server/supabase/admin";
 import { publicClient } from "@/server/supabase/public";
@@ -32,6 +35,21 @@ export async function createSuggestion(_prev: FormResult, formData: FormData): P
   if (input.url && !url) return { ok: false, message: `Chỉ nhận link https tới ${ALLOWED_SUGGESTION_HOSTS_LABEL}.` };
   // Generic on purpose: never tell a spammer which word tripped the filter.
   if (screenText([input.name, input.reason]).verdict === "block") return { ok: false, message: REJECTED };
+
+  // Optional thumbnail for fan-made / non-Steam games. Cheap local checks run before the
+  // insert; the Vision call runs after it, so the DB rate limit also caps Vision usage.
+  let art: Extract<Sanitized, { ok: true }> | undefined;
+  const file = formData.get("thumbnail");
+  if (input.source !== "steam" && file instanceof File && file.size > 0) {
+    if (file.size > MAX_UPLOAD_BYTES) return { ok: false, message: "Ảnh tối đa 3 MB." };
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    // Decided by the file's first bytes, never by its name or declared type.
+    if (!sniffImageType(bytes)) return { ok: false, message: "Chỉ nhận ảnh JPG, PNG hoặc WebP." };
+    const clean = await sanitizeImage(bytes);
+    if (!clean.ok) return { ok: false, message: "Không dùng được ảnh này (ảnh động hoặc quá lớn?), thử ảnh khác nhé." };
+    if (await isBannedImage(adminClient(), [clean.sha256, clean.originalSha256])) return { ok: false, message: IMAGE_REJECTED };
+    art = clean;
+  }
 
   const duplicate = { ok: false, message: "Game này đã có người đề xuất rồi – upvote thay vì tạo mới nhé." } as const;
   let name = input.name;
@@ -72,13 +90,34 @@ export async function createSuggestion(_prev: FormResult, formData: FormData): P
     }
   }
 
+  let imageNote = "";
+  if (art) {
+    // Service role (docs/07-conventions.md, "Service role"): the image was sanitised here
+    // and fans never write Storage or thumbnail_path themselves.
+    const admin = adminClient();
+    const judgement = await checkImage(art.webp);
+    if (judgement.verdict === "block") {
+      // Generic on purpose (no oracle). The row never became public: it was still pending.
+      await admin.from("suggestions").delete().eq("id", data.id).eq("author_id", viewer.id);
+      refresh();
+      return { ok: false, message: IMAGE_REJECTED };
+    }
+    const saved = await attachArt(admin, data.id, art, judgement, "upload");
+    if (!saved) imageNote = " Ảnh chưa lưu được, admin có thể thêm sau.";
+  } else if (steam?.steam_data.headerImage) {
+    // Copy the Steam header into our Storage after the response (works where Steam is reachable).
+    const id = data.id as string;
+    after(() => mirrorSteamArt(adminClient(), id));
+  }
+
   // Pending until an admin approves it, so the public list does not change yet; only
   // the author's own "đang chờ duyệt" list (uncached, read per request) shows it.
   // The public list is unchanged (pending), but the author's own "đang chờ duyệt" list is not.
   refresh();
-  return { ok: true, message: `Đã gửi đề xuất “${name}”. Đề xuất sẽ hiện công khai sau khi được duyệt.` };
+  return { ok: true, message: `Đã gửi đề xuất “${name}”. Đề xuất sẽ hiện công khai sau khi được duyệt.${imageNote}` };
 }
 
+const IMAGE_REJECTED = "Ảnh này không phù hợp với Góc Bộ Tộc, chọn ảnh khác nhé.";
 const REJECTED = "Nội dung không phù hợp với Góc Bộ Tộc. Viết lại lịch sự, không kèm quảng cáo nhé.";
 
 export async function toggleVote(suggestionId: string): Promise<{ ok: boolean; message?: string }> {

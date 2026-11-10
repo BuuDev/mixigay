@@ -230,6 +230,7 @@ create table quiz_links (               -- quiz fan làm sẵn (Kahoot, Waygroun
 | banned_terms | admin | admin | admin | admin |
 | quotes | mọi người (`approved = true`), tác giả thấy của mình, admin thấy hết | đăng nhập, `author_id = auth.uid()`, `approved = false` | admin | admin (tác giả muốn gỡ thì báo admin) |
 | fan_songs, fan_art, quiz_links | `approved`, hoặc tác giả, hoặc admin | đăng nhập, không bị cấm, `author_id = auth.uid()`, `approved = false`, giới hạn ở trigger | admin | **chỉ admin** |
+| banned_image_hashes | admin | admin | – | admin |
 | api_usage | admin | – (service role qua `add_api_usage`) | – | – |
 | admins | chính mình | – | – | – |
 | notifications_log, admin_alerts, account_logins, invites, auth_attempts | – (chỉ service role) | – | – | – |
@@ -267,6 +268,19 @@ Migration `supabase/migrations/20261110090000_moderation.sql`. Postgres là cổ
 | Tên hiển thị | Trigger đổi thành `Fan ####` khi tên rỗng sau khi bỏ ký tự ẩn, chứa URL/tên miền, hoặc chứa từ trong `banned_terms` (so sau khi bỏ dấu và ký tự đặc biệt). Không bao giờ báo lỗi, để đăng nhập không hỏng. `banned_terms` = `NAME_BLOCK_STEMS` trong `lexicon.ts` (test so khớp). |
 | Cấm | `profiles.trust` (API không đọc được cột này; `profiles` chỉ cho đọc `id, display_name, avatar_url, created_at`): −2 cấm ngầm (vẫn gửi được nhưng không ai thấy), −1 cấm (không gửi, không vote), 0 thường, 1–2 tin cậy (dành cho sau này). `moderate_user(uid, 'ban' \| 'shadow' \| 'unban')` và `reset_display_name(uid)`: `security definer`, kiểm tra `is_admin()`; cấm sẽ ẩn mọi đề xuất, gỡ duyệt mọi bài nhạc, xóa mọi vote và reset tên. Người bị cấm ngầm: bài mới sinh ra đã ẩn, vote "thành công" nhưng không lưu, không bị tính vào giới hạn toàn site. Trigger `block_banned_approval` chặn duyệt bài của người có `trust < 0`. |
 | Lọc chữ (app) | `screenText()` chặn cờ bạc/tục tĩu/link rút gọn với thông báo chung chung; tên miền trong chữ và cụm "nạp tiền", "cá độ"… chỉ gắn cờ cho admin. |
+
+## Ảnh game (`game-art`): ảnh Steam lưu về + thumbnail fan tải lên
+
+Migration `supabase/migrations/20261110190000_game_art.sql`. Code: `src/features/suggestions/lib/image-policy.ts` (quy tắc thuần) và `server/game-art.ts` (sharp, Vision, Storage).
+
+| Thành phần | Ghi chú |
+|---|---|
+| `suggestions.thumbnail_path` | Đường dẫn trong bucket, check `^suggestions/<uuid>.webp$`. **Không** có trong column grant của fan; chỉ server (service role) ghi sau khi làm sạch ảnh, admin gỡ được. Ảnh hiện trước tiên trong `GameThumb` (rồi tới ảnh Steam, rồi thumbnail stream). |
+| `suggestion_art_reviews(suggestion_id, review)` | jsonb `{verdict, reasons[], source: "upload"\|"steam", sha256, originalSha256}`, server (service role) ghi, **chỉ admin đọc** (RLS). Tách bảng riêng vì `suggestions` cho đọc công khai mọi cột. `sha256` là của file WebP đã lưu, `originalSha256` của file gốc. |
+| `banned_image_hashes(sha256, reason, created_at, created_by)` | Ảnh admin đã "Gỡ ảnh + chặn vĩnh viễn". RLS: chỉ admin đọc/thêm/xóa; server đọc bằng service role để từ chối tải lại đúng ảnh đó. |
+| Bucket `game-art` | Đọc công khai qua URL, tối đa 1 MB, chỉ `image/webp`. Không có policy ghi cho anon/authenticated: chỉ service role tải lên/xóa. Migration chỉ tạo bucket khi có schema `storage` (PGlite của `db:check` không có). |
+
+Luồng tải ảnh (fan, nguồn không phải Steam): ≤ 3 MB → nhận dạng JPG/PNG/WebP theo magic bytes → sharp (từ chối ảnh động, cạnh > 8000 px; xoay theo EXIF, cắt 640×360, WebP q80, bỏ hết metadata/GPS) → so `banned_image_hashes` → insert đề xuất bằng quyền fan → Google Vision SafeSearch + OCR (nếu có `GOOGLE_VISION_API_KEY`; "chặn" thì xóa đề xuất vừa tạo và báo lỗi chung chung) → lưu Storage + `thumbnail_path`. Đề xuất vẫn chờ admin duyệt như cũ. Đề xuất Steam: sau khi gửi (`after()`) và khi admin duyệt, server tải ảnh header Steam về một lần (`mirrorSteamArt`, 5 s, lỗi thì bỏ qua).
 
 ## fan_songs (Góc nhạc — "nhạc nịnh")
 

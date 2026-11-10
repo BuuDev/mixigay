@@ -146,6 +146,7 @@ Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mas
 - [x] Quiz Bộ Tộc làm cho anh Độ: fan gửi link quiz đã làm trên Kahoot / Wayground / Wordwall / Quizlet / Blooket / Google Forms (bảng `quiz_links`, duyệt + đánh dấu "anh Độ đã chơi" kèm mốc giờ ở `/admin/quiz`). Không có link mẫu bịa
 - [x] Ảnh nền game lấy từ thumbnail buổi stream mới nhất của game đó (`gameCovers`, không tốn quota) ở `/da-choi`, đề xuất game, `/video`
 - [x] Ảnh bìa bài nhạc nịnh (`fan_songs.thumbnail_url`, lấy từ oEmbed SoundCloud/Spotify hoặc thumbnail YouTube lúc gửi)
+- [x] Ảnh game đề xuất lưu ở Supabase Storage của mình (bucket `game-art`): ảnh Steam tải về một lần, fan tải thumbnail cho game không có trên Steam (sharp làm sạch, chặn theo mã băm, quét Google Vision tùy chọn, admin xem/gỡ/chặn ở `/admin/de-xuat`); **(cần bạn, tùy chọn)** bật Cloud Vision API và điền `GOOGLE_VISION_API_KEY`
 
 ---
 

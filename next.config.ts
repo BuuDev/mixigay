@@ -1,9 +1,37 @@
 import type { NextConfig } from "next";
 
+type RemotePattern = NonNullable<NonNullable<NextConfig["images"]>["remotePatterns"]>[number];
+
+/**
+ * Game art in our own Supabase Storage bucket `game-art` (mirrored Steam headers, fan
+ * uploads). Host taken from NEXT_PUBLIC_SUPABASE_URL so no project ref is hardcoded;
+ * none when the URL is unset (mock mode).
+ */
+function supabaseArtPattern(): RemotePattern[] {
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+    if (url.protocol !== "https:" && url.protocol !== "http:") return [];
+    return [
+      {
+        protocol: url.protocol === "https:" ? "https" : "http",
+        hostname: url.hostname,
+        ...(url.port ? { port: url.port } : {}),
+        pathname: "/storage/v1/object/public/game-art/**",
+      },
+    ];
+  } catch {
+    return [];
+  }
+}
+
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Fan thumbnail uploads (≤ 3 MB, src/features/suggestions/lib/image-policy.ts) plus multipart overhead.
+    serverActions: { bodySizeLimit: "4mb" },
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
@@ -16,6 +44,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "i.scdn.co" },
       { protocol: "https", hostname: "image-cdn-ak.spotifycdn.com" },
       { protocol: "https", hostname: "image-cdn-fa.spotifycdn.com" },
+      ...supabaseArtPattern(),
     ],
   },
   // Invite links carry a one-time token in the path: never leak it through Referer.
