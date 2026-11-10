@@ -226,6 +226,9 @@ create table quiz_links (               -- quiz fan làm sẵn (Kahoot, Waygroun
 | games, game_keywords, playlist_game_map, schedule_slots, schedule_overrides, played_games, videos, live_status, live_samples | mọi người | admin | admin | admin |
 | suggestions | mọi người (`approved and not hidden`), tác giả và admin thấy hết | đăng nhập, không bị cấm, chỉ 4 cột `name, source, url, reason` (column grant), giới hạn ở trigger (xem "Chống phá hoại") | admin | admin |
 | suggestion_votes | chỉ phiếu của mình | `user_id = auth.uid()`, tài khoản ≥ 24 giờ (hoặc `trust ≥ 1`), không bị cấm, đề xuất đã duyệt và không bị ẩn, ≤ 60 phiếu/giờ | – | `user_id = auth.uid()` |
+| polls | mọi người (`status <> 'draft'`), admin thấy cả nháp; cột `created_by` không public (column grant) | admin | admin | admin |
+| poll_options | như poll của nó (nháp chỉ admin) | admin (không ghi được `votes`) | admin (không ghi được `votes`) | admin |
+| poll_votes | chỉ phiếu của mình | `user_id = auth.uid()`, chỉ cột `poll_id, option_id`, bình chọn đang mở (`poll_is_open`), tài khoản ≥ 24 giờ, không bị cấm, ≤ 60 lần ghi/giờ | chủ phiếu, chỉ cột `option_id`, cùng điều kiện như insert | chủ phiếu, khi bình chọn còn mở |
 | profiles | mọi người | trigger khi tạo user | chủ sở hữu, chỉ cột `display_name` (trigger làm sạch, cắt 50 ký tự) | – |
 | banned_terms | admin | admin | admin | admin |
 | quotes | mọi người (`approved = true`), tác giả thấy của mình, admin thấy hết | đăng nhập, `author_id = auth.uid()`, `approved = false` | admin | admin (tác giả muốn gỡ thì báo admin) |
@@ -241,7 +244,7 @@ Job cron dùng service role nên bỏ qua RLS. Vì vậy mọi kiểm tra quyề
 
 ## Realtime
 
-Chỉ bật Realtime cho `live_status`, bằng lệnh `alter publication supabase_realtime add table live_status;`. Các bảng khác không cần realtime, vì cache + revalidate là đủ.
+Bật Realtime cho `live_status` và `poll_options` (số phiếu của thẻ bình chọn, client nghe `UPDATE` lọc theo `poll_id`), bằng `alter publication supabase_realtime add table …`. Các bảng khác không cần realtime, vì cache + revalidate là đủ.
 
 ## Trigger
 
@@ -400,3 +403,22 @@ Migration `supabase/migrations/20261110200000_moderation_center.sql`. Có assert
 | Trigger `log_content_moderation(kind, cột snapshot)` | AFTER UPDATE OF `approved, rejected_at` OR DELETE trên 7 bảng (`<bảng>_log_moderation`). Cột snapshot: suggestions→`name`, fan_songs/fan_art/quiz_links→`title`, quotes/wall_messages→`body`, glossary_entries→`term`. DELETE→`delete`; `rejected_at` null→có→`reject` (`reason = rejected_reason`); `approved` false→true→`approve`; true→false không kèm từ chối mới→`unapprove`. Bỏ qua khi `app.moderation_bulk = 'on'` và khi bài bị xóa dây chuyền do tài khoản tác giả bị xóa. |
 | `moderate_user(uid, mode)` | Giữ nguyên hành vi, thêm đúng **một** dòng log `kind = 'profile'`, `target_id = author_id = uid`, `action = mode`. Đặt `app.moderation_bulk = 'on'` (local trong transaction) trước các lệnh gỡ hàng loạt, nên cấm một người không sinh hàng trăm dòng log. |
 | `blocked_terms(term, category, created_by, created_at)` | `term` viết thường, 2–60 ký tự (PK); `category`: `gambling`, `profanity`, `spam`. RLS: chỉ admin đọc/thêm/xóa. Server app đọc bằng service role; **không công khai**, để người spam không đọc được danh sách mà lách. |
+
+## Bình chọn (polls) (20261110220000)
+
+"Bình chọn của Bộ Tộc": admin tạo câu hỏi (ví dụ "Tối nay anh Độ nên chơi game gì?"), fan chọn một lựa chọn. Migration `supabase/migrations/20261110220000_polls.sql`. Có assert trong `npm run db:check` (mục "Polls (20261110220000)"). Admin quản lý ở `/admin/binh-chon`; trang chủ hiện bình chọn đang mở mới nhất, không có thì hiện kết quả lần gần nhất (`src/features/polls`).
+
+| Bảng / hàm | Quy tắc |
+|---|---|
+| `polls(id, question 5–140, status draft/open/closed, closes_at, opened_at, closed_at, created_by, created_at)` | Mới tạo luôn là `draft` (fan không thấy). Đang mở = `status = 'open'` và (`closes_at` null hoặc ở tương lai): hết giờ thì DB tự từ chối phiếu, không cần job. Trigger `poll_status_times` đặt `opened_at`/`closed_at` khi đổi trạng thái. `created_by` không có column grant select. |
+| `poll_options(id, poll_id, label 1–80, position, suggestion_id, votes)` | Tối đa 8 lựa chọn mỗi poll (trigger `limit_poll_options`, khóa theo poll). `votes` chỉ trigger ghi: không có trong column grant, kể cả admin. `suggestion_id` trỏ về đề xuất game (on delete set null). |
+| `poll_votes(poll_id, user_id, option_id, created_at)`, PK `(poll_id, user_id)` | Một phiếu mỗi người mỗi poll. Đổi ý = `update option_id` (cùng hàng). FK `(option_id, poll_id) → poll_options(id, poll_id)`, nên không chọn được lựa chọn của poll khác. Insert/update/delete chỉ khi `poll_is_open(poll_id)`; insert/update cần `can_vote()` (tài khoản ≥ 24 giờ hoặc `trust ≥ 1`) và `not is_banned()`. |
+| `poll_vote_events(user_id, at)` + trigger `limit_poll_votes` | Sổ đếm giới hạn: mỗi lần bỏ phiếu hoặc đổi phiếu ghi một dòng; quá 60 lần/giờ → `rate_limited`. Phiếu của người bị cấm ngầm (`trust = -2`) "thành công" nhưng không được lưu (trigger trả `null`). Không ai đọc/ghi bảng này ngoài trigger. |
+| Trigger `count_poll_votes` | AFTER INSERT/UPDATE/DELETE trên `poll_votes`, security definer, `pg_advisory_xact_lock(hashtext('poll:' || poll_id))`: +1/−1 vào `poll_options.votes`; đổi ý thì −1 lựa chọn cũ, +1 lựa chọn mới. |
+| Trigger `withdraw_poll_votes_on_ban` | AFTER UPDATE OF `trust` trên `profiles`: khi `trust` xuống < 0 (cấm hoặc cấm ngầm), xóa mọi phiếu bình chọn của người đó (số phiếu tự trừ). Dùng trigger để `moderate_user` không cần phiên bản mới. |
+| `create_poll_from_suggestions(p_question, p_limit)` | Chỉ admin (security definer, kiểm tra `is_admin()`). Tạo poll **nháp** với 2–8 lựa chọn là các đề xuất đã duyệt, không ẩn, chưa bị từ chối, `status = 'pending'`, xếp theo `upvotes` giảm dần; `label` = tên đề xuất, `suggestion_id` được gán. Ít hơn 2 đề xuất phù hợp → lỗi `not_enough_suggestions`. |
+| `poll_is_open(poll_id)` | Security definer, dùng trong policy và trong action để báo "Bình chọn này đã đóng rồi." |
+
+- App: đọc poll qua `getPollBoard()` (`"use cache"`, tag `polls`, `cacheLife("minutes")`), phiếu của người xem qua `getMyPollVote()` (theo request, không cache). Vote dùng `revalidateTag(TAGS.polls, "max")` như vote đề xuất; số phiếu trên thẻ được cập nhật bằng Realtime.
+- Embed `poll_options` từ `polls` phải ghi rõ khóa `poll_options!poll_options_poll_id_fkey(...)`, vì `poll_votes` tạo thêm một đường nối nhiều-nhiều.
+- Kết quả chỉ hiện sau khi fan đã chọn (khách và poll đã đóng thấy kết quả ngay), để lựa chọn đầu tiên không bị đám đông dẫn dắt.

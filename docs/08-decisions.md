@@ -165,7 +165,7 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 - Một số tranh có chữ “Refund Gaming”/“MIXI”. Như thumbnail YouTube, chữ đó được chấp nhận khi tranh là nội dung minh họa, không được chấp nhận ở nhận diện trang ([01-product](01-product.md)).
 - Bỏ hẳn 4 tranh: cú cầm đồ có logo LEGO (thương hiệu bên thứ ba), và các cảnh quyên góp / top donate (trang không nhận tiền dưới mọi hình thức).
 - Ảnh gốc PNG (49 MB) để ở `design-src/` (gitignore). Trang dùng bản WebP 640×640 (~1,3 MB cả hai bộ), sinh bằng sharp.
-- **Nhạc nền:** trình duyệt chặn âm thanh tự phát trước khi người xem tương tác, nên nhạc bật ở **lần chạm hoặc bấm phím đầu tiên**, âm lượng nhỏ (30/100), có nút tắt. Ai bấm “Tắt hẳn nhạc” thì lần sau không tự bật (lưu `localStorage` key `gbt:bgm`). Không tự bật ở `/admin` và `/moi`. Mở “Nghe trực tiếp” một bài khác thì nhạc nền tự dừng.
+- **Nhạc nền:** bài mặc định là **Airport Lounge** (`BGM_DEFAULT_SLUG`), trình phát thử phát ngay khi tải trang; trình duyệt thường chặn âm thanh tự phát trước khi người xem tương tác, khi đó nhạc bật ở **lần chạm hoặc bấm phím đầu tiên**, âm lượng nhỏ (30/100), có nút tắt. Ai bấm “Tắt hẳn nhạc” thì lần sau không tự bật (lưu `localStorage` key `gbt:bgm`). Không tự bật ở `/admin`, `/moi` và `/gui-anh-do`. Mở “Nghe trực tiếp” một bài khác thì nhạc nền tự dừng.
 
 **Hệ quả:** COMPONENTS §12 đổi bảng pose sang ảnh Cú Đêm. `npm run brand` không còn sinh mascot dùng trên trang (file `public/brand/mascot/*` cũ để lại cho tới khi dọn brand.html). Safari đôi khi vẫn chặn widget SoundCloud tự phát; khung phát có ghi chú bấm ▶.
 
@@ -188,3 +188,11 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 - Thay ADR-011/ADR-014 ở phần nhận diện; Cú Đêm vẫn là linh vật của trang.
 
 **Hệ quả:** `AGENTS.md`, `docs/01-product.md` và agent `fan-site-guard` được cập nhật theo quy tắc mới. Nếu sau này anh Độ rút lại sự cho phép, chỉ cần đổi `Logo` trong `src/shared/ui/brand-art.tsx`, icon và ảnh OG về lửa trại.
+
+## ADR-017 – Bật layout animation (motion `domMax`) cho bảng đề xuất {#adr-017}
+
+**Bối cảnh:** Chủ dự án muốn chuyển động mượt và đưa game mới / game fan làm lên trước. Bảng đề xuất giờ có các tab sắp xếp "Đang hot / Mới đề xuất / Bộ Tộc tự làm / Nhiều vote nhất"; khi đổi tab, các thẻ nên trượt về vị trí mới thay vì nhảy.
+
+**Quyết định:** `src/shared/motion/features.ts` dùng `domMax` (thêm layout animation) thay cho `domAnimation`. Gói này vẫn được `MotionProvider` tải lười, không nằm trong chunk JS đầu tiên. Người bật giảm chuyển động không có layout animation (`layout` chỉ bật khi được phép).
+
+**Hệ quả:** Thêm khoảng 15 KB (gzip) vào chunk motion tải sau. Các component khác có thể dùng `layout` khi thật sự cần, không cần ADR mới.

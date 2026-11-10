@@ -27,6 +27,8 @@ describe("mapSuggestion", () => {
     for (const steam_data of junk) {
       expect(mapSuggestion({ ...base, steam_app_id: 5, steam_data: steam_data as never }).steam).toBeUndefined();
     }
-    expect(mapSuggestion({ ...base, steam_app_id: 5, steam_data: { price: "1₫", genres: [], headerImage: "javascript:x" } }).steam?.headerImage).toBeUndefined();
+    expect(
+      mapSuggestion({ ...base, steam_app_id: 5, steam_data: { price: "1₫", genres: [], headerImage: "javascript:x" } }).steam?.headerImage,
+    ).toBeUndefined();
   });
 });

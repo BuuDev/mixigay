@@ -193,6 +193,23 @@ sugIds.forEach((s, i) => FANS.slice(0, 6 - i).forEach((f) => votes.push({ sugges
 must("votes", await db.from("suggestion_votes").upsert(votes, { onConflict: "suggestion_id,user_id", ignoreDuplicates: true }));
 console.log(`Suggestions: ${sugIds.length} real games with ${votes.length} votes.`);
 
+// ---- An open poll built from the most-voted real suggestions (0 votes: results are never invented) ----
+{
+  const question = "Buổi tới anh Độ nên thử game nào? (bình chọn mẫu)";
+  const existing = must("poll check", await db.from("polls").select("id").eq("question", question).maybeSingle());
+  if (!existing) {
+    const top = must(
+      "top suggestions",
+      await db.from("suggestions").select("id, name").eq("approved", true).eq("hidden", false).order("upvotes", { ascending: false }).limit(4),
+    );
+    if (top.length >= 2) {
+      const poll = must("poll", await db.from("polls").insert({ question, status: "open" }).select("id").single());
+      must("poll options", await db.from("poll_options").insert(top.map((t, i) => ({ poll_id: poll.id, label: t.name, position: i, suggestion_id: t.id }))));
+      console.log(`Poll: "${question}" with ${top.length} real games.`);
+    }
+  }
+}
+
 // ---- Fan songs: real tracks on SoundCloud (each URL verified through SoundCloud oEmbed) ----
 for (const [i, s] of mockSongs.entries()) {
   const exists = must("song check", await db.from("fan_songs").select("id").eq("url", s.url).maybeSingle());

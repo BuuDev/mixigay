@@ -148,6 +148,9 @@ Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mas
 - [x] Ảnh bìa bài nhạc nịnh (`fan_songs.thumbnail_url`, lấy từ oEmbed SoundCloud/Spotify hoặc thumbnail YouTube lúc gửi)
 - [x] Ảnh game đề xuất lưu ở Supabase Storage của mình (bucket `game-art`): ảnh Steam tải về một lần, fan tải thumbnail cho game không có trên Steam (sharp làm sạch, chặn theo mã băm, quét Google Vision tùy chọn, admin xem/gỡ/chặn ở `/admin/de-xuat`); **(cần bạn, tùy chọn)** bật Cloud Vision API và điền `GOOGLE_VISION_API_KEY`
 - [x] Trung tâm kiểm duyệt: hộp duyệt chung `/admin/duyet` (7 loại nội dung, từ chối kèm lý do thay vì xóa, duyệt/từ chối hàng loạt, cấm tác giả), số chờ duyệt trên menu admin, nhật ký `/admin/nhat-ky`, người dùng `/admin/nguoi-dung`, từ khóa chặn `/admin/tu-khoa` (áp dụng ngay cho mọi form), "Nội dung của bạn" ở `/tai-khoan` (migration 20261110200000, 20261110210000)
+- [x] Góc tương tác ngay dưới phần mở đầu trang chủ (thứ YouTube không có): phòng "Bộ Tộc đang ở đây" (số người online + thả cảm xúc realtime, Supabase Realtime, không lưu DB), Bình chọn của Bộ Tộc (`polls`, admin `/admin/binh-chon`, tạo từ đề xuất được vote nhiều), chuỗi điểm danh + huy hiệu cá nhân, lời nhắn mới nhất; "Hôm nay năm xưa" từ video thật (migration 20261110220000)
+- [x] Ưu tiên đóng góp của fan: menu/thanh tab đưa Đề xuất game · Gửi nhạc · Quiz · Ân xá lên đầu, trang `/quiz` riêng, khối "Góp sức cùng Bộ Tộc" trên trang chủ; bố cục rộng hơn (`max-w-7xl`, `2xl:max-w-[88rem]`)
+- [x] Xếp hạng "Đang hot" cho đề xuất (giảm dần theo thời gian, ưu tiên game fan làm và game mới) + tab Mới / Bộ Tộc tự làm / Nhiều vote; "Ứng viên tối nay" (3 hot + 1 mới + 1 fan làm) trên trang chủ, `/de-xuat`, `/gui-anh-do`
 
 ---
 

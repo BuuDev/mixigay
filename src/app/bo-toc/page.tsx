@@ -6,8 +6,7 @@ import { CharityCard } from "@/features/charity/components/charity-card";
 import { FanArtForm, FanArtGallery } from "@/features/fan-art/components/fan-art-section";
 import { getFanArt } from "@/features/fan-art/server/queries";
 import { GlossarySection } from "@/features/glossary/components/glossary-section";
-import { QuizBoard } from "@/features/quiz/components/quiz-board";
-import { QuizComposer, QuizSignInCard } from "@/features/quiz/components/quiz-composer";
+import { QUIZ_PLATFORM_LABEL } from "@/features/quiz/lib/quiz-url";
 import { getQuizLinks } from "@/features/quiz/server/queries";
 import { CommunityLinks } from "@/features/tribe/components/community-links";
 import { GhostProjectsBoard } from "@/features/tribe/components/ghost-projects-board";
@@ -20,8 +19,9 @@ import { WallSection } from "@/features/wall/components/wall-section";
 import { isSupabaseConfigured } from "@/shared/lib/env";
 import { ScrollReveal } from "@/shared/motion/scroll-reveal";
 import { SceneArt } from "@/shared/ui/brand-art";
+import { ButtonLink } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
-import { IconAlbum, IconCampfire, IconCleared, IconFanart, IconGameViewer, IconQuote, IconSuggest, IconTribe, IconWall } from "@/shared/ui/icons";
+import { IconAlbum, IconCampfire, IconCleared, IconExternal, IconFanart, IconGameViewer, IconQuote, IconSuggest, IconTribe, IconWall } from "@/shared/ui/icons";
 import { NeonText } from "@/shared/ui/neon-text";
 import { SectionHeader } from "@/shared/ui/section-header";
 
@@ -29,6 +29,7 @@ export const metadata: Metadata = { title: "Bộ Tộc – Góc Bộ Tộc" };
 
 export default async function TribePage() {
   const [videos, games, fanArt, quizLinks] = await Promise.all([getVideos(), getGames(), getFanArt(), getQuizLinks()]);
+  const latestQuiz = quizLinks.slice(0, 3);
   const topics = trendingTopics(videos, newestPublishedAt(videos)).slice(0, 8);
   const fanGames = videos.filter((v) => v.gameSlug === "viewer-made").slice(0, 8);
 
@@ -51,22 +52,47 @@ export default async function TribePage() {
         <TrendBoard topics={topics} />
       </ScrollReveal>
 
+      {/* Teaser only: the board and the submit form live on /quiz. */}
       <ScrollReveal as="section">
         <SectionHeader eyebrow="Fan làm, anh Độ chơi" title="Quiz Bộ Tộc làm cho anh Độ" icon={<IconCleared size={26} className="text-accent" />} />
-        <p className="mx-auto mb-5 max-w-2xl text-center text-sm text-muted">
-          Bộ câu hỏi anh em tự làm trên Kahoot, Wayground (Quizizz), Wordwall, Quizlet, Blooket hay Google Forms. Góc Bộ Tộc chỉ giữ link, bấm vào là chơi ngay
-          trên trang gốc.
-        </p>
-        <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
-          <QuizBoard links={quizLinks} />
-          <div className="self-start lg:sticky lg:top-20">
-            <Suspense fallback={<QuizSignInCard />}>
-              <QuizSubmitBox />
-            </Suspense>
-          </div>
-        </div>
+        <Card className="mx-auto max-w-3xl space-y-4 p-5">
+          <p className="text-sm text-muted">
+            Bộ câu hỏi anh em tự làm trên Kahoot, Wayground (Quizizz), Wordwall, Quizlet, Blooket hay Google Forms. Góc Bộ Tộc chỉ giữ link, bấm vào là chơi
+            ngay trên trang gốc.
+          </p>
+          {latestQuiz.length > 0 ? (
+            <ul className="divide-y divide-border">
+              {latestQuiz.map((q) => (
+                <li key={q.id}>
+                  <a
+                    href={q.url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow ugc"
+                    className="flex min-h-11 items-center justify-between gap-3 py-2 hover:text-accent-glow"
+                  >
+                    <span className="min-w-0">
+                      <span className="line-clamp-1 font-semibold break-words">{q.title}</span>
+                      <span className="text-xs text-muted">
+                        {QUIZ_PLATFORM_LABEL[q.platform]} · {q.author}
+                      </span>
+                    </span>
+                    <IconExternal size={16} aria-hidden className="shrink-0 text-muted" />
+                    <span className="sr-only">(mở tab mới)</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm">Chưa có quiz nào trên bảng. Làm một bộ rồi gửi link để cả Bộ Tộc cùng chơi nhé.</p>
+          )}
+          <ButtonLink href="/quiz" className="min-h-11">
+            Xem tất cả & gửi quiz
+          </ButtonLink>
+        </Card>
       </ScrollReveal>
 
+      {/* Anchor for "Gửi fan art" in the home page's "Góp sức cùng Bộ Tộc". */}
+      <div id="fan-art" aria-hidden className="scroll-mt-20" />
       <ScrollReveal as="section">
         <SectionHeader
           eyebrow="Lưu trên Google Drive cá nhân · Xem trực tiếp"
@@ -81,6 +107,8 @@ export default async function TribePage() {
         </div>
       </ScrollReveal>
 
+      {/* Anchor for "Viết lời nhắn cho anh Độ" on the home page. */}
+      <div id="buc-tuong" aria-hidden className="scroll-mt-20" />
       <ScrollReveal as="section">
         <SectionHeader eyebrow="Lưu bút · tối đa 140 ký tự" title="Bức tường Bộ Tộc" icon={<IconWall size={26} className="text-accent" />} />
         <WallSection />
@@ -137,13 +165,6 @@ export default async function TribePage() {
       </ScrollReveal>
     </div>
   );
-}
-
-async function QuizSubmitBox() {
-  if (!isSupabaseConfigured) return <QuizSignInCard demo />;
-  const viewer = await getViewer();
-  if (!viewer) return <QuizSignInCard />;
-  return <QuizComposer viewerId={viewer.id} />;
 }
 
 async function FanArtSubmitBox() {

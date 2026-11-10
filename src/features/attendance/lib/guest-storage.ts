@@ -43,3 +43,76 @@ export function markGuestAttended(storage: WriteStorage | null, dateVn: string):
     return false;
   }
 }
+
+// ===== Guest history (for the personal streak) and badges already celebrated =====
+
+export const GUEST_HISTORY_KEY = "gbt:attendance-history";
+export const SEEN_BADGES_KEY = "gbt:streak-badges-seen";
+/** Enough for years of nights and for the 100-night badge; older days drop off first. */
+const MAX_HISTORY = 1000;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function readJsonStrings(storage: ReadStorage | null, key: string): string[] {
+  if (!storage) return [];
+  try {
+    const parsed: unknown = JSON.parse(storage.getItem(key) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Raw history value, for useSyncExternalStore (a string, so it is a stable snapshot). */
+export function readGuestHistoryRaw(storage: ReadStorage | null): string {
+  if (!storage) return "";
+  try {
+    return storage.getItem(GUEST_HISTORY_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** Every Vietnam day this device tapped on as a guest (the last single-day tap included), oldest first. */
+export function readGuestHistory(storage: ReadStorage | null): string[] {
+  const days = new Set(readJsonStrings(storage, GUEST_HISTORY_KEY).filter((d) => DATE_RE.test(d)));
+  const last = readGuestDay(storage);
+  if (last) days.add(last);
+  return [...days].sort();
+}
+
+/** Parses a raw history value (see readGuestHistoryRaw) plus the last tapped day. */
+export function parseGuestHistory(raw: string, lastDay: string | null): string[] {
+  return readGuestHistory({ getItem: (k) => (k === GUEST_HISTORY_KEY ? raw || null : k === GUEST_KEY ? lastDay : null) });
+}
+
+/** Adds `dateVn` to the guest's history; false when it could not be stored. */
+export function appendGuestHistory(storage: (ReadStorage & WriteStorage) | null, dateVn: string): boolean {
+  if (!storage || !DATE_RE.test(dateVn)) return false;
+  const days = readGuestHistory(storage).filter((d) => d !== dateVn);
+  days.push(dateVn);
+  days.sort();
+  try {
+    storage.setItem(GUEST_HISTORY_KEY, JSON.stringify(days.slice(-MAX_HISTORY)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Badge ids already celebrated on this device. */
+export function readSeenBadges(storage: ReadStorage | null): string[] {
+  return readJsonStrings(storage, SEEN_BADGES_KEY);
+}
+
+/** Remembers that these badges were celebrated here, so each bursts once per device. */
+export function markBadgesSeen(storage: (ReadStorage & WriteStorage) | null, ids: readonly string[]): boolean {
+  if (!storage) return false;
+  const seen = new Set(readSeenBadges(storage));
+  ids.forEach((id) => seen.add(id));
+  try {
+    storage.setItem(SEEN_BADGES_KEY, JSON.stringify([...seen]));
+    return true;
+  } catch {
+    return false;
+  }
+}

@@ -14,7 +14,7 @@ import {
   shouldAutoStart,
   type BgmPref,
 } from "../lib/bgm";
-import { BGM_ARTIST, BGM_LICENSE, BGM_SOURCE_URL, BGM_TRACKS, nextIndex, playlistMinutes, trackSrc } from "../lib/bgm-tracks";
+import { BGM_ARTIST, BGM_LICENSE, BGM_SOURCE_URL, BGM_TRACKS, defaultTrackIndex, nextIndex, playlistMinutes, trackSrc } from "../lib/bgm-tracks";
 
 function read(key: string): string | null {
   try {
@@ -37,7 +37,8 @@ const readPref = (): BgmPref => parseBgmPref(read(BGM_PREF_KEY));
 /**
  * "Đài phát thanh Bộ Tộc": a long, looping playlist of chill instrumentals played by a
  * native <audio> element (same-origin files, real volume control, no third-party widget).
- * Browsers block audible autoplay, so it starts on the visitor's first tap or keypress —
+ * It opens with Airport Lounge and tries to play as soon as the page loads. Most browsers
+ * block audible autoplay on a first visit, so the first tap or keypress is the fallback —
  * play() is called inside that gesture, which Safari requires — unless they turned it off.
  */
 export function BgMusicPlayer() {
@@ -45,7 +46,7 @@ export function BgMusicPlayer() {
   const audio = useRef<HTMLAudioElement>(null);
   const [open, setOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const [idx, setIdx] = useState(0);
+  const [idx, setIdx] = useState(defaultTrackIndex);
   const [volume, setVolume] = useState(BGM_DEFAULT_VOLUME);
   const latest = useRef({ playing, pathname });
   useEffect(() => {
@@ -62,19 +63,19 @@ export function BgMusicPlayer() {
     const v = parseVolume(read(BGM_VOLUME_KEY));
     el.volume = v;
     setVolume(v);
-    el.play().catch(() => setPlaying(false)); // still blocked (e.g. iOS low-power): the button stays "Bật"
+    el.play().catch(() => setPlaying(false)); // blocked (first visit, iOS low-power): the first gesture or the button starts it
   }
 
-  // First interaction anywhere on the page starts the music (random first track).
+  // Play on load where the browser allows it (returning visitors, installed app); otherwise
+  // the first interaction anywhere on the page starts the music.
   useEffect(() => {
+    const canStart = () => shouldAutoStart({ pref: readPref(), pathname: latest.current.pathname, alreadyActive: latest.current.playing });
+    if (canStart()) start();
     function onFirstGesture(e: Event) {
       const target = e.target instanceof Element ? e.target : null;
       if (target?.closest("[data-bgm-ignore]")) return; // the player itself or another player
       remove();
-      if (!shouldAutoStart({ pref: readPref(), pathname: latest.current.pathname, alreadyActive: latest.current.playing })) return;
-      const first = Math.floor(Math.random() * BGM_TRACKS.length);
-      setIdx(first);
-      start(first);
+      if (canStart()) start();
     }
     function remove() {
       window.removeEventListener("pointerdown", onFirstGesture, true);

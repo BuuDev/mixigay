@@ -77,3 +77,11 @@ Tất cả được kích hoạt từ poll-live khi phát hiện chuyển sang `
 
 Nội dung mẫu: `🔴 Anh Độ đang live: <tiêu đề>` + link `youtube.com/watch?v=…`. Không gắn tag/mention anh Độ.
 
+
+## Supabase Realtime (phòng "Bộ Tộc đang ở đây", bình chọn, trạng thái live)
+
+- Phòng `tribe-room` dùng **Presence + Broadcast** trên một kênh **private** (migration `20261111090000`, policy trên `realtime.messages`): khách và fan đều nghe và được đếm (presence), **chỉ fan đã đăng nhập, không bị cấm, mới gửi được cảm xúc**, nên anon key một mình không spam được kênh. Khách bấm thì cảm xúc chỉ bay trên máy họ, kèm lời mời vào Bộ Tộc. Không có bảng nào lưu cảm xúc. Payload chỉ là `{ id }` của 4 cảm xúc cố định, kiểm tra khi nhận; mỗi tab tối đa 1 lần thả / 350 ms (5 lần liền rồi nghỉ). Số "online" là số tab đang mở (presence anon vẫn có thể bị thổi phồng bằng nhiều kết nối, nên coi là con số ước lượng).
+- Bình chọn nghe `postgres_changes` trên `poll_options`; trạng thái live nghe `live_status`. Cả ba dùng chung một kết nối WebSocket mỗi tab.
+- Phòng chỉ kết nối khi khối "Góc tương tác" cuộn tới gần màn hình (`MountWhenVisible`), để khách không cuộn tới thì không chiếm kết nối.
+- **Hạn mức cần để ý khi anh Độ live:** gói Free khoảng 200 kết nối đồng thời và ~100 message/giây cho cả project (Pro: 500 kết nối). Vượt hạn mức thì Realtime bỏ bớt message: trang không lỗi nhưng số online / cảm xúc / cập nhật live không còn tức thời. Khi lượng fan lớn, nâng gói hoặc chỉnh quota trong Realtime Settings.
+- Realtime Settings: kênh `tribe-room` là private, nên **không** cần bật quyền truy cập public; các kênh `postgres_changes` (bình chọn, live) vẫn theo RLS của bảng.

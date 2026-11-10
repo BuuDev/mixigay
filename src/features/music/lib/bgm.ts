@@ -1,7 +1,7 @@
 // Background music ("Đài phát thanh Bộ Tộc") rules, kept pure so they can be tested.
-// Browsers block audible autoplay until the visitor interacts with the page, so the
-// music starts on the first tap/keypress instead of on load — unless the visitor
-// turned it off before (remembered per device).
+// The radio tries to start as soon as the page loads; browsers that block audible
+// autoplay until the visitor interacts (most of them, on a first visit) get it on the
+// first tap/keypress instead — unless the visitor turned it off before (remembered per device).
 
 export type BgmPref = "on" | "off" | null;
 
@@ -30,7 +30,7 @@ export function isQuietPath(pathname: string): boolean {
   return QUIET_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-/** Should this first interaction start the music? */
+/** Should the radio start now (on load, or on the first interaction)? */
 export function shouldAutoStart({ pref, pathname, alreadyActive }: { pref: BgmPref; pathname: string; alreadyActive: boolean }): boolean {
   return !alreadyActive && pref !== "off" && !isQuietPath(pathname);
 }

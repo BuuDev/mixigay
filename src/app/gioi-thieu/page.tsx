@@ -31,8 +31,8 @@ export default function AboutPage() {
           dưới.
         </li>
         <li>
-          Cho fan gửi link bài “nhạc nịnh” tự làm. Bài chỉ hiện sau khi được duyệt và luôn mở ở nền tảng gốc (YouTube, SoundCloud…); trang không lưu hay phát
-          nhạc.
+          Cho fan gửi link bài “nhạc nịnh” tự làm. Bài chỉ hiện sau khi được duyệt. Trang không lưu file nhạc của fan: bài trên SoundCloud nghe được ngay qua
+          trình phát chính thức của SoundCloud, các nền tảng khác (YouTube, Spotify…) mở ở trang gốc.
         </li>
       </ul>
       <h2 className="text-lg font-semibold">Tiền bạc</h2>
@@ -46,11 +46,12 @@ export default function AboutPage() {
       <h2 className="text-lg font-semibold">Dữ liệu</h2>
       <p>
         Tài khoản ở Góc Bộ Tộc chỉ gồm <strong>tên Bộ Tộc và mã khóa</strong>: trang không hỏi email, số điện thoại hay tài khoản Google/Facebook của bất kỳ ai,
-        kể cả anh Độ. Trang chỉ lưu tên đăng nhập, tên hiển thị, các đề xuất, lượt upvote, báo cáo, lời nhắn trên Bức tường, lượt “Tối nay tôi có mặt” (chỉ công
-        khai tổng số) và những gì bạn tự gửi (bài nhạc, tranh, link quiz, quote kèm mốc giờ, mục từ cho từ điển Bộ Tộc). Mã khóa được lưu dạng băm, không ai xem
-        được; mất mã khóa thì không khôi phục được tài khoản. Để chống spam, trang lưu tạm mã mạng đã băm (không lưu địa chỉ IP) và có thể dùng bước xác minh
-        Cloudflare Turnstile khi tạo tài khoản. Khách chưa đăng nhập bấm “có mặt” thì chỉ lưu trên máy của bạn. Số liệu video lấy từ YouTube Data API, thông tin
-        game lấy từ Steam. Nhạc nền là các bản nhạc chill của Kevin MacLeod (
+        kể cả anh Độ. Trang chỉ lưu tên đăng nhập, tên hiển thị, các đề xuất, lượt upvote, báo cáo, lời nhắn trên Bức tường, lượt “Tối nay tôi có mặt” và lượt
+        bình chọn (chỉ công khai tổng số, không ai xem được bạn chọn gì) và những gì bạn tự gửi (bài nhạc, tranh, link quiz, quote kèm mốc giờ, mục từ cho từ
+        điển Bộ Tộc). Mã khóa được lưu dạng băm, không ai xem được; mất mã khóa thì không khôi phục được tài khoản. Để chống spam, trang lưu tạm mã mạng đã băm
+        (không lưu địa chỉ IP) và có thể dùng bước xác minh Cloudflare Turnstile khi tạo tài khoản. Khách chưa đăng nhập bấm “có mặt” thì lượt đó và chuỗi có
+        mặt chỉ lưu trên máy của bạn. Phòng “Bộ Tộc đang ở đây” chỉ đếm số tab đang mở và chuyển cảm xúc trong lúc đó, không lưu gì và không gửi tên hay tài
+        khoản. Số liệu video lấy từ YouTube Data API, thông tin game lấy từ Steam. Nhạc nền là các bản nhạc chill của Kevin MacLeod (
         <a href="https://incompetech.com" target="_blank" rel="noopener noreferrer" className="text-accent underline">
           incompetech.com
         </a>
@@ -58,7 +59,8 @@ export default function AboutPage() {
         <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" className="text-accent underline">
           CC BY 4.0
         </a>
-        ; nhạc chỉ bật sau lần chạm đầu tiên và tắt được bất cứ lúc nào.
+        ; trang thử phát nhạc khi bạn mở trang nếu trình duyệt cho phép (thường thì trình duyệt chặn, nhạc sẽ bật ở lần chạm đầu tiên), âm lượng nhỏ, không bao
+        giờ tự phát ở trang Gửi anh Độ, và bấm “Tắt hẳn nhạc” là lần sau không tự bật nữa.
       </p>
       <h2 id="lien-he" className="scroll-mt-20 text-lg font-semibold">
         Liên hệ / yêu cầu gỡ nội dung

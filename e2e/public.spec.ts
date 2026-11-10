@@ -85,8 +85,26 @@ test.describe("public pages", () => {
     await page.goto("/lich");
     const tabs = page.locator("nav.td-bottom-nav");
     await expect(tabs).toBeVisible();
-    await expect(tabs.getByRole("link", { name: "Lịch" })).toBeVisible();
+    await expect(tabs.getByRole("link", { name: "Đề xuất" })).toBeVisible();
     await expect(page.getByRole("banner").getByRole("button", { name: "Thêm ▾" })).toBeHidden();
+  });
+
+  test("home puts the community corner right after the cover, with shortcuts in the hero", async ({ page }) => {
+    await page.goto("/");
+    await dismissIntro(page);
+    const shortcuts = page.getByRole("navigation", { name: "Góc tương tác" });
+    // Thả cảm xúc · Bình chọn · Điểm danh → #tuong-tac, Góp sức → #gop-suc.
+    await expect(shortcuts.getByRole("link")).toHaveCount(4);
+    await expect(shortcuts.getByRole("link", { name: /Góp sức/ })).toHaveAttribute("href", "#gop-suc");
+    await expect(shortcuts.getByRole("link").first()).toHaveAttribute("href", "#tuong-tac");
+    // The first section after the cover is the community corner.
+    const order = await page.evaluate(() =>
+      [...document.querySelectorAll("main section")].filter((el) => el.parentElement?.closest("section") === null).map((el) => el.id),
+    );
+    expect(order.indexOf("tuong-tac")).toBe(1);
+    await shortcuts.getByRole("link").first().click();
+    await expect(page.getByRole("group", { name: "Thả cảm xúc" })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("group", { name: "Thả cảm xúc" }).getByRole("button")).toHaveCount(4);
   });
 
   test("/thong-ke is gone (404)", async ({ page }) => {

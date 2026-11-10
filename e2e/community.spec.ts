@@ -1,5 +1,5 @@
 import type { Browser, BrowserContextOptions, Page } from "@playwright/test";
-import { expect, hasSupabase, signUpThroughDialog, test } from "./fixtures";
+import { dismissIntro, expect, hasSupabase, signUpThroughDialog, test } from "./fixtures";
 import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { createAdminClient, E2E_PREFIX, uniqueTag, userIdForHandle } from "./supabase";
@@ -330,6 +330,90 @@ test("moderation center: reject with a reason, approve, the author sees why, adm
 
   await supabaseAdmin.from("blocked_terms").delete().eq("term", term);
   await admin.context().close();
+});
+
+test("community corner: admin opens a poll, a fan votes on the home page, reactions reach another visitor live", async ({ page, browser, supabaseAdmin }) => {
+  expect(adminState, "admin session from the invite test").toBeDefined();
+  const question = `E2E bình chọn ${tag}?`;
+  const optA = `E2E lựa chọn A ${tag}`;
+  const optB = `E2E lựa chọn B ${tag}`;
+  try {
+    // 1. Admin creates and opens the poll through /admin/binh-chon (its actions refresh the cache).
+    const admin = await newPage(browser, { storageState: adminState });
+    await admin.goto("/admin/binh-chon");
+    const create = admin.locator("form", { has: admin.getByRole("button", { name: "Tạo nháp", exact: true }) });
+    await create.locator("input[name=question]").fill(question);
+    await create.locator("textarea[name=options]").fill(`${optA}\n${optB}`);
+    await create.getByRole("button", { name: "Tạo nháp", exact: true }).click();
+    const row = admin.locator("li", { hasText: question }).first();
+    await row.getByRole("button", { name: "Mở bình chọn" }).click();
+    await expect
+      .poll(async () => (await supabaseAdmin.from("polls").select("status").eq("question", question).single()).data?.status, { timeout: 15_000 })
+      .toBe("open");
+    await admin.context().close();
+
+    // 2. An aged fan (service role: the sign-up form is limited per IP) votes from the home page.
+    const handle = `${E2E_PREFIX}poll${tag}`;
+    const passphrase = `e2e-binh-chon-ma-khoa-${tag}`;
+    const email = `u-${randomUUID()}@id.gocbotoc.invalid`;
+    const { data: created } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: passphrase,
+      email_confirm: true,
+      user_metadata: { full_name: `E2E Poll Fan ${tag}` },
+    });
+    const fanId = created!.user!.id;
+    const { data: key } = await supabaseAdmin.rpc("name_key", { t: handle });
+    await supabaseAdmin.from("account_logins").insert({ handle_key: key, user_id: fanId, auth_email: email });
+    await supabaseAdmin
+      .from("profiles")
+      .update({ created_at: new Date(Date.now() - 3 * 864e5).toISOString() })
+      .eq("id", fanId);
+    await page.goto("/gioi-thieu");
+    await page.getByRole("button", { name: "Vào Bộ Tộc" }).first().click();
+    await page.locator("dialog input[name=handle]").fill(handle);
+    await page.locator("dialog input[name=passphrase]").fill(passphrase);
+    await page.getByRole("button", { name: "Đăng nhập" }).last().click();
+    await expect(page.getByRole("link", { name: new RegExp(`E2E Poll Fan ${tag}`) })).toBeVisible({ timeout: 15_000 });
+
+    await page.goto("/");
+    await dismissIntro(page);
+    const card = page.getByRole("region", { name: "Bình chọn của Bộ Tộc" }).or(page.locator('[aria-label="Bình chọn của Bộ Tộc"]')).first();
+    await card.scrollIntoViewIfNeeded();
+    await expect(card).toContainText(question, { timeout: 15_000 });
+    await card.getByRole("button", { name: new RegExp(optA) }).click();
+    await expect(card.getByText("Bạn đã chọn")).toBeVisible({ timeout: 15_000 });
+    // The card updates optimistically; the vote row and the trigger-kept count land a moment later.
+    await expect
+      .poll(
+        async () => {
+          const { data } = await supabaseAdmin.from("polls").select("poll_options(label, votes)").eq("question", question).single();
+          return (data?.poll_options as { label: string; votes: number }[] | undefined)?.find((o) => o.label === optA)?.votes;
+        },
+        { timeout: 15_000 },
+      )
+      .toBe(1);
+
+    // 3. Reactions are shared live: the fan taps 🔥, an anonymous visitor's counter goes up.
+    const guest = await newPage(browser);
+    await guest.goto("/");
+    await dismissIntro(guest);
+    const guestRoom = guest.getByRole("group", { name: "Thả cảm xúc" });
+    await guestRoom.scrollIntoViewIfNeeded();
+    await expect(guestRoom).toBeVisible({ timeout: 15_000 });
+    const guestFire = guestRoom.getByRole("button", { name: /Cháy/ });
+    const before = Number((await guestFire.innerText()).match(/\d+/)?.[0] ?? 0);
+    const fanRoom = page.getByRole("group", { name: "Thả cảm xúc" });
+    await fanRoom.scrollIntoViewIfNeeded();
+    await expect(async () => {
+      await fanRoom.getByRole("button", { name: /Cháy/ }).click();
+      const now = Number((await guestFire.innerText()).match(/\d+/)?.[0] ?? 0);
+      expect(now).toBeGreaterThan(before);
+    }).toPass({ timeout: 20_000, intervals: [1000] });
+    await guest.context().close();
+  } finally {
+    await supabaseAdmin.from("polls").delete().eq("question", question);
+  }
 });
 
 // Belt and braces when a single spec is run without the global teardown.

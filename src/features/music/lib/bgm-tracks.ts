@@ -27,6 +27,15 @@ export const BGM_TRACKS: BgmTrack[] = [
   { slug: "easy-lemon", title: "Easy Lemon", duration: 126 },
 ];
 
+/** The track the radio opens with on a fresh visit (the playlist continues from there). */
+export const BGM_DEFAULT_SLUG = "airport-lounge";
+
+/** Index of the default track; 0 if it ever disappears from the list. */
+export function defaultTrackIndex(tracks: BgmTrack[] = BGM_TRACKS): number {
+  const i = tracks.findIndex((t) => t.slug === BGM_DEFAULT_SLUG);
+  return i < 0 ? 0 : i;
+}
+
 export function trackSrc(t: BgmTrack): string {
   return `/music/${t.slug}.m4a`;
 }

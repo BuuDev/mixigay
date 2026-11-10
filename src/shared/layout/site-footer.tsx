@@ -13,7 +13,8 @@ import { Logo } from "../ui/brand-art";
 import { IconDiscord, IconExternal, IconFacebook, IconKindle, IconShop, IconYoutube, type IconProps } from "../ui/icons";
 import { NAV } from "./nav";
 
-const EXPLORE = [...NAV.map(({ href, label }) => ({ href, label })), { href: "/gioi-thieu", label: "Giới thiệu" }];
+// Same order as the header: contribution pages first.
+const EXPLORE = NAV.map(({ href, label }) => ({ href, label }));
 
 // Official destinations only (ADR-016): link out, the site never takes money itself.
 const OFFICIAL: { href: string; label: string; Icon: ComponentType<IconProps> }[] = [
@@ -35,7 +36,7 @@ const linkClass = "inline-flex min-h-7 items-center gap-2 rounded-sm text-muted 
 export function SiteFooter() {
   return (
     <footer className="relative z-10 border-t border-border px-safe pt-10 pb-[calc(9rem+env(safe-area-inset-bottom))] text-sm text-muted lg:pb-24">
-      <div className="mx-auto grid max-w-6xl gap-8 sm:grid-cols-2 lg:grid-cols-[1.2fr_1.4fr_1fr]">
+      <div className="mx-auto grid max-w-7xl gap-8 2xl:max-w-[88rem] sm:grid-cols-2 lg:grid-cols-[1.2fr_1.4fr_1fr]">
         <div className="sm:col-span-2 lg:col-span-1">
           <Logo height={32} />
           <p className="mt-3 max-w-xs leading-relaxed">Góc nhỏ Bộ Tộc tự dựng: lịch stream, video theo game, đề xuất game và kỷ niệm cùng anh Độ Mixi.</p>
@@ -71,7 +72,7 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="mx-auto mt-8 max-w-6xl space-y-1 border-t border-border pt-6 text-center">
+      <div className="mx-auto mt-8 max-w-7xl space-y-1 2xl:max-w-[88rem] border-t border-border pt-6 text-center">
         <p>
           Trang do fan tự làm, <strong className="text-foreground">không liên kết chính thức</strong> với anh Độ Mixi hay Kênh MixiGaming.
         </p>

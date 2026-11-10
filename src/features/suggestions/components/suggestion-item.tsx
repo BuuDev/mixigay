@@ -3,6 +3,7 @@ import type { GameCover } from "@/features/videos/lib/game-cover";
 import { formatDate } from "@/shared/lib/format";
 import { Badge } from "@/shared/ui/badge";
 import { cn } from "@/shared/ui/cn";
+import { IconGameViewer, IconKindle } from "@/shared/ui/icons";
 import { GameThumb } from "./game-thumb";
 import { allowedSuggestionUrl } from "../lib/url-policy";
 import type { Suggestion } from "../types";
@@ -15,9 +16,13 @@ interface Props {
   onVote: () => void;
   /** Stream thumbnail of the game this suggestion is linked to; shown only when there is no Steam image. */
   gameCover?: GameCover;
+  /** "Mới": suggested less than 72 h ago. */
+  fresh?: boolean;
+  /** "Đang lên": climbing much faster in "Đang hot" than its all-time votes would place it. */
+  rising?: boolean;
 }
 
-export function SuggestionItem({ suggestion: s, voted, onVote, gameCover }: Props) {
+export function SuggestionItem({ suggestion: s, voted, onVote, gameCover, fresh = false, rising = false }: Props) {
   // Re-checked at render so rows saved before the host allowlist never become links.
   const href = allowedSuggestionUrl(s.url);
   return (
@@ -43,7 +48,15 @@ export function SuggestionItem({ suggestion: s, voted, onVote, gameCover }: Prop
             )}
           </h3>
           <Badge tone={STATUS[s.status].tone}>{STATUS[s.status].label}</Badge>
-          <Badge tone={SOURCE[s.source].tone}>{SOURCE[s.source].label}</Badge>
+          <Badge tone={SOURCE[s.source].tone} icon={s.source === "viewer-made" ? <IconGameViewer size={14} /> : undefined}>
+            {SOURCE[s.source].label}
+          </Badge>
+          {fresh && <Badge tone="misc">Mới</Badge>}
+          {rising && (
+            <Badge tone="accent" icon={<IconKindle size={14} />}>
+              Đang lên
+            </Badge>
+          )}
         </div>
         <p className="mt-1 text-sm break-words">{s.reason}</p>
         {s.steam && (

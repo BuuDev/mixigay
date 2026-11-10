@@ -98,7 +98,7 @@ export function VideoBrowser({
 function GameBanner({ name, count, cover }: { name: string; count: number; cover: GameCover }) {
   return (
     <div className="relative mt-4 overflow-hidden rounded-lg border border-border bg-surface-raised">
-      <Image src={cover.thumbnailUrl} alt="" fill sizes="(min-width: 1152px) 72rem, 100vw" className="object-cover" />
+      <Image src={cover.thumbnailUrl} alt="" fill sizes="(min-width: 1536px) 88rem, (min-width: 1280px) 80rem, 100vw" className="object-cover" />
       <div className="relative bg-gradient-to-r from-black/90 via-black/75 to-black/40 px-4 py-5 text-white">
         <p className="text-lg font-bold">{name}</p>
         <p className="text-sm">{count} video</p>

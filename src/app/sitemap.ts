@@ -9,6 +9,7 @@ const PATHS = [
   "/series",
   "/nhac",
   "/bo-toc",
+  "/quiz",
   "/an-xa",
   "/gui-anh-do",
   "/da-choi",

@@ -40,15 +40,29 @@ const SAMPLE: Suggestion[] = [
 ];
 
 describe("selectTopGamesForStream", () => {
-  it("excludes played/rejected games, sorts by upvotes, and omits raw author names and untrusted URLs", () => {
+  it("excludes played/rejected games, omits raw author names and untrusted URLs", () => {
     const res = selectTopGamesForStream(SAMPLE, NOW);
-    expect(res.map((g) => g.id)).toEqual(["2", "1"]);
-    expect(res[0].safeUrl).toBeNull();
-    expect(res[1].safeUrl).toBe("https://store.steampowered.com/app/100");
+    expect(res.map((g) => g.id).sort()).toEqual(["1", "2"]);
+    const byId = Object.fromEntries(res.map((g) => [g.id, g]));
+    expect(byId["2"].safeUrl).toBeNull();
+    expect(byId["1"].safeUrl).toBe("https://store.steampowered.com/app/100");
     for (const item of res) {
       expect(Object.keys(item)).not.toContain("author");
       expect(Object.keys(item)).not.toContain("authorId");
     }
   });
-});
 
+  it("follows tonight's lineup: a new fan game makes it in over older high-vote games, with its reason", () => {
+    const old = Array.from({ length: 6 }, (_, i) => ({ ...SAMPLE[0], id: `old${i}`, upvotes: 400 - i, createdAt: "2026-10-01T10:00:00Z" }));
+    const fan: Suggestion = { ...SAMPLE[0], id: "fan", source: "viewer-made", upvotes: 8, createdAt: "2026-11-09T10:00:00Z" };
+    const res = selectTopGamesForStream([...old, fan], NOW);
+    expect(res).toHaveLength(5);
+    const pick = res.find((g) => g.id === "fan");
+    expect(pick?.sourceLabel).toBe("Game Bộ Tộc tự làm");
+    expect(["Đang hot", "Mới đề xuất", "Bộ Tộc tự làm"]).toContain(pick?.pickLabel);
+  });
+
+  it("honours the limit", () => {
+    expect(selectTopGamesForStream(SAMPLE, NOW, 1)).toHaveLength(1);
+  });
+});
