@@ -1,8 +1,9 @@
-import Image from "next/image";
 import { ReportButton } from "@/features/reports/components/report-button";
 import type { GameCover } from "@/features/videos/lib/game-cover";
 import { formatDate } from "@/shared/lib/format";
 import { Badge } from "@/shared/ui/badge";
+import { cn } from "@/shared/ui/cn";
+import { GameThumb } from "./game-thumb";
 import { allowedSuggestionUrl } from "../lib/url-policy";
 import type { Suggestion } from "../types";
 import { SOURCE, STATUS } from "./labels";
@@ -19,20 +20,16 @@ interface Props {
 export function SuggestionItem({ suggestion: s, voted, onVote, gameCover }: Props) {
   // Re-checked at render so rows saved before the host allowlist never become links.
   const href = allowedSuggestionUrl(s.url);
-  const streamCover = s.steam?.headerImage ? undefined : gameCover;
   return (
     <div className="flex gap-4 rounded-lg border border-border bg-surface p-4 shadow-card">
       <VoteButton name={s.name} count={s.upvotes} voted={voted} onVote={onVote} />
-      {s.steam?.headerImage && (
-        <div className="relative hidden aspect-[460/215] w-36 shrink-0 self-start overflow-hidden rounded-sm sm:block">
-          <Image src={s.steam.headerImage} alt="" fill sizes="9rem" className="object-cover" />
-        </div>
-      )}
-      {streamCover && (
-        <div className="relative hidden aspect-video w-36 shrink-0 self-start overflow-hidden rounded-sm bg-surface-raised sm:block">
-          <Image src={streamCover.thumbnailUrl} alt="" fill sizes="9rem" className="object-cover" />
-        </div>
-      )}
+      {/* Shown on phones too (it used to be hidden below sm). */}
+      <GameThumb
+        sources={[s.steam?.headerImage, gameCover?.thumbnailUrl]}
+        name={s.name}
+        sizes="(min-width: 640px) 9rem, 5rem"
+        className={cn("w-20 sm:w-36", s.steam?.headerImage ? "aspect-[460/215]" : "aspect-video")}
+      />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-semibold">

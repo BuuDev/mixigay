@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useDebounced } from "@/shared/hooks/use-debounced";
 import { AnimatePresence, m, pop } from "@/shared/motion";
@@ -12,6 +11,7 @@ import { steamAppIdFromUrl, type SteamDetails } from "../lib/steam";
 import type { SuggestionSource, SuggestionStatus } from "../types";
 import { fieldClass, PLAY_LABEL, SOURCE, STATUS } from "./labels";
 import { SimilarHint } from "./similar-hint";
+import { GameThumb } from "./game-thumb";
 
 function similarLabel(s: SimilarItem): string {
   if (s.kind === "game") return `${s.name} – ${PLAY_LABEL[s.status] ?? "có trong danh sách game"}`;
@@ -87,11 +87,7 @@ export function SuggestionForm() {
         <AnimatePresence>
           {steam && (
             <m.div variants={pop} initial="hidden" animate="visible" exit="exit" className="flex gap-2 rounded-md border border-border p-2 text-xs">
-              {steam.headerImage && (
-                <div className="relative aspect-[460/215] w-24 shrink-0 overflow-hidden rounded-sm">
-                  <Image src={steam.headerImage} alt="" fill sizes="6rem" className="object-cover" />
-                </div>
-              )}
+              <GameThumb key={steam.headerImage ?? steam.name} sources={[steam.headerImage]} name={steam.name} sizes="6rem" className="aspect-[460/215] w-24" />
               <div>
                 <div className="font-medium">{steam.name}</div>
                 <div className="text-muted">
