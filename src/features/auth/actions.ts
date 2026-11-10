@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { serverClient } from "@/server/supabase/server";
-import { changeOwnPassphrase, redeemInvite, registerFan, signInFan, type AuthResult } from "./server/accounts";
+import { changeOwnPassphrase, redeemInvite, registerFan, signInAfterSignup, signInFan, type AuthResult } from "./server/accounts";
 
 export type AuthFormState = AuthResult | null;
 
@@ -10,6 +10,11 @@ const field = (fd: FormData, key: string) => String(fd.get(key) ?? "");
 
 export async function signIn(_prev: AuthFormState, fd: FormData): Promise<AuthFormState> {
   return signInFan({ handle: field(fd, "handle"), passphrase: field(fd, "passphrase") });
+}
+
+/** Called by the dialog's "Tôi đã lưu" button once the fan has saved the passphrase. */
+export async function finishSignup(handle: string, passphrase: string): Promise<AuthResult> {
+  return signInAfterSignup({ handle, passphrase });
 }
 
 export async function register(_prev: AuthFormState, fd: FormData): Promise<AuthFormState> {

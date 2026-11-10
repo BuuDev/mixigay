@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { GameCoverRecord } from "@/features/videos/lib/game-cover";
 import { AnimatePresence, m, rise } from "@/shared/motion";
 import { Card } from "@/shared/ui/card";
 import { Chip } from "@/shared/ui/chip";
@@ -20,11 +21,13 @@ interface Props {
   /** "live" talks to Supabase; "demo" (no backend configured) keeps everything in the browser. */
   mode: "live" | "demo";
   signedIn: boolean;
+  /** Stream thumbnails by game slug, for suggestions linked to a game anh Độ played. */
+  covers?: GameCoverRecord;
 }
 
 const FILTERS = ["all", "pending", "played", "rejected"] as const;
 
-export function SuggestionBoard({ initial, votedIds, pending = [], mode, signedIn }: Props) {
+export function SuggestionBoard({ initial, votedIds, pending = [], mode, signedIn, covers }: Props) {
   const { items, voted, vote, notice, addDemo, demoItems } = useSuggestionVotes({ initial, votedIds, mode, signedIn });
   const [filter, setFilter] = useState<SuggestionStatus | "all">("all");
   const shown = items.filter((s) => filter === "all" || s.status === filter).sort((a, b) => b.upvotes - a.upvotes);
@@ -52,14 +55,19 @@ export function SuggestionBoard({ initial, votedIds, pending = [], mode, signedI
             <AnimatePresence initial={false}>
               {shown.map((s) => (
                 <m.li key={s.id} variants={rise} initial="hidden" animate="visible" exit="exit">
-                  <SuggestionItem suggestion={s} voted={voted.has(s.id)} onVote={() => vote(s.id)} />
+                  <SuggestionItem
+                    suggestion={s}
+                    voted={voted.has(s.id)}
+                    onVote={() => vote(s.id)}
+                    gameCover={s.linkedGameSlug ? covers?.[s.linkedGameSlug] : undefined}
+                  />
                 </m.li>
               ))}
             </AnimatePresence>
           </ul>
         ) : (
           <div className="mt-4">
-            <EmptyState art="empty-suggestions" title="Chưa có đề xuất nào ở mục này">
+            <EmptyState mascot="notify" title="Chưa có đề xuất nào ở mục này">
               Hãy là người đầu tiên đề xuất một game cho anh Độ.
             </EmptyState>
           </div>

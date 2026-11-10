@@ -18,10 +18,11 @@ import { GiftBox } from "@/features/support/components/gift-box";
 import { TrendBoard } from "@/features/tribe/components/trend-board";
 import { TribeVibe } from "@/features/tribe/components/tribe-vibe";
 import { newestPublishedAt, trendingTopics } from "@/features/tribe/lib/trends";
+import { ShortsRail } from "@/features/videos/components/shorts-rail";
 import { VideoRail } from "@/features/videos/components/video-rail";
-import { getGames, getVideos } from "@/features/videos/server/queries";
+import { getGames, getShorts, getVideos } from "@/features/videos/server/queries";
 import { ScrollReveal } from "@/shared/motion/scroll-reveal";
-import { IconAlbum, IconCampfire, IconEvent, IconGameMisc, IconSchedule, IconTimeline, IconTribe, IconUpcoming } from "@/shared/ui/icons";
+import { IconAlbum, IconCampfire, IconEvent, IconGameMisc, IconSchedule, IconTimeline, IconTribe, IconUpcoming, IconVlog } from "@/shared/ui/icons";
 import { SectionHeader } from "@/shared/ui/section-header";
 
 /** One block ≈ one phone screen, revealed as it scrolls in (e-invitation rhythm, spec "Nguyên tắc chung"). */
@@ -34,7 +35,9 @@ function Block({ id, children }: { id?: string; children: ReactNode }) {
 }
 
 export default async function Home() {
+  const shortsPromise = getShorts(12);
   const [status, schedule, overrides, videos, games] = await Promise.all([getLiveStatus(), getSchedule(), getScheduleOverrides(), getVideos(), getGames()]);
+  const shorts = await shortsPromise;
   const latest = [...videos].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt)).slice(0, 8);
   const hotSeries = groupSeries(videos).slice(0, 6);
   const topics = trendingTopics(videos, newestPublishedAt(videos)).slice(0, 4);
@@ -126,6 +129,13 @@ export default async function Home() {
           </Link>
         </p>
       </Block>
+
+      {shorts.length > 0 && (
+        <Block>
+          <SectionHeader eyebrow="Xem nhanh" title="Shorts mới" icon={<IconVlog size={26} className="text-accent" />} />
+          <ShortsRail shorts={shorts} />
+        </Block>
+      )}
 
       <Block id="ung-ho">
         <SectionHeader eyebrow="Hộp quà Bộ Tộc" title="Ủng hộ anh Độ" icon={<IconCampfire size={26} className="text-accent" />} />

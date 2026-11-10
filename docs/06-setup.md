@@ -28,6 +28,14 @@ supabase gen types typescript --local > src/server/supabase/database.types.ts
 
 Tài khoản là **tên Bộ Tộc + mã khóa**, không email, không Google ([ADR-013](08-decisions.md#adr-013)). `supabase/config.toml` đã tắt đăng ký công khai; chỉ server của app tạo được tài khoản (cần `SUPABASE_SERVICE_ROLE_KEY`).
 
+**Project dev trên cloud (không cần Docker)** — `mixi-fan-hub-dev`, ref `doxxrzoibwmyybutsama`, Singapore:
+1. Đăng nhập và link: chạy `npx supabase@2 login` rồi `npx supabase@2 link --project-ref <ref>` **trong Terminal của máy** (cần TTY, không chạy được trong chat của agent).
+2. Đẩy migration và seed: `npx supabase@2 db push --linked --include-seed`.
+3. Đẩy cài đặt Auth từ `config.toml`: chạy `npx supabase@2 config diff` để xem trước, rồi `config push`.
+4. Điền file env local theo `.env.example`. Key mới có dạng `sb_publishable_…` / `sb_secret_…`.
+5. **Dữ liệu mẫu thật** (chỉ dùng cho project dev): `npm run seed:sample` nạp video thật của kênh, game Steam thật làm đề xuất, bài nhạc nịnh thật, lời nhắn và điểm danh của 6 tài khoản "Fan mẫu". Script không bịa quote, kết quả giải đấu hay phát ngôn của ai. Script chỉ chạy khi project được nêu rõ: `SEED_SAMPLE_ALLOW=<ref> npm run seed:sample` (localhost thì không cần), và chỉ đụng đúng 6 tài khoản `mau01…mau06` còn mang tên "Fan mẫu". Xóa bằng `SEED_SAMPLE_ALLOW=<ref> npm run seed:sample -- --remove`.
+6. Kiểm tra toàn luồng bằng `node node_modules/.cache/ui-audit/e2e.mjs <thư-mục-ảnh>` với `next start` ở cổng 3311. Kịch bản tạo các tài khoản `e2e…` và tự xóa khi xong.
+
 **Chế độ mock:** khi `NEXT_PUBLIC_SUPABASE_URL` trống, mọi trang dùng `src/features/*/mock.ts`, đề xuất chỉ lưu trên trình duyệt, admin trả 404. CI build theo chế độ này.
 
 **Chủ trang, admin và tài khoản chính chủ (không ai đăng ký, không ai đưa email):**
@@ -57,6 +65,7 @@ Copy `.env.example` → `.env.local` rồi điền. **Không commit `.env.local`
 | `WEBSUB_SECRET` | server | `openssl rand -hex 32` | 4 |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID` | server | @BotFather | 4 |
 | `DISCORD_WEBHOOK_URL` | server | Discord → Kênh → Integrations → Webhooks | 4 |
+| `ADMIN_ALERT_TELEGRAM_CHAT_ID`, `ADMIN_ALERT_DISCORD_WEBHOOK_URL` | server | Nhóm/kênh **riêng của admin** (không phải kênh thông báo live cho fan). Cron `moderation-alert` 5 phút/lần báo khi ≥ 20 nội dung chờ duyệt hoặc ≥ 10 báo cáo trong 1 giờ, tối đa 1 tin/giờ mỗi loại; để trống thì không gửi | 8 |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | server (public key cả client) | `npx web-push generate-vapid-keys` | 4 |
 
 ## Google Cloud (một project dùng chung)

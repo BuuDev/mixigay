@@ -4,16 +4,33 @@ import { formatDate } from "@/shared/lib/format";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { serverClient } from "@/server/supabase/server";
 import { PLATFORM_LABEL, songPlatform } from "../lib/song-url";
-import { deleteSong, setSongApproved } from "./actions";
+import { deleteSong, refetchSongCover, setSongApproved } from "./actions";
 
 /** Moderation queue for fan songs: pending first. Open each link before approving. */
 export async function SongAdmin() {
   const supabase = await serverClient();
-  const { data } = await supabase.from("fan_songs").select("id,author_id,title,artist,url,note,approved,created_at").order("approved").order("created_at", { ascending: false }).limit(300);
-  const rows = (data ?? []) as { id: string; author_id: string; title: string; artist: string; url: string; note: string | null; approved: boolean; created_at: string }[];
+  const { data } = await supabase
+    .from("fan_songs")
+    .select("id,author_id,title,artist,url,note,approved,created_at,thumbnail_url")
+    .order("approved")
+    .order("created_at", { ascending: false })
+    .limit(300);
+  const rows = (data ?? []) as {
+    id: string;
+    author_id: string;
+    title: string;
+    artist: string;
+    url: string;
+    note: string | null;
+    approved: boolean;
+    created_at: string;
+    thumbnail_url: string | null;
+  }[];
   return (
     <Section title="Nhạc nịnh – duyệt bài">
-      <p className="text-xs text-muted">Mở link nghe thử trước khi duyệt. Không duyệt bài có lời lẽ xúc phạm, nội dung bản quyền đem đi bán, hoặc mạo danh kênh.</p>
+      <p className="text-xs text-muted">
+        Mở link nghe thử trước khi duyệt. Không duyệt bài có lời lẽ xúc phạm, nội dung bản quyền đem đi bán, hoặc mạo danh kênh.
+      </p>
       <ul className="divide-y divide-border text-sm">
         {rows.map((s) => {
           const platform = songPlatform(s.url);
@@ -24,7 +41,8 @@ export async function SongAdmin() {
                   {s.title}
                 </a>{" "}
                 <span className="text-muted">
-                  — {s.artist} · {platform ? PLATFORM_LABEL[platform] : "link lạ"} · {formatDate(s.created_at)} · {s.approved ? "đã duyệt" : "chờ duyệt"}
+                  — {s.artist} · {platform ? PLATFORM_LABEL[platform] : "link lạ"} · {formatDate(s.created_at)} · {s.approved ? "đã duyệt" : "chờ duyệt"} ·{" "}
+                  {s.thumbnail_url ? "có ảnh bìa" : "chưa có ảnh bìa"}
                 </span>
                 <ScreenFlags flags={screenText([s.title, s.artist, s.note]).flags} />
                 {s.note && <span className="block text-xs text-muted">{s.note}</span>}
@@ -33,8 +51,13 @@ export async function SongAdmin() {
               <form action={setSongApproved.bind(null, s.id, !s.approved)}>
                 <button className={s.approved ? button : primary}>{s.approved ? "Gỡ duyệt" : "Duyệt"}</button>
               </form>
+              <form action={refetchSongCover.bind(null, s.id)}>
+                <button className={button}>Lấy lại ảnh bìa</button>
+              </form>
               <form action={deleteSong.bind(null, s.id)}>
-                <button className={button} title="Xóa hẳn (trả lại hạn mức gửi cho tác giả – với spam hãy dùng Cấm)">Xóa hẳn</button>
+                <button className={button} title="Xóa hẳn (trả lại hạn mức gửi cho tác giả – với spam hãy dùng Cấm)">
+                  Xóa hẳn
+                </button>
               </form>
             </li>
           );

@@ -1,9 +1,10 @@
 import Image from "next/image";
+import { ChapterTimeline } from "@/features/videos/components/chapter-timeline";
 import { formatDate, formatViews } from "@/shared/lib/format";
 import { youtubeUrl } from "@/shared/lib/links";
 import type { Series } from "../lib/series";
 
-/** Episodes of one series, newest first; each opens on YouTube. */
+/** Episodes of one series, newest first; each opens on YouTube, with its chapters (if any) in a collapsible timeline. */
 export function EpisodeList({ series }: { series: Series }) {
   return (
     <ol className="space-y-3">
@@ -17,7 +18,9 @@ export function EpisodeList({ series }: { series: Series }) {
           >
             <div className="relative aspect-video w-36 shrink-0 overflow-hidden rounded-md bg-surface-raised sm:w-48">
               {e.thumbnailUrl && <Image src={e.thumbnailUrl} alt="" fill sizes="12rem" className="object-cover" />}
-              {e.episode !== undefined && <span className="absolute top-1 left-1 rounded-sm bg-black/70 px-1.5 text-xs font-bold text-white">#{e.episode}</span>}
+              {e.episode !== undefined && (
+                <span className="absolute top-1 left-1 rounded-sm bg-black/70 px-1.5 text-xs font-bold text-white">#{e.episode}</span>
+              )}
             </div>
             <div className="min-w-0 py-1">
               <p className="line-clamp-2 text-sm font-semibold group-hover:underline">{e.episodeTitle}</p>
@@ -26,6 +29,14 @@ export function EpisodeList({ series }: { series: Series }) {
               </p>
             </div>
           </a>
+          {e.chapters && e.chapters.length > 0 && (
+            <details className="mt-1 ml-2">
+              <summary className="inline-flex min-h-8 cursor-pointer items-center rounded-md px-2 text-sm text-accent hover:underline">
+                Các chương ({e.chapters.length})
+              </summary>
+              <ChapterTimeline videoId={e.videoId} chapters={e.chapters} label={`Các chương của ${e.episodeTitle}`} className="mt-2 mb-1" />
+            </details>
+          )}
         </li>
       ))}
     </ol>

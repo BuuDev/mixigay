@@ -74,16 +74,19 @@ export function IntroRitual({ status: initial, schedule, overrides }: { status: 
             <NeonText className="mt-2 text-3xl sm:text-4xl">GÓC BỘ TỘC</NeonText>
             <p className="mt-2 text-sm text-muted">Nhóm lửa trại, quây quần bên anh Độ — web fan tự làm</p>
 
-            <div className="relative mt-8 h-40 w-60">
+            {/* Fixed box (fits the 240×160 unlit fire and the 192×192 lit scene) so nothing shifts between phases. */}
+            <div className="relative mt-8 h-48 w-60">
               <AnimatePresence mode="wait" initial={false}>
                 {phase === "unlit" ? (
-                  <m.div key="unlit" exit={{ opacity: 0, scale: 0.9 }} className="absolute inset-0">
+                  <m.div key="unlit" exit={{ opacity: 0, scale: 0.9 }} className="absolute inset-0 flex items-center justify-center">
                     <Illustration name="intro-unlit" width={240} />
+                    {/* Warm the cache so the lit scene is ready the moment the fire flares. */}
+                    <Mascot pose="campfire" size={192} decorative loading="eager" className="hidden" />
                   </m.div>
                 ) : (
                   <m.div
                     key="lit"
-                    className="absolute inset-0 motion-safe:animate-td-flicker"
+                    className="absolute inset-0 flex items-center justify-center motion-safe:animate-td-flicker"
                     initial={{ opacity: 0, scale: 0.6 }}
                     animate={{
                       opacity: 1,
@@ -94,7 +97,7 @@ export function IntroRitual({ status: initial, schedule, overrides }: { status: 
                       },
                     }}
                   >
-                    <Illustration name="intro-lit" width={240} />
+                    <Mascot pose="campfire" size={192} decorative loading="eager" />
                   </m.div>
                 )}
               </AnimatePresence>

@@ -62,7 +62,10 @@ Lưới 2 cột mobile / 4 cột desktop; chạm → lightbox (`expand`, `close`
 ## 11. Thông báo lên sóng
 Nút `bell`: web push (VAPID) hoặc link bot Telegram/Discord. Chỉ hỏi quyền sau khi người dùng chạm, không hỏi lúc tải trang.
 
-## 12. Mascot Cú Tộc — khi nào dùng pose nào
+## 12. Mascot Cú Đêm — khi nào dùng pose nào
+
+Từ [ADR-014](../08-decisions.md#adr-014): ảnh `public/art/cu-dem/*.webp` (hello = 01-trang-chu, live = 02-dang-live, wait = 06-lich-live, sleep = 20-dang-xuat-di-ngu, sad = 15-ung-ho-support, win = 13-meme-giai-tri). Tranh anh Độ + Cú Đêm (`public/art/do-mixi/`) chỉ làm minh họa nội dung, không làm nhận diện.
+
 | Pose | Dùng ở |
 |---|---|
 | `hello` | trang chủ lần đầu, trang giới thiệu, footer |

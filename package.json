@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "db:check": "node scripts/check-sql.mjs",
     "smoke": "node scripts/smoke.mjs",
+    "seed:sample": "node --no-warnings scripts/seed-sample.mjs",
     "brand": "node scripts/extract-brand.mjs"
   },
   "dependencies": {

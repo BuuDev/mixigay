@@ -22,7 +22,10 @@ export function handleKey(input: string): string {
 
 export const HANDLE_MIN = 3;
 export const HANDLE_MAX = 24;
-export const PASSPHRASE_MIN = 10;
+// Owner decision (2026-11-10): 8 characters for everyone, as in NIST SP 800-63B, which
+// pairs it with a common-password blocklist and attempt limits (both enforced here and
+// in accounts.ts). Longer passphrases are encouraged, not required.
+export const PASSPHRASE_MIN = 8;
 
 /** Null when acceptable, else a message for the form. */
 export function handleProblem(input: string): string | null {
@@ -32,7 +35,8 @@ export function handleProblem(input: string): string | null {
   return null;
 }
 
-export const PASSPHRASE_MIN_PRIVILEGED = 16;
+/** Same as PASSPHRASE_MIN since 2026-11-10; kept so admin-only rules have one place to change. */
+export const PASSPHRASE_MIN_PRIVILEGED = 8;
 
 // The most common choices; a 10-character minimum alone still lets these through.
 const COMMON = [
@@ -51,7 +55,7 @@ const COMMON = [
   "toctruong",
 ];
 
-/** Null when acceptable. `privileged` (admin / official / owner) requires a longer passphrase. */
+/** Null when acceptable. `privileged` (admin / official / owner) uses PASSPHRASE_MIN_PRIVILEGED. */
 export function passphraseProblem(passphrase: string, opts: { handle?: string; privileged?: boolean } = {}): string | null {
   const min = opts.privileged ? PASSPHRASE_MIN_PRIVILEGED : PASSPHRASE_MIN;
   if (passphrase.length < min) return `Mã khóa cần ít nhất ${min} ký tự.`;

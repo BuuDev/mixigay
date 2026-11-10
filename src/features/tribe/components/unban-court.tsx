@@ -12,7 +12,7 @@ import { composeUnbanPlea, UNBAN_OFFENSES, UNBAN_STYLES } from "../lib/unban";
 /**
  * Interactive "Tòa Án Bộ Tộc – Máy Tạo Văn Mẫu Hối Lỗi Xin Unban":
  * visitors pick their "offense" + "apology style" to generate a humorous plea
- * and receive a playful mock verdict from Cú Tộc.
+ * and receive a playful mock verdict from Cú Đêm.
  */
 export function UnbanCourt() {
   const [name, setName] = useState("");
@@ -39,9 +39,7 @@ export function UnbanCourt() {
         <div>
           <Badge tone="accent">Phiên tòa ân xá giả lập</Badge>
           <h3 className="mt-2 text-lg font-extrabold">Khai báo hồ sơ “Ra đảo”</h3>
-          <p className="mt-1 text-xs text-muted">
-            Trình tạo văn mẫu giải trí lấy cảm hứng từ những buổi đọc đơn xin unban đầy nước mắt của anh em Bộ tộc.
-          </p>
+          <p className="mt-1 text-xs text-muted">Trình tạo văn mẫu giải trí lấy cảm hứng từ những buổi đọc đơn xin unban đầy nước mắt của anh em Bộ tộc.</p>
         </div>
 
         <label className="block text-sm font-medium">
@@ -83,9 +81,7 @@ export function UnbanCourt() {
         <div>
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
             <span className="font-mono text-xs tracking-wider text-muted uppercase">Bản thảo đơn xin về bờ</span>
-            <Badge tone={plea.verdict.approved ? "cleared" : "danger"}>
-              Mức cảm động: {plea.verdict.mercyScore}%
-            </Badge>
+            <Badge tone={plea.verdict.approved ? "cleared" : "danger"}>Mức cảm động: {plea.verdict.mercyScore}%</Badge>
           </div>
 
           <AnimatePresence mode="wait" initial={false}>

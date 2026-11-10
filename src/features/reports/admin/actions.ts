@@ -22,6 +22,18 @@ export async function takeDown(kind: string, id: string) {
   if (t.kind === "suggestion") {
     fail("takeDown", (await supabase.from("suggestions").update({ hidden: true }).eq("id", t.id)).error);
     updateTag(TAGS.suggestions);
+  } else if (t.kind === "quote") {
+    fail("takeDown", (await supabase.from("quotes").update({ approved: false }).eq("id", t.id)).error);
+    updateTag(TAGS.quotes);
+  } else if (t.kind === "quiz_link") {
+    fail("takeDown", (await supabase.from("quiz_links").update({ approved: false }).eq("id", t.id)).error);
+    updateTag(TAGS.quiz);
+  } else if (t.kind === "glossary_entry") {
+    fail("takeDown", (await supabase.from("glossary_entries").update({ approved: false }).eq("id", t.id)).error);
+    updateTag(TAGS.glossary);
+  } else if (t.kind === "wall_message") {
+    fail("takeDown", (await supabase.from("wall_messages").update({ approved: false }).eq("id", t.id)).error);
+    updateTag(TAGS.wall);
   } else if (t.kind === "fan_song") {
     fail("takeDown", (await supabase.from("fan_songs").update({ approved: false }).eq("id", t.id)).error);
     updateTag(TAGS.songs);

@@ -2,10 +2,10 @@
 
 import Script from "next/script";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/shared/ui/button";
 import { cn } from "@/shared/ui/cn";
-import { register, signIn, type AuthFormState } from "../actions";
+import { finishSignup, register, signIn, type AuthFormState } from "../actions";
 import { generatePassphrase, HANDLE_MAX, PASSPHRASE_MIN } from "../lib/handle";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
@@ -72,12 +72,22 @@ function useDone(state: AuthFormState, onDone: () => void) {
 function LoginForm() {
   const router = useRouter();
   const [state, action, pending] = useActionState(signIn, null);
+  // React 19 resets uncontrolled form fields after every action: keep the name so a wrong
+  // passphrase does not also wipe the login name.
+  const [loginHandle, setLoginHandle] = useState("");
   useDone(state, () => router.refresh());
   return (
     <form action={action} className="mt-4 space-y-3">
       <label className="block text-sm">
         Tên Bộ Tộc
-        <input name="handle" required autoComplete="username" className={cn(field, "mt-1")} />
+        <input
+          name="handle"
+          required
+          autoComplete="username"
+          className={cn(field, "mt-1")}
+          value={loginHandle}
+          onChange={(e) => setLoginHandle(e.target.value)}
+        />
       </label>
       <label className="block text-sm">
         Mã khóa
@@ -101,6 +111,10 @@ function SignupForm() {
   const [own, setOwn] = useState(false);
   const [passphrase, setPassphrase] = useState(() => generatePassphrase());
   const [saved, setSaved] = useState(false);
+  const [handle, setHandle] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [finishing, startFinishing] = useTransition();
+  const [finishError, setFinishError] = useState<string>();
 
   if (state?.ok) {
     return (
@@ -110,12 +124,27 @@ function SignupForm() {
         <p className="text-xs text-muted">
           Trang không có email của bạn nên <strong>không thể khôi phục</strong> mã khóa. Chụp màn hình hoặc lưu vào trình quản lý mật khẩu.
         </p>
+        {finishError && (
+          <p role="alert" className="text-sm text-live-text">
+            {finishError}
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <Button type="button" variant="secondary" onClick={() => navigator.clipboard?.writeText(passphrase).then(() => setSaved(true))}>
             {saved ? "Đã chép ✓" : "Chép mã khóa"}
           </Button>
-          <Button type="button" onClick={() => router.refresh()}>
-            Tôi đã lưu
+          <Button
+            type="button"
+            disabled={finishing}
+            onClick={() =>
+              startFinishing(async () => {
+                const res = await finishSignup(handle, passphrase);
+                if (res.ok) router.refresh();
+                else setFinishError(res.message);
+              })
+            }
+          >
+            {finishing ? "Đang vào…" : "Tôi đã lưu"}
           </Button>
         </div>
       </div>
@@ -127,16 +156,31 @@ function SignupForm() {
       {TURNSTILE_SITE_KEY && <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="lazyOnload" />}
       <label className="block text-sm">
         Tên Bộ Tộc (dùng để đăng nhập)
-        <input name="handle" required maxLength={HANDLE_MAX + 16} autoComplete="username" className={cn(field, "mt-1")} />
+        <input
+          name="handle"
+          required
+          maxLength={HANDLE_MAX + 16}
+          autoComplete="username"
+          className={cn(field, "mt-1")}
+          value={handle}
+          onChange={(e) => setHandle(e.target.value)}
+        />
       </label>
       <label className="block text-sm">
         Tên hiển thị <span className="text-muted">(tùy chọn, có dấu thoải mái)</span>
-        <input name="displayName" maxLength={50} className={cn(field, "mt-1")} />
+        <input name="displayName" maxLength={50} className={cn(field, "mt-1")} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
       </label>
       <div className="text-sm">
         <div className="flex items-center justify-between">
           <span>Mã khóa</span>
-          <button type="button" onClick={() => setOwn((o) => !o)} className="min-h-8 text-xs text-accent underline underline-offset-2">
+          <button
+            type="button"
+            onClick={() => {
+              setPassphrase(own ? generatePassphrase() : "");
+              setOwn(!own);
+            }}
+            className="min-h-8 text-xs text-accent underline underline-offset-2"
+          >
             {own ? "Dùng mã tự sinh" : "Tự đặt mã khóa"}
           </button>
         </div>
@@ -148,6 +192,7 @@ function SignupForm() {
             minLength={PASSPHRASE_MIN}
             autoComplete="new-password"
             className={cn(field, "mt-1")}
+            value={passphrase}
             onChange={(e) => setPassphrase(e.target.value)}
           />
         ) : (

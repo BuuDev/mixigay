@@ -7,6 +7,8 @@ export interface FanSong {
   url: string;
   platform: SongPlatform;
   note?: string;
+  /** Cover from the platform (host-pinned), absent for TikTok / Zing MP3 / NhacCuaTui. */
+  thumbnailUrl?: string;
   createdAt: string;
   upvotes: number;
 }

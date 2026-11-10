@@ -28,6 +28,8 @@ revoke execute on function public.call_cron_route(text) from public, anon, authe
 -- The route decides between 1- and 5-minute polling (src/features/live/lib/live.ts shouldPoll).
 select cron.schedule('poll-live', '* * * * *', $$ select public.call_cron_route('/api/cron/poll-live') $$);
 select cron.schedule('sync-videos', '17 */6 * * *', $$ select public.call_cron_route('/api/cron/sync-videos') $$);
+-- Alerts admins (ADMIN_ALERT_* env) when the moderation queue spikes; no-op without them.
+select cron.schedule('moderation-alert', '*/5 * * * *', $$ select public.call_cron_route('/api/cron/moderation-alert') $$);
 
 -- Keep pg_net's response log small.
 select cron.schedule('purge-net-responses', '0 4 * * *', $$ delete from net._http_response where created < now() - interval '1 day' $$);

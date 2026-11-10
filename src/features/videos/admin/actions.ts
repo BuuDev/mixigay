@@ -10,7 +10,15 @@ export async function setVideoGame(fd: FormData) {
   const videoId = z.string().min(1).max(20).parse(str(fd, "videoId"));
   const game = optional(fd, "game");
   const supabase = await adminDb();
-  fail("setVideoGame", (await supabase.from("videos").update({ manual_game_slug: game ? slug.parse(game) : null }).eq("video_id", videoId)).error);
+  fail(
+    "setVideoGame",
+    (
+      await supabase
+        .from("videos")
+        .update({ manual_game_slug: game ? slug.parse(game) : null })
+        .eq("video_id", videoId)
+    ).error,
+  );
   updateTag(TAGS.videos);
 }
 
@@ -50,7 +58,15 @@ export async function mapPlaylist(fd: FormData) {
   const playlistId = z.string().min(1).max(64).parse(str(fd, "playlistId"));
   const game = optional(fd, "game");
   const supabase = await adminDb();
-  fail("mapPlaylist", (await supabase.from("playlist_game_map").update({ game_slug: game ? slug.parse(game) : null }).eq("playlist_id", playlistId)).error);
+  fail(
+    "mapPlaylist",
+    (
+      await supabase
+        .from("playlist_game_map")
+        .update({ game_slug: game ? slug.parse(game) : null })
+        .eq("playlist_id", playlistId)
+    ).error,
+  );
   // Membership of a newly mapped playlist is fetched by the next sync-videos run.
   await reclassifyAll(supabase);
   updateTag(TAGS.videos);

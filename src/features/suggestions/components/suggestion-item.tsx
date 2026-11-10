@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { ReportButton } from "@/features/reports/components/report-button";
+import type { GameCover } from "@/features/videos/lib/game-cover";
 import { formatDate } from "@/shared/lib/format";
 import { Badge } from "@/shared/ui/badge";
 import { allowedSuggestionUrl } from "../lib/url-policy";
@@ -7,15 +8,29 @@ import type { Suggestion } from "../types";
 import { SOURCE, STATUS } from "./labels";
 import { VoteButton } from "./vote-button";
 
-export function SuggestionItem({ suggestion: s, voted, onVote }: { suggestion: Suggestion; voted: boolean; onVote: () => void }) {
+interface Props {
+  suggestion: Suggestion;
+  voted: boolean;
+  onVote: () => void;
+  /** Stream thumbnail of the game this suggestion is linked to; shown only when there is no Steam image. */
+  gameCover?: GameCover;
+}
+
+export function SuggestionItem({ suggestion: s, voted, onVote, gameCover }: Props) {
   // Re-checked at render so rows saved before the host allowlist never become links.
   const href = allowedSuggestionUrl(s.url);
+  const streamCover = s.steam?.headerImage ? undefined : gameCover;
   return (
     <div className="flex gap-4 rounded-lg border border-border bg-surface p-4 shadow-card">
       <VoteButton name={s.name} count={s.upvotes} voted={voted} onVote={onVote} />
       {s.steam?.headerImage && (
         <div className="relative hidden aspect-[460/215] w-36 shrink-0 self-start overflow-hidden rounded-sm sm:block">
           <Image src={s.steam.headerImage} alt="" fill sizes="9rem" className="object-cover" />
+        </div>
+      )}
+      {streamCover && (
+        <div className="relative hidden aspect-video w-36 shrink-0 self-start overflow-hidden rounded-sm bg-surface-raised sm:block">
+          <Image src={streamCover.thumbnailUrl} alt="" fill sizes="9rem" className="object-cover" />
         </div>
       )}
       <div className="min-w-0 flex-1">

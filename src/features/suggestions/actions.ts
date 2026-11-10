@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
+import { refresh, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { TAGS } from "@/shared/lib/cache-tags";
 import { getViewer } from "@/features/auth/server/viewer";
@@ -51,11 +51,7 @@ export async function createSuggestion(_prev: FormResult, formData: FormData): P
 
   // Fans may only write these four columns (column grants + RLS + rate-limit trigger).
   const supabase = await serverClient();
-  const { data, error } = await supabase
-    .from("suggestions")
-    .insert({ name, source: input.source, url: link, reason: input.reason })
-    .select("id")
-    .single();
+  const { data, error } = await supabase.from("suggestions").insert({ name, source: input.source, url: link, reason: input.reason }).select("id").single();
   if (error) {
     const blocked = suggestionInsertError(error);
     if (blocked) return { ok: false, message: blocked };
@@ -78,6 +74,8 @@ export async function createSuggestion(_prev: FormResult, formData: FormData): P
 
   // Pending until an admin approves it, so the public list does not change yet; only
   // the author's own "đang chờ duyệt" list (uncached, read per request) shows it.
+  // The public list is unchanged (pending), but the author's own "đang chờ duyệt" list is not.
+  refresh();
   return { ok: true, message: `Đã gửi đề xuất “${name}”. Đề xuất sẽ hiện công khai sau khi được duyệt.` };
 }
 

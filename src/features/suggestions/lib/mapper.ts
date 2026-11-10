@@ -18,7 +18,7 @@ export interface SuggestionRow {
 }
 
 export const SUGGESTION_SELECT =
-  "id,author_id,name,source,url,reason,status,linked_game_slug,steam_app_id,steam_data,upvotes,hidden,created_at,profiles(display_name,avatar_url,verified)";
+  "id,author_id,name,source,url,reason,status,linked_game_slug,steam_app_id,steam_data,upvotes,hidden,created_at,profiles!author_id(display_name,avatar_url,verified)";
 
 /** steam_data is jsonb: accept it only in the expected shape so one bad row cannot crash the page. */
 function steamInfo(appId: number, data: unknown): Suggestion["steam"] {

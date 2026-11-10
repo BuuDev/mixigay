@@ -39,7 +39,8 @@ export default function UnbanPage() {
         <Badge tone="accent">Đặc sản văn mẫu ngoài khơi</Badge>
         <NeonText className="mt-3 text-4xl sm:text-5xl">TÒA ÁN ÂN XÁ</NeonText>
         <p className="mx-auto mt-3 max-w-2xl text-muted">
-          Nơi tập kết của các “Robinson ngoài đảo xa” muốn soạn tâm thư xin về bờ cùng anh Độ Mixi và anh em Bộ Tộc. Chỉ mang tính chất giải trí vui vẻ — muốn xin gỡ khóa thật hãy sinh hoạt đúng nội quy trên kênh chính chủ nhé!
+          Nơi tập kết của các “Robinson ngoài đảo xa” muốn soạn tâm thư xin về bờ cùng anh Độ Mixi và anh em Bộ Tộc. Chỉ mang tính chất giải trí vui vẻ — muốn
+          xin gỡ khóa thật hãy sinh hoạt đúng nội quy trên kênh chính chủ nhé!
         </p>
       </header>
 
@@ -73,7 +74,7 @@ export default function UnbanPage() {
           ))}
         </div>
         <p className="mt-6 text-center text-xs text-muted">
-          Đang có {UNBAN_STYLES.length} trường phái viết tâm thư được cập nhật. Khám phá thêm từ điển, đố vui và phòng tranh tại trang{" "}
+          Đang có {UNBAN_STYLES.length} trường phái viết tâm thư được cập nhật. Khám phá thêm từ điển, quiz Bộ Tộc làm và phòng tranh tại trang{" "}
           <Link href="/bo-toc" className="font-semibold text-accent underline underline-offset-2">
             Bộ Tộc
           </Link>
@@ -83,4 +84,3 @@ export default function UnbanPage() {
     </div>
   );
 }
-

@@ -49,15 +49,20 @@ export function LiveHero({
     <>
       {embers && <Embers live={view === "live"} />}
       <Card className="relative overflow-hidden p-5 sm:p-6" aria-live="polite">
-        <AnimatePresence mode="wait" initial={false}>
-          <m.div key={view} variants={rise} initial="hidden" animate="visible" exit="exit">
-            {view === "live" && <LiveNow status={status} now={now} />}
-            {view === "upcoming" && <UpcomingStream status={status} now={now} />}
-            {view === "next" && next && now && <NextStream slot={next.slot} at={next.at} now={now} override={next.override} />}
-            {view === "offday" && <OffDay next={next} today={today} />}
-            {view === "loading" && <div className="h-32" />}
-          </m.div>
-        </AnimatePresence>
+        {/* The hydration placeholder stays outside AnimatePresence: swapping it for the real
+            view in the commit right after hydration left mode="wait" stuck on the placeholder. */}
+        {view === "loading" ? (
+          <div className="h-32" />
+        ) : (
+          <AnimatePresence mode="wait" initial={false}>
+            <m.div key={view} variants={rise} initial="hidden" animate="visible" exit="exit">
+              {view === "live" && <LiveNow status={status} now={now} />}
+              {view === "upcoming" && <UpcomingStream status={status} now={now} />}
+              {view === "next" && next && now && <NextStream slot={next.slot} at={next.at} now={now} override={next.override} />}
+              {view === "offday" && <OffDay next={next} today={today} />}
+            </m.div>
+          </AnimatePresence>
+        )}
       </Card>
     </>
   );

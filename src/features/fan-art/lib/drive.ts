@@ -47,3 +47,10 @@ export function driveImageUrl(fileId: string, width = 1000): string {
   return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w${width}`;
 }
 
+/**
+ * Bigger version of a gallery image for the lightbox: Drive thumbnails are re-requested at `width`,
+ * anything else (mock-mode local art) is returned unchanged.
+ */
+export function largeImageUrl(imageUrl: string, fileId: string, width = 1600): string {
+  return imageUrl.startsWith("https://drive.google.com/thumbnail?") && FILE_ID_RE.test(fileId) ? driveImageUrl(fileId, width) : imageUrl;
+}

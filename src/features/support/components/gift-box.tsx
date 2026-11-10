@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AnimatePresence, m, pop } from "@/shared/motion";
 import { BottomSheet } from "@/shared/motion/bottom-sheet";
 import { Burst } from "@/shared/motion/burst";
-import { Illustration } from "@/shared/ui/brand-art";
+import { Illustration, SceneArt } from "@/shared/ui/brand-art";
 import { OFFICIAL_LINKS } from "../links";
 
 /**
@@ -72,7 +72,10 @@ export function GiftBox() {
             </m.li>
           ))}
         </ul>
-        <p className="mt-4 text-xs text-muted">Góc Bộ Tộc là trang do fan tự làm, không liên kết chính thức và không nhận tiền dưới bất kỳ hình thức nào.</p>
+        <div className="mt-4 flex items-center gap-3">
+          <SceneArt scene="15-ung-ho-support" size={72} className="shrink-0" />
+          <p className="text-xs text-muted">Góc Bộ Tộc là trang do fan tự làm, không liên kết chính thức và không nhận tiền dưới bất kỳ hình thức nào.</p>
+        </div>
       </BottomSheet>
     </div>
   );

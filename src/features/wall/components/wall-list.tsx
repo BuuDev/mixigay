@@ -6,7 +6,7 @@ import { WallMessageCard } from "./wall-message-card";
 export function WallList({ messages, pending = [] }: { messages: WallMessage[]; pending?: WallMessage[] }) {
   if (!messages.length && !pending.length) {
     return (
-      <EmptyState art="wall-empty" title="Là người đầu tiên viết lên tường">
+      <EmptyState mascot="chat" title="Là người đầu tiên viết lên tường">
         Mỗi lời nhắn tối đa 140 ký tự, hiện lên tường sau khi được duyệt.
       </EmptyState>
     );

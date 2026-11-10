@@ -14,7 +14,7 @@ export function InviteForm({ token, handle }: { token: string; handle: string })
     <form action={action} className="space-y-3">
       <input type="hidden" name="handle" value={handle} autoComplete="username" />
       <label className="block text-sm">
-        Đặt mã khóa (ít nhất {PASSPHRASE_MIN} ký tự, nên là một câu dài; không chứa tên đăng nhập)
+        Đặt mã khóa (ít nhất {PASSPHRASE_MIN} ký tự, không chứa tên đăng nhập)
         <input name="passphrase" type="password" required minLength={PASSPHRASE_MIN} autoComplete="new-password" className={field} />
       </label>
       <label className="block text-sm">

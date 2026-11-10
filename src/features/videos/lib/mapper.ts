@@ -1,5 +1,6 @@
 import { thumbnailFor } from "@/shared/lib/links";
 import type { Game, Video } from "../types";
+import { toChapters } from "./chapters";
 import { gradientFor } from "./classify";
 
 export interface GameRow {
@@ -22,6 +23,9 @@ export interface VideoRow {
   playlist_ids: string[];
   manual_game_slug: string | null;
   auto_game_slug: string | null;
+  /** jsonb `[{ t, title }]`, validated on read. */
+  chapters?: unknown;
+  is_short?: boolean;
 }
 
 export function mapGame(r: GameRow): Game {
@@ -46,5 +50,7 @@ export function mapVideo(r: VideoRow): Video & { autoGameSlug?: string } {
     playlistIds: r.playlist_ids,
     manualGameSlug: r.manual_game_slug ?? undefined,
     autoGameSlug: r.auto_game_slug ?? undefined,
+    chapters: toChapters(r.chapters),
+    isShort: r.is_short ?? false,
   };
 }

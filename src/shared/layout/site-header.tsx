@@ -2,57 +2,93 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Logo } from "../ui/brand-art";
 import { cn } from "../ui/cn";
-import { isActive, NAV } from "./nav";
+import { isActive, MORE_GROUPS, NAV } from "./nav";
 
-/** App chrome. `account` is a slot so this client component never imports server code. */
+const PRIMARY = NAV.filter((n) => n.primary);
+const MORE = [
+  ...NAV.filter((n) => !n.primary),
+  { href: "/gioi-thieu", label: "Giới thiệu", group: "tribe" as const, desc: "Trang này là gì, liên hệ gỡ nội dung" },
+];
+const MENU_WIDTH = 448; // w-md
+
+/**
+ * App chrome. `account` is a slot so this client component never imports server code.
+ * Six fixed links with short labels leave room for "Quản trị · tên · Thoát"
+ * at 1024 px; everything else lives in a two-column "Thêm" menu anchored under its button.
+ */
 export function SiteHeader({ account }: { account?: ReactNode }) {
   const pathname = usePathname();
-  const more = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+
+  // Anchor the popover under its button (top layer is fixed; CSS anchor positioning isn't everywhere yet).
+  useEffect(() => {
+    const el = menu.current;
+    if (!el) return;
+    const place = (e: Event) => {
+      if ((e as ToggleEvent).newState !== "open" || !button.current) return;
+      const r = button.current.getBoundingClientRect();
+      const left = Math.max(16, Math.min(r.left, window.innerWidth - MENU_WIDTH - 16));
+      el.style.left = `${left}px`;
+      el.style.top = `${r.bottom + 8}px`;
+    };
+    el.addEventListener("beforetoggle", place);
+    return () => el.removeEventListener("beforetoggle", place);
+  }, []);
+
+  const moreActive = MORE.some((n) => isActive(n.href, pathname));
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-safe py-2.5">
         <Link href="/" className="shrink-0" aria-label="Góc Bộ Tộc – trang chủ">
           <Logo height={28} />
         </Link>
-        {/* Desktop: the main destinations inline, everything else under "Thêm" (native popover). */}
         <nav aria-label="Điều hướng chính" className="hidden min-w-0 flex-1 items-center gap-1 text-sm lg:flex">
-          {NAV.filter((n) => n.primary).map((item) => (
+          {PRIMARY.map((item) => (
             <NavLink key={item.href} href={item.href} label={item.label} short={item.short} active={isActive(item.href, pathname)} />
           ))}
           <button
+            ref={button}
             type="button"
             popoverTarget="header-more"
             className={cn(
-              "shrink-0 rounded-pill px-3 py-1.5 transition-colors duration-150",
-              NAV.some((n) => !n.primary && isActive(n.href, pathname)) ? "bg-accent text-background" : "text-muted hover:text-foreground",
+              "shrink-0 rounded-pill px-2.5 py-1.5 transition-colors duration-150 xl:px-3",
+              moreActive ? "bg-accent text-background" : "text-muted hover:text-foreground",
             )}
           >
             Thêm ▾
           </button>
           <div
-            ref={more}
+            ref={menu}
             id="header-more"
             popover="auto"
-            className="td-nav-more inset-auto top-14 m-0 min-w-44 rounded-lg border border-border bg-surface p-1 text-sm text-foreground shadow-card"
-            style={{ right: "max(1rem, calc((100vw - 72rem) / 2 + 1rem))" }}
+            className="td-nav-more inset-auto m-0 w-md max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-surface p-3 text-sm text-foreground shadow-card"
           >
-            <ul>
-              {[...NAV.filter((n) => !n.primary), { href: "/gioi-thieu", label: "Giới thiệu" }].map((n) => (
-                <li key={n.href}>
-                  <Link
-                    href={n.href}
-                    aria-current={isActive(n.href, pathname) ? "page" : undefined}
-                    onClick={() => more.current?.hidePopover()}
-                    className="block rounded-md px-3 py-2.5 hover:bg-surface-raised aria-[current=page]:text-accent"
-                  >
-                    {n.label}
-                  </Link>
-                </li>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+              {MORE_GROUPS.map((g) => (
+                <div key={g.key}>
+                  <p className="px-2 pt-1 pb-1.5 text-[11px] font-bold tracking-wider text-accent uppercase">{g.title}</p>
+                  <ul>
+                    {MORE.filter((n) => n.group === g.key).map((n) => (
+                      <li key={n.href}>
+                        <Link
+                          href={n.href}
+                          aria-current={isActive(n.href, pathname) ? "page" : undefined}
+                          onClick={() => menu.current?.hidePopover()}
+                          className="block rounded-md px-2 py-2 hover:bg-surface-raised aria-[current=page]:text-accent"
+                        >
+                          <span className="block font-semibold">{n.label}</span>
+                          {n.desc && <span className="block text-xs leading-snug text-muted">{n.desc}</span>}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </nav>
         <div className="ml-auto shrink-0">{account}</div>
@@ -61,25 +97,23 @@ export function SiteHeader({ account }: { account?: ReactNode }) {
   );
 }
 
-/** Short label between lg and xl so the header fits at 1024 px; full label from xl. */
+/**
+ * Short label at every desktop width: the header container stops growing at 72rem, and
+ * full labels ("Video theo game"…) collided with "Quản trị · long name · Thoát". The full
+ * label stays available as a tooltip.
+ */
 function NavLink({ href, label, short, active }: { href: string; label: string; short?: string; active: boolean }) {
   return (
     <Link
       href={href}
+      title={short ? label : undefined}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "shrink-0 rounded-pill px-3 py-1.5 transition-colors duration-150",
+        "shrink-0 rounded-pill px-2.5 py-1.5 whitespace-nowrap transition-colors duration-150 xl:px-3",
         active ? "bg-accent text-background" : "text-muted hover:text-foreground",
       )}
     >
-      {short ? (
-        <>
-          <span className="xl:hidden">{short}</span>
-          <span className="hidden xl:inline">{label}</span>
-        </>
-      ) : (
-        label
-      )}
+      {short ?? label}
     </Link>
   );
 }

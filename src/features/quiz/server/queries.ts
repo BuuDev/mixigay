@@ -2,28 +2,39 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { check } from "@/server/supabase/check";
 import { publicClient } from "@/server/supabase/public";
+import { serverClient } from "@/server/supabase/server";
 import { TAGS } from "@/shared/lib/cache-tags";
 import { isSupabaseConfigured } from "@/shared/lib/env";
-import { mapQuizQuestion, type QuizQuestionRow } from "../lib/mapper";
-import { STARTER_QUIZ_QUESTIONS } from "../lib/quiz";
-import type { QuizQuestion } from "../types";
+import { mapQuizLinks, QUIZ_LINK_SELECT, type QuizLinkRow } from "../lib/mapper";
+import type { QuizLink } from "../types";
 
-/** Approved fan-contributed quiz questions merged with curated starter questions. */
-export async function getQuizQuestions(): Promise<QuizQuestion[]> {
+/**
+ * Approved quiz links, newest first (RLS hides pending ones from the anon client).
+ * Mock mode has none on purpose: inventing links (or a "played" moment) would put
+ * words in anh Độ's mouth.
+ */
+export async function getQuizLinks(): Promise<QuizLink[]> {
   "use cache";
   cacheTag(TAGS.quiz);
-  cacheLife("hours");
-  if (!isSupabaseConfigured) return STARTER_QUIZ_QUESTIONS;
-  const rows = check<QuizQuestionRow[]>(
-    await publicClient()
-      .from("quiz_questions")
-      .select("id,question,option_a,option_b,option_c,option_d,correct_index,explanation,author_name,approved,created_at")
-      .eq("approved", true)
-      .order("created_at", { ascending: false })
-      .limit(100),
-    "quiz_questions",
+  cacheLife("minutes");
+  if (!isSupabaseConfigured) return [];
+  const rows = check<QuizLinkRow[]>(
+    await publicClient().from("quiz_links").select(QUIZ_LINK_SELECT).eq("approved", true).order("created_at", { ascending: false }).limit(120),
+    "quiz_links",
   );
-  const fanQuestions = rows.map(mapQuizQuestion).filter((q): q is QuizQuestion => q !== null);
-  return [...fanQuestions, ...STARTER_QUIZ_QUESTIONS];
+  return mapQuizLinks(rows);
 }
 
+/** The viewer's own links waiting for review (RLS lets authors read them). Dynamic (session): render under <Suspense>, never cache. */
+export async function getMyPendingQuizLinks(userId: string): Promise<QuizLink[]> {
+  if (!isSupabaseConfigured) return [];
+  const supabase = await serverClient();
+  const { data } = await supabase
+    .from("quiz_links")
+    .select(QUIZ_LINK_SELECT)
+    .eq("author_id", userId)
+    .eq("approved", false)
+    .order("created_at", { ascending: false })
+    .limit(5);
+  return mapQuizLinks((data ?? []) as unknown as QuizLinkRow[]);
+}

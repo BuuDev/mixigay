@@ -13,7 +13,7 @@ const container = stagger(0.04);
  */
 export function VideoGrid({ videos, games, animationKey = "all" }: { videos: ClassifiedVideo[]; games: Game[]; animationKey?: string }) {
   if (!videos.length) {
-    return <EmptyState art="empty-videos" title="Chưa có video nào ở đây" />;
+    return <EmptyState mascot="vod" title="Chưa có video nào ở đây" />;
   }
   const bySlug = new Map(games.map((g) => [g.slug, g]));
   return (

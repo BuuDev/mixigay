@@ -6,45 +6,10 @@ import { Card } from "@/shared/ui/card";
 import { cn } from "@/shared/ui/cn";
 import { submitFanArt } from "../actions";
 import { driveImageUrl, extractDriveFileId } from "../lib/drive";
-import type { FanArtItem } from "../types";
+
+export { FanArtGallery } from "./fan-art-gallery";
 
 const field = "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
-
-export function FanArtGallery({ items }: { items: FanArtItem[] }) {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((art) => (
-        <Card key={art.id} className="group flex flex-col overflow-hidden border border-border bg-surface transition-colors hover:border-accent">
-          <a
-            href={art.driveUrl}
-            target="_blank"
-            rel="noopener noreferrer nofollow ugc"
-            className="relative aspect-[4/3] w-full overflow-hidden bg-background"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={art.imageUrl}
-              alt={art.title}
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-            <span className="absolute right-2 bottom-2 rounded-pill bg-background/85 px-2.5 py-1 text-[11px] font-semibold text-foreground backdrop-blur">
-              Mở Drive gốc ↗
-            </span>
-          </a>
-          <div className="flex flex-1 flex-col justify-between p-4">
-            <div>
-              <h3 className="font-bold text-foreground">{art.title}</h3>
-              <p className="mt-0.5 text-xs font-medium text-accent">Họa sĩ: {art.artist}</p>
-              {art.note && <p className="mt-2 text-xs text-muted">{art.note}</p>}
-            </div>
-          </div>
-        </Card>
-      ))}
-    </div>
-  );
-}
 
 /**
  * Signed-in fans paste their personal Google Drive share link.
@@ -81,7 +46,9 @@ export function FanArtForm() {
           <p className="font-semibold text-foreground">Cách gửi không tốn dung lượng server:</p>
           <ol className="mt-1 list-inside list-decimal space-y-0.5">
             <li>Tải tranh lên Google Drive cá nhân của bạn.</li>
-            <li>Bấm Chuột phải → Chia sẻ → đổi quyền thành <strong>“Bất kỳ ai có đường liên kết đều có thể xem”</strong>.</li>
+            <li>
+              Bấm Chuột phải → Chia sẻ → đổi quyền thành <strong>“Bất kỳ ai có đường liên kết đều có thể xem”</strong>.
+            </li>
             <li>Dán link vào ô bên dưới để xem thử ảnh hiện ngay tại chỗ.</li>
           </ol>
         </div>
@@ -113,9 +80,7 @@ export function FanArtForm() {
         </label>
 
         {rawUrl.trim().length > 0 && !fileId && (
-          <p className="text-xs text-live-text">
-            Link chưa đúng định dạng file Google Drive (`https://drive.google.com/file/d/&lt;ID&gt;/view`).
-          </p>
+          <p className="text-xs text-live-text">Link chưa đúng định dạng file Google Drive (`https://drive.google.com/file/d/&lt;ID&gt;/view`).</p>
         )}
 
         {previewSrc && (
@@ -132,7 +97,8 @@ export function FanArtForm() {
               />
             ) : (
               <p className="text-xs text-live-text">
-                Không tải được ảnh xem trước. Hãy kiểm tra chắc chắn file đã bật chế độ <strong>“Bất kỳ ai có đường liên kết đều xem được”</strong> và là file ảnh (PNG/JPG/WEBP).
+                Không tải được ảnh xem trước. Hãy kiểm tra chắc chắn file đã bật chế độ <strong>“Bất kỳ ai có đường liên kết đều xem được”</strong> và là file
+                ảnh (PNG/JPG/WEBP).
               </p>
             )}
           </div>

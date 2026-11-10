@@ -7,6 +7,7 @@ import { serverClient } from "@/server/supabase/server";
 import { TAGS } from "@/shared/lib/cache-tags";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { songPlatform } from "./lib/song-url";
+import { fetchSongCover } from "./server/song-cover";
 
 export type SongResult = { ok: boolean; message: string } | null;
 
@@ -24,14 +25,17 @@ export async function submitSong(_prev: SongResult, formData: FormData): Promise
   const parsed = SongInput.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ" };
   const { title, artist, url, note } = parsed.data;
-  if (!songPlatform(url)) return { ok: false, message: "Chỉ nhận link https từ YouTube, SoundCloud, TikTok, Spotify, Zing MP3, NhacCuaTui." };
+  const platform = songPlatform(url);
+  if (!platform) return { ok: false, message: "Chỉ nhận link https từ YouTube, SoundCloud, TikTok, Spotify, Zing MP3, NhacCuaTui." };
   // Generic on purpose: never tell a spammer which word tripped the filter.
   if (screenText([title, artist, note]).verdict === "block") {
     return { ok: false, message: "Nội dung không phù hợp với Góc Bộ Tộc. Viết lại lịch sự, không kèm quảng cáo nhé." };
   }
 
+  // Taken from the platform itself and host-pinned (the DB CHECK pins the same hosts).
+  const thumbnail_url = await fetchSongCover(url, platform);
   const supabase = await serverClient();
-  const { error } = await supabase.from("fan_songs").insert({ title, artist, url, note: note || null });
+  const { error } = await supabase.from("fan_songs").insert({ title, artist, url, note: note || null, thumbnail_url });
   if (error) {
     if (error.message.includes("rate_limited_new")) return { ok: false, message: "Tài khoản mới gửi tối đa 1 bài trong ngày đầu, mai quay lại nhé." };
     if (error.message.includes("rate_limited_global")) return { ok: false, message: "Đang có nhiều bài gửi cùng lúc, thử lại sau ít phút nhé." };

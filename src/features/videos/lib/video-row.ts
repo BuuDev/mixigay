@@ -1,6 +1,8 @@
 import { parseIsoDuration } from "@/server/youtube/parse";
 import { thumbnailFor } from "@/shared/lib/links";
 import type { YtVideo } from "@/server/youtube/client";
+import type { Chapter } from "../types";
+import { parseChapters } from "./chapters";
 
 /** Columns of public.videos that come from YouTube (never the admin's manual tag). */
 export interface YtVideoColumns {
@@ -16,6 +18,8 @@ export interface YtVideoColumns {
   actual_start_at: string | null;
   actual_end_at: string | null;
   stats_updated_at: string;
+  /** Parsed from snippet.description (already fetched, no extra quota); null when there is no valid list. */
+  chapters: Chapter[] | null;
 }
 
 export function toVideoColumns(v: YtVideo, now: Date): YtVideoColumns {
@@ -41,5 +45,6 @@ export function toVideoColumns(v: YtVideo, now: Date): YtVideoColumns {
     actual_start_at: live?.actualStartTime ?? null,
     actual_end_at: live?.actualEndTime ?? null,
     stats_updated_at: now.toISOString(),
+    chapters: parseChapters(v.snippet.description),
   };
 }

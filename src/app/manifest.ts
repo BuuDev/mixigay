@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-// Web app manifest (served as /manifest.webmanifest). No service worker: install only.
+// Web app manifest (served as /manifest.webmanifest). The service worker (public/sw.js) only provides the offline page.
 // Icons are the campfire mark from ./icon-192 and ./icon-512 (route handlers, static).
 
 export default function manifest(): MetadataRoute.Manifest {

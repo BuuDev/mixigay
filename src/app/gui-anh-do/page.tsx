@@ -8,7 +8,7 @@ import { getSuggestions } from "@/features/suggestions/server/queries";
 import { WallStreamList } from "@/features/wall/components/wall-stream-list";
 import { ScrollReveal } from "@/shared/motion/scroll-reveal";
 import { Badge } from "@/shared/ui/badge";
-import { Mascot } from "@/shared/ui/brand-art";
+import { Mascot, SceneArt } from "@/shared/ui/brand-art";
 import { Card } from "@/shared/ui/card";
 import { IconAlbum, IconEvent, IconSuggest, IconUpvote, IconWall } from "@/shared/ui/icons";
 import { NeonText } from "@/shared/ui/neon-text";
@@ -31,8 +31,13 @@ export default async function ForAnhDoPage() {
   return (
     <div className="space-y-16 py-6">
       <header className="mx-auto max-w-3xl text-center">
-        <Badge tone="accent">Chế độ đọc nhanh trên sóng · 100% nội dung đã kiểm duyệt</Badge>
-        <NeonText className="mt-3 text-4xl sm:text-5xl">GỬI ANH ĐỘ MIXI</NeonText>
+        <SceneArt scene="04-phong-chat" size={160} sizes="(min-width: 640px) 160px, 112px" className="mx-auto mb-3 size-28 sm:size-40" />
+        <div>
+          <Badge tone="accent">Chế độ đọc nhanh trên sóng · 100% nội dung đã kiểm duyệt</Badge>
+        </div>
+        <h1>
+          <NeonText className="mt-3 block text-4xl text-balance sm:text-5xl">GỬI ANH ĐỘ MIXI</NeonText>
+        </h1>
         <p className="mt-3 text-base leading-relaxed text-muted sm:text-lg">
           Trang tổng hợp gọn, chữ to để anh Độ và team xem nhanh những tựa game anh em Bộ Tộc đang mong chờ nhất, cùng nhạc và tranh fan gửi tặng. Mọi mục trên
           trang này đều đã qua kiểm duyệt, không tự phát âm thanh và chỉ dẫn tới các nền tảng chính thức.

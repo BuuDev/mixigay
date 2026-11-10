@@ -78,7 +78,12 @@ async function signInWithAddress(email: string, passphrase: string): Promise<"ok
 }
 
 /** Creates the auth user, its login handle and (for invites) its role, then signs in. */
-async function createAccount(key: string, displayName: string, passphrase: string, inviteToken?: string): Promise<AuthResult> {
+/**
+ * `signIn: false` for fan sign-up: setting the session cookie re-renders the header and
+ * would unmount the dialog before the fan has seen their generated passphrase. The dialog
+ * signs in once the fan confirms they saved it.
+ */
+async function createAccount(key: string, displayName: string, passphrase: string, inviteToken?: string, signIn = true): Promise<AuthResult> {
   const admin = adminClient();
   const { data: taken } = await admin.from("account_logins").select("handle_key").eq("handle_key", key).maybeSingle();
   if (taken) return { ok: false, message: "Tên này đã có người dùng, chọn tên khác nhé." };
@@ -106,6 +111,7 @@ async function createAccount(key: string, displayName: string, passphrase: strin
       return { ok: false, message: "Link mời đã dùng hoặc hết hạn. Nhờ admin tạo link mới." };
     }
   }
+  if (!signIn) return { ok: true };
   if ((await signInWithAddress(email, passphrase)) !== "ok") return { ok: false, message: "Đã tạo tài khoản, nhưng đăng nhập lỗi. Thử đăng nhập lại nhé." };
   return { ok: true };
 }
@@ -131,7 +137,12 @@ export async function registerFan(input: { handle: string; displayName: string; 
     .limit(1);
   if (promised?.length) return { ok: false, message: "Tên này đã có người dùng, chọn tên khác nhé." };
   const displayName = input.displayName.trim() || input.handle.trim();
-  return createAccount(key, displayName.slice(0, 50), input.passphrase);
+  return createAccount(key, displayName.slice(0, 50), input.passphrase, undefined, false);
+}
+
+/** Right after sign-up: the fan confirmed they saved the passphrase shown by the dialog. */
+export async function signInAfterSignup(input: { handle: string; passphrase: string }): Promise<AuthResult> {
+  return signInFan(input);
 }
 
 export async function signInFan(input: { handle: string; passphrase: string }): Promise<AuthResult> {

@@ -140,7 +140,7 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 **Bối cảnh:** Chủ dự án lo rằng bắt đăng nhập Gmail sẽ làm lộ thông tin: của anh Độ (mọi admin đều thấy email, email nằm trong DB của một web fan) và của người xem. Anh Độ cũng sẽ lo cho thông tin của người xem.
 
 **Quyết định:**
-- Bỏ đăng nhập Google. Mọi tài khoản là tên Bộ Tộc + mã khóa. Mã khóa do trang sinh (4 từ + 4 số, khoảng 41 bit) hoặc do người dùng tự đặt (≥ 10 ký tự).
+- Bỏ đăng nhập Google. Mọi tài khoản là tên Bộ Tộc + mã khóa. Mã khóa do trang sinh (4 từ + 4 số, khoảng 41 bit) hoặc do người dùng tự đặt (≥ 8 ký tự, chặn mã phổ biến; chủ dự án quyết định 2026-11-10).
 - Supabase Auth vẫn quản lý phiên và băm mật khẩu, nhưng mỗi user dùng một địa chỉ ảo `*.invalid`. Đăng ký công khai tắt: chỉ server của app tạo tài khoản, kèm giới hạn theo IP đã băm, giới hạn toàn site và Turnstile (tùy chọn).
 - Anh Độ, team kênh và mod vào bằng link mời dùng một lần, hết hạn sau 48 giờ, tự đặt mã khóa. Chỉ chủ trang tạo được lời mời.
 
@@ -154,3 +154,17 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 - Không còn tài khoản Google làm rào chắn chống clone. Thay bằng: giới hạn tạo tài khoản, luật tài khoản < 24 giờ (không vote, 2 đề xuất/ngày), duyệt trước, cấm và cấm ngầm, Turnstile.
 - Service role có thêm một ngoại lệ, đã ghi trong `docs/07-conventions.md`.
 
+
+## ADR-014 – Linh vật Cú Đêm, tranh anh Độ + Cú Đêm làm minh họa, nhạc nền bật ở lần chạm đầu {#adr-014}
+
+**Bối cảnh:** Chủ dự án thêm hai bộ tranh (mỗi bộ 20 cảnh theo các mục của trang): linh vật cú “Cú Đêm” và tranh hoạt hình anh Độ cùng Cú Đêm. Chủ dự án cũng muốn nhạc nền tự phát khi vào trang.
+
+**Quyết định:**
+- **Cú Đêm thay Cú Tộc** làm linh vật của trang (`Mascot` trong `src/shared/ui/brand-art.tsx`, ảnh ở `public/art/cu-dem/`). Linh vật vẫn là nhân vật của trang, không phải hình anh Độ. Logo vẫn là logomark lửa trại.
+- Tranh **anh Độ + Cú Đêm** (`public/art/do-mixi/`) chỉ dùng làm **minh họa nội dung** trong trang (đầu trang, empty state), có alt ghi rõ là tranh fan làm. Không bao giờ dùng làm logo, favicon, icon app, manifest hay ảnh chia sẻ OG.
+- Một số tranh có chữ “Refund Gaming”/“MIXI”. Như thumbnail YouTube, chữ đó được chấp nhận khi tranh là nội dung minh họa, không được chấp nhận ở nhận diện trang ([01-product](01-product.md)).
+- Bỏ hẳn 4 tranh: cú cầm đồ có logo LEGO (thương hiệu bên thứ ba), và các cảnh quyên góp / top donate (trang không nhận tiền dưới mọi hình thức).
+- Ảnh gốc PNG (49 MB) để ở `design-src/` (gitignore). Trang dùng bản WebP 640×640 (~1,3 MB cả hai bộ), sinh bằng sharp.
+- **Nhạc nền:** trình duyệt chặn âm thanh tự phát trước khi người xem tương tác, nên nhạc bật ở **lần chạm hoặc bấm phím đầu tiên**, âm lượng nhỏ (30/100), có nút tắt. Ai bấm “Tắt hẳn nhạc” thì lần sau không tự bật (lưu `localStorage` key `gbt:bgm`). Không tự bật ở `/admin` và `/moi`. Mở “Nghe trực tiếp” một bài khác thì nhạc nền tự dừng.
+
+**Hệ quả:** COMPONENTS §12 đổi bảng pose sang ảnh Cú Đêm. `npm run brand` không còn sinh mascot dùng trên trang (file `public/brand/mascot/*` cũ để lại cho tới khi dọn brand.html). Safari đôi khi vẫn chặn widget SoundCloud tự phát; khung phát có ghi chú bấm ▶.

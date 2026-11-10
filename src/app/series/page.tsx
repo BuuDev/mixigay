@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { SeriesCard } from "@/features/series/components/series-card";
 import { getSeries } from "@/features/series/server/queries";
 import { ScrollReveal } from "@/shared/motion/scroll-reveal";
+import { Mascot } from "@/shared/ui/brand-art";
 import { IconTimeline } from "@/shared/ui/icons";
 import { PageHeader } from "@/shared/ui/page-header";
 import { DirectionalTransition } from "@/features/series/components/series-hero";
@@ -13,7 +14,7 @@ export default async function SeriesPage() {
   return (
     <DirectionalTransition>
       <div className="space-y-6">
-        <PageHeader title="Series trên kênh" icon={<IconTimeline size={26} className="text-accent" />}>
+        <PageHeader title="Series trên kênh" icon={<IconTimeline size={26} className="text-accent" />} art={<Mascot pose="stage" size={128} decorative />}>
           Tự gom theo tên series trong tiêu đề video, ví dụ “(Phòng Trà An Liễng #4)”. Series nào có tập mới thì lên đầu.
         </PageHeader>
         <h2 className="sr-only">Danh sách series</h2>

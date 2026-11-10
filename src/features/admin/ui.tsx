@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 export const input = "rounded-md border border-border bg-background px-2 py-1 text-sm";
 export const button = "rounded-md border border-border px-3 py-1 text-sm hover:border-accent";
-export const primary = "rounded-md bg-accent px-3 py-1 text-sm font-semibold text-white";
+export const primary = "rounded-md bg-accent px-3 py-1 text-sm font-semibold text-background";
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -15,7 +15,17 @@ export function Section({ title, children }: { title: string; children: ReactNod
   );
 }
 
-export function GameSelect({ games, name = "game", value, empty = "— chưa gán —" }: { games: { slug: string; name: string }[]; name?: string; value?: string | null; empty?: string }) {
+export function GameSelect({
+  games,
+  name = "game",
+  value,
+  empty = "— chưa gán —",
+}: {
+  games: { slug: string; name: string }[];
+  name?: string;
+  value?: string | null;
+  empty?: string;
+}) {
   return (
     <select name={name} defaultValue={value ?? ""} className={input}>
       <option value="">{empty}</option>

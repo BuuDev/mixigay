@@ -50,15 +50,23 @@ export async function ReportQueue() {
 
   // Human-readable labels for the reported targets.
   const ids = (k: ReportKind) => list.filter((g) => g.kind === k).map((g) => g.id);
-  const [sug, songs, people] = await Promise.all([
+  const [sug, songs, people, wallRows, quoteRows, glossRows, quizRows] = await Promise.all([
     ids("suggestion").length ? supabase.from("suggestions").select("id,name").in("id", ids("suggestion")) : { data: [] },
     ids("fan_song").length ? supabase.from("fan_songs").select("id,title").in("id", ids("fan_song")) : { data: [] },
     ids("profile").length ? supabase.from("profiles").select("id,display_name").in("id", ids("profile")) : { data: [] },
+    ids("wall_message").length ? supabase.from("wall_messages").select("id,body").in("id", ids("wall_message")) : { data: [] },
+    ids("quote").length ? supabase.from("quotes").select("id,body").in("id", ids("quote")) : { data: [] },
+    ids("glossary_entry").length ? supabase.from("glossary_entries").select("id,term").in("id", ids("glossary_entry")) : { data: [] },
+    ids("quiz_link").length ? supabase.from("quiz_links").select("id,title").in("id", ids("quiz_link")) : { data: [] },
   ]);
   const names = new Map<string, string>([
     ...((sug.data ?? []) as { id: string; name: string }[]).map((r) => [r.id, r.name] as const),
     ...((songs.data ?? []) as { id: string; title: string }[]).map((r) => [r.id, r.title] as const),
     ...((people.data ?? []) as { id: string; display_name: string }[]).map((r) => [r.id, r.display_name] as const),
+    ...((wallRows.data ?? []) as { id: string; body: string }[]).map((r) => [r.id, `“${r.body}”`] as const),
+    ...((quoteRows.data ?? []) as { id: string; body: string }[]).map((r) => [r.id, `“${r.body}”`] as const),
+    ...((glossRows.data ?? []) as { id: string; term: string }[]).map((r) => [r.id, r.term] as const),
+    ...((quizRows.data ?? []) as { id: string; title: string }[]).map((r) => [r.id, r.title] as const),
   ]);
 
   return (

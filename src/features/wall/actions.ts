@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { z } from "zod";
 import { getViewer } from "@/features/auth/server/viewer";
 import { serverClient } from "@/server/supabase/server";
@@ -40,6 +41,8 @@ export async function postWallMessage(_prev: WallFormResult, formData: FormData)
 
   // Pending until an admin approves it, so the cached public wall does not change yet;
   // only the author's own "đang chờ duyệt" list (uncached, read per request) shows it.
+  // The public list is unchanged (pending), but the author's own "đang chờ duyệt" list is not.
+  refresh();
   return { ok: true, message: "Đã gửi lời nhắn. Lời nhắn sẽ hiện trên tường sau khi được duyệt." };
 }
 

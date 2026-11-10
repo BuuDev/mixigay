@@ -9,6 +9,7 @@ import { EpisodeList } from "@/features/series/components/episode-list";
 import { getSeriesBySlug } from "@/features/series/server/queries";
 import { isSupabaseConfigured } from "@/shared/lib/env";
 import { ScrollReveal } from "@/shared/motion/scroll-reveal";
+import { Mascot } from "@/shared/ui/brand-art";
 import { Card } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { IconEvent } from "@/shared/ui/icons";
@@ -22,6 +23,7 @@ export default async function MusicPage() {
   return (
     <div className="space-y-16 py-6">
       <header className="text-center">
+        <Mascot pose="chat" size={160} sizes="(min-width: 640px) 160px, 112px" decorative className="mx-auto mb-3 size-28 sm:size-40" />
         <NeonText className="text-4xl sm:text-5xl">GÓC NHẠC</NeonText>
         <p className="mx-auto mt-3 max-w-xl text-muted">
           Phòng Trà An Liễng trên kênh và những bài “nhạc nịnh” Bộ Tộc tự làm. Bài trên SoundCloud có thể bấm nghe trực tiếp tại chỗ hoặc mở ở nền tảng gốc.
@@ -30,7 +32,7 @@ export default async function MusicPage() {
 
       <ScrollReveal as="section">
         <SectionHeader eyebrow="Đêm nhạc trên kênh" title="Phòng Trà An Liễng" icon={<IconEvent size={26} className="text-accent" />} />
-        {anLieng ? <EpisodeList series={anLieng} /> : <EmptyState art="empty-videos" title="Chưa có tập An Liễng nào trong dữ liệu" />}
+        {anLieng ? <EpisodeList series={anLieng} /> : <EmptyState mascot="vod" title="Chưa có tập An Liễng nào trong dữ liệu" />}
       </ScrollReveal>
 
       <ScrollReveal as="section">
@@ -42,12 +44,15 @@ export default async function MusicPage() {
                 <SongList songs={songs} />
               </Suspense>
             ) : (
-              <EmptyState art="empty-suggestions" title="Chưa có bài nào được duyệt" />
+              <EmptyState mascot="wait" title="Chưa có bài nào được duyệt" />
             )}
           </div>
-          <Suspense fallback={null}>
-            <SubmitBox />
-          </Suspense>
+          {/* Sized to its content and kept in view below the header while the list scrolls. */}
+          <div className="self-start lg:sticky lg:top-20">
+            <Suspense fallback={null}>
+              <SubmitBox />
+            </Suspense>
+          </div>
         </div>
       </ScrollReveal>
     </div>

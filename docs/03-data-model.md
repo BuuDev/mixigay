@@ -215,17 +215,14 @@ create table fan_art (
   created_at timestamptz not null default now()
 );
 
-create table quiz_questions (
+create table quiz_links (               -- quiz fan làm sẵn (Kahoot, Wayground, Wordwall…) cho anh Độ chơi
   id uuid primary key default gen_random_uuid(),
   author_id uuid not null references profiles on delete cascade,
-  question text not null check (char_length(btrim(question)) between 10 and 240),
-  option_a text not null,
-  option_b text not null,
-  option_c text not null,
-  option_d text not null,
-  correct_index smallint not null check (correct_index between 0 and 3),
-  explanation text,
-  author_name text not null default 'Bộ Tộc',
+  title text not null,                   -- 5–120
+  url text not null,                     -- chỉ nền tảng quiz, unique (không phân biệt hoa thường)
+  description text,                      -- ≤300
+  played_video_id text references videos on delete set null,  -- admin đánh dấu "anh Độ đã chơi"
+  played_at_seconds int,
   approved boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -240,12 +237,12 @@ create table quiz_questions (
 | suggestion_votes | chỉ phiếu của mình | `user_id = auth.uid()`, tài khoản ≥ 24 giờ (hoặc `trust ≥ 1`), không bị cấm, đề xuất đã duyệt và không bị ẩn, ≤ 60 phiếu/giờ | – | `user_id = auth.uid()` |
 | profiles | mọi người | trigger khi tạo user | chủ sở hữu, chỉ cột `display_name` (trigger làm sạch, cắt 50 ký tự) | – |
 | banned_terms | admin | admin | admin | admin |
-| quotes | mọi người (`approved = true`), tác giả thấy của mình, admin thấy hết | đăng nhập, `author_id = auth.uid()`, `approved = false` | admin | admin, tác giả |
-| fan_songs, fan_art, quiz_questions | `approved`, hoặc tác giả, hoặc admin | đăng nhập, không bị cấm, `author_id = auth.uid()`, `approved = false`, giới hạn ở trigger | admin | **chỉ admin** |
+| quotes | mọi người (`approved = true`), tác giả thấy của mình, admin thấy hết | đăng nhập, `author_id = auth.uid()`, `approved = false` | admin | admin (tác giả muốn gỡ thì báo admin) |
+| fan_songs, fan_art, quiz_links | `approved`, hoặc tác giả, hoặc admin | đăng nhập, không bị cấm, `author_id = auth.uid()`, `approved = false`, giới hạn ở trigger | admin | **chỉ admin** |
 | push_subscriptions | chủ sở hữu | đăng nhập | – | chủ sở hữu |
 | api_usage | admin | – (service role qua `add_api_usage`) | – | – |
 | admins | chính mình | – | – | – |
-| notifications_log, account_logins, invites, auth_attempts | – (chỉ service role) | – | – | – |
+| notifications_log, admin_alerts, account_logins, invites, auth_attempts | – (chỉ service role) | – | – | – |
 
 Job cron dùng service role nên bỏ qua RLS. Vì vậy mọi kiểm tra quyền của job phải nằm ở phía route (`CRON_SECRET`).
 
@@ -287,7 +284,8 @@ Migration `supabase/migrations/20261109120000_fan_songs.sql`.
 
 | Cột | Ghi chú |
 |---|---|
-| `title` (2–120), `artist` (1–80), `url`, `note` (≤300) | Fan chỉ được insert 4 cột này (column grant) |
+| `title` (2–120), `artist` (1–80), `url`, `note` (≤300), `thumbnail_url` | Fan chỉ được insert 5 cột này (column grant) |
+| `thumbnail_url` | Ảnh bìa, server lấy từ oEmbed của SoundCloud/Spotify hoặc `i.ytimg.com` của YouTube lúc gửi; admin bấm "Lấy lại ảnh bìa" được. Check trong DB chỉ nhận host `i[0-9].sndcdn.com`, `i.ytimg.com`, `i.scdn.co`, `image-cdn-xx.spotifycdn.com` (trình duyệt tải ảnh này, nên không cho trỏ tới server lạ). TikTok để trống vì link ảnh hết hạn. Migration `20261110160000_quiz_links_song_art.sql` |
 | `url` | `https://` tới YouTube, youtu.be, SoundCloud, TikTok, Spotify, Zing MP3, NhacCuaTui, có đường dẫn (check trong DB + `songPlatform()` trong app); **unique chỉ trong các bài đã duyệt**, để bản chờ duyệt của người khác không chiếm được link |
 | `approved` | mặc định `false`; chỉ admin đổi |
 
@@ -305,14 +303,16 @@ Migration `supabase/migrations/20261110100000_fan_art_and_quiz.sql`.
 | `drive_file_id` | Chỉ chấp nhận `[A-Za-z0-9_-]{10,80}`, unique trong các tranh `approved` |
 | `approved` | Mặc định `false`; admin xem trước ảnh trực tiếp trong `/admin/fan-art` rồi mới duyệt |
 
-## quiz_questions (Đố vui Bộ Tộc — fan đóng góp câu hỏi)
+## quiz_links (Quiz Bộ Tộc làm cho anh Độ chơi)
 
-Migration `supabase/migrations/20261110100000_fan_art_and_quiz.sql`.
+Migration `supabase/migrations/20261110160000_quiz_links_song_art.sql` (thay `quiz_questions`: trang không tự làm câu hỏi nữa, chỉ gom link quiz fan đã làm).
 
 | Cột | Ghi chú |
 |---|---|
-| `question` (10–240), `option_a..d` (1–120), `correct_index` (0..3), `explanation` (≤300), `author_name` (1–60) | Fan chỉ được insert các cột nội dung này; `approved` mặc định `false` |
-| Giới hạn | Tối đa 3 câu/ngày (1 câu/ngày cho tài khoản < 24h, 20 câu/giờ toàn site); chặn duyệt nếu tác giả bị cấm (`block_banned_approval`) |
+| `title` (5–120), `url`, `description` (≤300) | Fan chỉ được insert 3 cột này; `approved` mặc định `false` |
+| `url` | `https://` tới `kahoot.it`, `quizizz.com`/`wayground.com`, `wordwall.net`, `quizlet.com`, `blooket.com` (cho phép tiền tố `www.`/`create.`/`play.`), `forms.gle`, `docs.google.com/forms`. Check trong DB + `quizPlatform()` trong app. Unique theo `lower(url)` |
+| `played_video_id`, `played_at_seconds` | Chỉ admin đặt, khi anh Độ đã chơi trên sóng; trang dẫn ra YouTube đúng mốc giờ |
+| Giới hạn | 3 link/ngày, tài khoản < 24h chỉ 1; chặn duyệt nếu tác giả bị cấm; báo cáo được (`target_kind = 'quiz_link'`); `moderate_user` gỡ khi cấm |
 
 ## Báo cáo nội dung, vote nhạc nịnh, giới hạn Steam
 
@@ -360,8 +360,8 @@ Migration `supabase/migrations/20261110120000_admin_access_official.sql`, [ADR-0
   - 50 lần sai / giờ cho mỗi tên;
   - 30 lần sai / 10 phút cho mỗi mạng (IPv6 tính theo dải /64).
 - Mã khóa:
-  - ≥ 10 ký tự, không phải mã phổ biến, không chứa tên đăng nhập;
-  - tài khoản admin / chính chủ / chủ trang cần ≥ 16 ký tự;
+  - ≥ 8 ký tự cho mọi tài khoản, kể cả admin / chính chủ / chủ trang (chủ dự án chọn ngày 2026-11-10, theo NIST SP 800-63B);
+  - không phải mã phổ biến, không toàn số, không chứa tên đăng nhập;
   - đổi mã khóa phải nhập mã hiện tại.
 
 ## Bức tường Bộ Tộc, "Tối nay tôi có mặt", gộp `live_samples`

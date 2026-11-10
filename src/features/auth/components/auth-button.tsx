@@ -17,7 +17,7 @@ export async function AuthButton() {
           Quản trị
         </Link>
       )}
-      <Link href="/tai-khoan" className="hidden max-w-36 truncate text-muted hover:text-foreground sm:inline">
+      <Link href="/tai-khoan" title={viewer.name} className="hidden max-w-24 truncate text-muted hover:text-foreground sm:inline xl:max-w-28">
         {viewer.name}
         {viewer.verified && <span className="ml-1 text-cleared">✓</span>}
       </Link>

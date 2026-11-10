@@ -10,6 +10,8 @@ export interface YtVideo {
   id: string;
   snippet: {
     title: string;
+    /** Part of `snippet`, so reading it costs nothing extra. */
+    description?: string;
     publishedAt: string;
     liveBroadcastContent: "live" | "upcoming" | "none";
     thumbnails?: { high?: { url: string }; medium?: { url: string } };

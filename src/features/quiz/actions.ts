@@ -1,58 +1,67 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { z } from "zod";
 import { getViewer } from "@/features/auth/server/viewer";
 import { serverClient } from "@/server/supabase/server";
 import { screenText } from "@/shared/lib/moderation/screen";
+import { quizLinkInsertError } from "./lib/errors";
+import { QUIZ_DESCRIPTION_MAX, QUIZ_PLATFORM_LIST, QUIZ_TITLE_MAX, QUIZ_TITLE_MIN, QUIZ_URL_MAX, quizPlatform } from "./lib/quiz-url";
 
-export type QuizSubmitResult = { ok: boolean; message: string } | null;
+export type QuizLinkFormResult = { ok: true; message: string } | { ok: false; message: string } | null;
 
-const QuizInput = z.object({
-  question: z.string().trim().min(10, "Câu hỏi ít nhất 10 ký tự").max(240),
-  optionA: z.string().trim().min(1, "Nhập đủ 4 đáp án A, B, C, D").max(120),
-  optionB: z.string().trim().min(1, "Nhập đủ 4 đáp án A, B, C, D").max(120),
-  optionC: z.string().trim().min(1, "Nhập đủ 4 đáp án A, B, C, D").max(120),
-  optionD: z.string().trim().min(1, "Nhập đủ 4 đáp án A, B, C, D").max(120),
-  correctIndex: z.coerce.number().int().min(0).max(3),
-  explanation: z.string().trim().max(300).optional(),
-  authorName: z.string().trim().min(1).max(60).optional(),
+const REJECTED = "Nội dung không phù hợp với Góc Bộ Tộc. Viết lại lịch sự, không kèm quảng cáo nhé.";
+
+/** Length as Postgres char_length counts it (code points). */
+const chars = (s: string) => [...s].length;
+
+const QuizLinkInput = z.object({
+  title: z
+    .string()
+    .trim()
+    .refine((s) => chars(s) >= QUIZ_TITLE_MIN, `Tên quiz ít nhất ${QUIZ_TITLE_MIN} ký tự.`)
+    .refine((s) => chars(s) <= QUIZ_TITLE_MAX, `Tên quiz tối đa ${QUIZ_TITLE_MAX} ký tự.`),
+  url: z
+    .string()
+    .trim()
+    .min(1, "Dán link quiz của bạn.")
+    .refine((s) => chars(s) <= QUIZ_URL_MAX, `Link tối đa ${QUIZ_URL_MAX} ký tự.`)
+    .refine((s) => quizPlatform(s) !== null, `Chỉ nhận link quiz trên ${QUIZ_PLATFORM_LIST}, bắt đầu bằng https://.`),
+  description: z
+    .string()
+    .trim()
+    .refine((s) => chars(s) <= QUIZ_DESCRIPTION_MAX, `Mô tả tối đa ${QUIZ_DESCRIPTION_MAX} ký tự.`),
 });
 
-/** Signed-in fan submits a quiz question; it remains unapproved until an admin approves it. */
-export async function submitQuizQuestion(_prev: QuizSubmitResult, formData: FormData): Promise<QuizSubmitResult> {
+const text = (fd: FormData, key: string) => {
+  const v = fd.get(key);
+  return typeof v === "string" ? v : "";
+};
+
+/** Signed-in fan shares a quiz link; it stays hidden until an admin approves it. */
+export async function submitQuizLink(_prev: QuizLinkFormResult, formData: FormData): Promise<QuizLinkFormResult> {
   const viewer = await getViewer();
-  if (!viewer) return { ok: false, message: "Vào Bộ Tộc (đăng nhập) để đóng góp câu hỏi đố vui." };
+  if (!viewer) return { ok: false, message: "Vào Bộ Tộc (đăng nhập) để gửi link quiz." };
 
-  const parsed = QuizInput.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu câu hỏi không hợp lệ" };
+  const parsed = QuizLinkInput.safeParse({ title: text(formData, "title"), url: text(formData, "url"), description: text(formData, "description") });
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ" };
+  const { title, url, description } = parsed.data;
 
-  const { question, optionA, optionB, optionC, optionD, correctIndex, explanation, authorName } = parsed.data;
-  if (screenText([question, optionA, optionB, optionC, optionD, explanation, authorName]).verdict === "block") {
-    return { ok: false, message: "Nội dung không phù hợp với Góc Bộ Tộc. Viết lại lịch sự, không kèm quảng cáo nhé." };
-  }
+  // Generic on purpose: never tell a spammer which word tripped the filter.
+  if (screenText([title, description]).verdict === "block") return { ok: false, message: REJECTED };
 
+  // Fans may only write (title, url, description) (column grant + RLS + rate-limit trigger); author_id defaults to auth.uid().
   const supabase = await serverClient();
-  const { error } = await supabase.from("quiz_questions").insert({
-    question,
-    option_a: optionA,
-    option_b: optionB,
-    option_c: optionC,
-    option_d: optionD,
-    correct_index: correctIndex,
-    explanation: explanation || null,
-    author_name: authorName || viewer.name || "Bộ Tộc",
-  });
-
+  const { error } = await supabase.from("quiz_links").insert({ title, url, description: description || null });
   if (error) {
-    if (error.message.includes("rate_limited_new")) return { ok: false, message: "Tài khoản mới gửi tối đa 1 câu hỏi trong ngày đầu, mai quay lại nhé." };
-    if (error.message.includes("rate_limited_global")) return { ok: false, message: "Đang có nhiều câu hỏi gửi cùng lúc, thử lại sau ít phút nhé." };
-    if (error.message.includes("rate_limited")) return { ok: false, message: "Mỗi ngày gửi tối đa 3 câu hỏi, mai quay lại nhé." };
-    if (error.message.includes("too_short")) return { ok: false, message: "Câu hỏi hoặc đáp án quá ngắn." };
-    if (error.code === "42501") return { ok: false, message: "Tài khoản này đã bị khóa gửi nội dung." };
-    console.error("submitQuizQuestion", error);
-    return { ok: false, message: "Có lỗi khi gửi câu hỏi, thử lại sau nhé." };
+    const friendly = quizLinkInsertError(error);
+    if (friendly) return { ok: false, message: friendly };
+    console.error("submitQuizLink", error);
+    return { ok: false, message: "Có lỗi, thử lại sau." };
   }
 
-  return { ok: true, message: "Đã gửi câu hỏi đố vui! Câu hỏi sẽ xuất hiện trong bộ đề sau khi được duyệt." };
+  // Pending until an admin approves it: the cached board does not change,
+  // but the author's own "đang chờ duyệt" list (read per request) does.
+  refresh();
+  return { ok: true, message: "Đã gửi link quiz. Link sẽ hiện trên bảng sau khi admin mở thử và duyệt." };
 }
-

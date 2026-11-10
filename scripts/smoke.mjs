@@ -27,9 +27,51 @@ const tables = {
   games: [{ slug: "pubg", name: "PUBG", is_vlog: false, cover_url: null, sort_order: 0, game_keywords: [{ keyword: "pubg" }] }],
   schedule_slots: [{ id: "00000000-0000-0000-0000-000000000001", day_of_week: 1, time_vn: "20:00:00", title: "SMOKE slot", game_slug: "pubg", note: null }],
   videos: [
-    { video_id: "dQw4w9WgXcQ", title: "SMOKE PUBG video", published_at: now, duration_seconds: 3600, view_count: 99, thumbnail_url: null, was_live: true, playlist_ids: [], manual_game_slug: null, auto_game_slug: "pubg" },
+    {
+      video_id: "dQw4w9WgXcQ",
+      title: "SMOKE PUBG video",
+      published_at: now,
+      duration_seconds: 3600,
+      view_count: 99,
+      thumbnail_url: null,
+      was_live: true,
+      playlist_ids: [],
+      manual_game_slug: null,
+      auto_game_slug: "pubg",
+      is_short: false,
+      chapters: [
+        { t: 0, title: "SMOKE mở đầu" },
+        { t: 60, title: "SMOKE phần 1" },
+        { t: 120, title: "SMOKE phần 2" },
+      ],
+    },
+    {
+      video_id: "smokeShort01",
+      title: "SMOKE short",
+      published_at: now,
+      duration_seconds: 45,
+      view_count: 5,
+      thumbnail_url: null,
+      was_live: false,
+      playlist_ids: [],
+      manual_game_slug: null,
+      auto_game_slug: null,
+      chapters: null,
+      is_short: true,
+    },
   ],
-  fan_songs: [{ id: "00000000-0000-0000-0000-0000000000bb", title: "SMOKE song", artist: "Smoke Fan", url: "https://soundcloud.com/smoke/song", note: null, approved: true, created_at: now }],
+  fan_songs: [
+    {
+      id: "00000000-0000-0000-0000-0000000000bb",
+      title: "SMOKE song",
+      artist: "Smoke Fan",
+      url: "https://soundcloud.com/smoke/song",
+      note: null,
+      thumbnail_url: null,
+      approved: true,
+      created_at: now,
+    },
+  ],
   fan_art: [
     {
       id: "00000000-0000-0000-0000-0000000000cc",
@@ -42,24 +84,37 @@ const tables = {
       created_at: now,
     },
   ],
-  quiz_questions: [
+  quiz_links: [
     {
       id: "00000000-0000-0000-0000-0000000000dd",
-      question: "SMOKE quiz question của Bộ Tộc?",
-      option_a: "Đáp án A",
-      option_b: "Đáp án B",
-      option_c: "Đáp án C",
-      option_d: "Đáp án D",
-      correct_index: 1,
-      explanation: "Giải thích smoke",
-      author_name: "Smoke Fan",
+      author_id: "00000000-0000-0000-0000-0000000000ee",
+      title: "SMOKE quiz link của Bộ Tộc",
+      url: "https://wordwall.net/vi/resource/123/smoke",
+      description: "Quiz thử nghiệm",
+      played_video_id: null,
+      played_at_seconds: null,
       approved: true,
       created_at: now,
+      profiles: { display_name: "Smoke Fan" },
     },
   ],
   played_games: [{ game_slug: "pubg", status: "playing", sessions: 3, last_played: "2026-11-01" }],
   suggestions: [
-    { id: "00000000-0000-0000-0000-0000000000aa", name: "SMOKE suggestion", source: "other", url: null, reason: "because", status: "played", linked_game_slug: "pubg", steam_app_id: null, steam_data: null, upvotes: 7, hidden: false, created_at: now, profiles: { display_name: "Smoke Fan", avatar_url: null } },
+    {
+      id: "00000000-0000-0000-0000-0000000000aa",
+      name: "SMOKE suggestion",
+      source: "other",
+      url: null,
+      reason: "because",
+      status: "played",
+      linked_game_slug: "pubg",
+      steam_app_id: null,
+      steam_data: null,
+      upvotes: 7,
+      hidden: false,
+      created_at: now,
+      profiles: { display_name: "Smoke Fan", avatar_url: null },
+    },
   ],
 };
 const stub = http.createServer((req, res) => {
@@ -125,15 +180,58 @@ try {
   }
 
   console.log("Pages");
-  for (const path of ["/", "/lich", "/video", "/vlog", "/series", "/nhac", "/bo-toc", "/an-xa", "/gui-anh-do", "/da-choi", "/de-xuat", "/gioi-thieu", "/robots.txt", "/sitemap.xml", "/thong-ke", "/tai-khoan"]) {
+  for (const path of [
+    "/",
+    "/lich",
+    "/video",
+    "/vlog",
+    "/series",
+    "/nhac",
+    "/bo-toc",
+    "/an-xa",
+    "/gui-anh-do",
+    "/da-choi",
+    "/de-xuat",
+    "/gioi-thieu",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/tai-khoan",
+    "/kho-quote",
+    "/giai-dau",
+    "/offline",
+  ]) {
     await expectStatus(path, path, 200);
   }
-  await expectBody("/", "/", { has: ["SMOKE live title", "SMOKE PUBG video", "Vào Bộ Tộc", "không liên kết chính thức", "Đếm ngược", "Chạm để mở", "Trang không nhận tiền"] });
+  await expectBody("/", "/", {
+    has: ["SMOKE live title", "SMOKE PUBG video", "Vào Bộ Tộc", "không liên kết chính thức", "Đếm ngược", "Chạm để mở", "Trang không nhận tiền"],
+  });
   await expectBody("/lich", "/lich", { has: ["SMOKE slot", "Tối nay tôi có mặt", "người Bộ Tộc đã hẹn"] });
-  await expectBody("/thong-ke", "/thong-ke", { has: ["Thống kê stream"] });
+  await expectStatus("stats page was removed (YouTube Studio has it)", "/thong-ke", 404);
   await expectBody("/bo-toc wall", "/bo-toc", { has: ["Bức tường Bộ Tộc"] });
+  await expectBody("/video timeline + shorts", "/video", { has: ["Timeline buổi stream gần nhất", "SMOKE mở đầu", "Shorts mới"] });
+  await expectBody("/ shorts", "/", { has: ["Shorts mới"] });
+  await expectBody("/kho-quote", "/kho-quote", { has: ["Kho quote", "Chưa có quote nào trong kho"] });
+  await expectBody("/giai-dau", "/giai-dau", { has: ["Giải đấu"] });
+  await expectBody("/offline", "/offline", { has: ["Bạn đang offline"] });
+  await expectBody("/bo-toc glossary", "/bo-toc", { has: ["Từ điển Bộ Tộc", "Góp từ cho từ điển"] });
   await expectBody("/de-xuat", "/de-xuat", { has: ["SMOKE suggestion", "để gửi đề xuất"] });
-  await expectBody("/bo-toc", "/bo-toc", { has: ["Từ điển Bộ Tộc", "Tộc Trưởng", "facebook.com/groups/mixigaming", "Hồ sơ Dự Án Ma", "Bộ Tộc vẫn hóng", "Đơn hối lỗi xin về bờ", "Góp Gạch Xây Trường", "Trang không nhận quyên góp", "Lươn Cao Bằng", "Đố vui Bộ Tộc", "SMOKE quiz question", "Phòng tranh Fan Art", "SMOKE fan art"] });
+  await expectBody("/bo-toc", "/bo-toc", {
+    has: [
+      "Từ điển Bộ Tộc",
+      "Tộc Trưởng",
+      "facebook.com/groups/mixigaming",
+      "Hồ sơ Dự Án Ma",
+      "Bộ Tộc vẫn hóng",
+      "Đơn hối lỗi xin về bờ",
+      "Góp Gạch Xây Trường",
+      "Trang không nhận quyên góp",
+      "Lươn Cao Bằng",
+      "Quiz Bộ Tộc làm cho anh Độ",
+      "SMOKE quiz link",
+      "Phòng tranh Fan Art",
+      "SMOKE fan art",
+    ],
+  });
   await expectBody("/an-xa", "/an-xa", { has: ["TÒA ÁN ÂN XÁ", "Máy tạo Đơn hối lỗi xin về bờ", "Khai báo hồ sơ"] });
   await expectBody("/gui-anh-do", "/gui-anh-do", { has: ["GỬI ANH ĐỘ MIXI", "Top Game Bộ Tộc đề xuất", "SMOKE song", "SMOKE fan art"] });
   await expectBody("/lich", "/lich", { has: ["Radar sự kiện Bộ Tộc", "Sinh nhật Tộc Trưởng"] });
@@ -141,13 +239,47 @@ try {
 
   console.log("Admin (anonymous)");
   // Markers rendered only by admin pages; none may reach an anonymous visitor.
-  const adminMarkers = ["Quota YouTube", "Thêm khung giờ", "Video chưa phân loại", "Playlist chính chủ", "ẩn (spam)", "— thêm game —", "Nhạc nịnh – duyệt bài", "Tranh Fan Art (Google Drive) – duyệt bài", "Đố vui Bộ Tộc – duyệt câu hỏi", "Cấm ngầm", "Quản trị viên & tài khoản chính chủ", "Bức tường Bộ Tộc – duyệt lời nhắn"];
-  for (const path of ["/admin", "/admin/lich", "/admin/video", "/admin/game", "/admin/de-xuat", "/admin/da-choi", "/admin/nhac", "/admin/fan-art", "/admin/quiz", "/admin/quan-tri", "/admin/tuong"]) {
-    await expectBody(path, path, { has: ["could not be found"], lacks: adminMarkers });
+  const adminMarkers = [
+    "Quota YouTube",
+    "Thêm khung giờ",
+    "Video chưa phân loại",
+    "Playlist chính chủ",
+    "ẩn (spam)",
+    "— thêm game —",
+    "Nhạc nịnh – duyệt bài",
+    "Tranh Fan Art (Google Drive) – duyệt bài",
+    "Đố vui Bộ Tộc – duyệt câu hỏi",
+    "Cấm ngầm",
+    "Quản trị viên & tài khoản chính chủ",
+    "Bức tường Bộ Tộc – duyệt lời nhắn",
+    "Kho quote – duyệt quote",
+    "Từ điển – duyệt từ fan góp",
+    "Giải đấu – quản lý",
+    "Skin theo dịp – lịch bật",
+  ];
+  for (const path of [
+    "/admin",
+    "/admin/lich",
+    "/admin/video",
+    "/admin/game",
+    "/admin/de-xuat",
+    "/admin/da-choi",
+    "/admin/nhac",
+    "/admin/fan-art",
+    "/admin/quiz",
+    "/admin/quan-tri",
+    "/admin/tuong",
+    "/admin/quote",
+    "/admin/tu-dien",
+    "/admin/giai-dau",
+    "/admin/skin",
+  ]) {
+    await expectBody(path, path, { has: ["Không tìm thấy trang này"], lacks: adminMarkers });
   }
 
   console.log("Machine routes");
   await expectStatus("cron without secret", "/api/cron/poll-live", 401, { method: "POST" });
+  await expectStatus("moderation alert cron without secret", "/api/cron/moderation-alert", 401, { method: "POST" });
   await expectStatus("cron with wrong secret", "/api/cron/sync-videos", 401, { method: "POST", headers: { Authorization: "Bearer nope" } });
   await expectStatus("cron with secret, YouTube not configured", "/api/cron/poll-live", 503, {
     method: "POST",

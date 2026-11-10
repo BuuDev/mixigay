@@ -14,5 +14,8 @@ export const TAGS = {
   quiz: "quiz",
   wall: "wall",
   attendance: "attendance",
-  stats: "stats",
+  quotes: "quotes",
+  glossary: "glossary",
+  tournaments: "tournaments",
+  themes: "themes",
 } as const;

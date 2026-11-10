@@ -63,7 +63,7 @@ Tính năng hiện có: `live`, `schedule`, `videos` (gồm game và vlog), `pla
 
 ## Design system Góc Bộ Tộc
 
-- Nguồn: `docs/design/brand.html` + `docs/design/COMPONENTS.md`. Asset (logo, mascot, minh họa, icon, skin) **được sinh ra** bằng `npm run brand` (`scripts/extract-brand.mjs`). Không sửa tay các file `*.generated.*` hay `public/brand/**`.
+- Nguồn: `docs/design/brand.html` + `docs/design/COMPONENTS.md`. Asset (logo, mascot, minh họa, icon, skin) **được sinh ra** bằng `npm run brand` (`scripts/extract-brand.mjs`). Không sửa tay các file `*.generated.*` hay `public/brand/**`. Riêng linh vật **Cú Đêm** (`Mascot`) và tranh anh Độ + Cú Đêm (`SceneArt`) là ảnh WebP trong `public/art/` do chủ dự án cung cấp (gốc PNG ở `design-src/`, không commit); tranh anh Độ chỉ làm minh họa nội dung, không làm nhận diện ([ADR-014](08-decisions.md#adr-014)). Thêm ảnh mới: đổi sang WebP 640×640 bằng sharp rồi khai báo trong `brand-art.tsx`; test `brand-art.test.ts` kiểm tra mọi file khai báo đều tồn tại.
 - Màu: chỉ dùng tên ngữ nghĩa (`bg-surface`, `text-muted`, `border-border`, `bg-accent`, `text-cleared`, `bg-steam/15`…), không hex trong component. Token gốc `--td-*` ở `src/shared/design/tokens.css`; skin theo dịp đổi các token đó qua `data-theme` trên `<html>`.
 - `accent` (ember) cho hành động chính; `live` chỉ cho trạng thái phát sóng; không dùng hai màu này làm nền lớn.
 - Chỉ có nền tối (theo brand). Không thêm `dark:` variant.
@@ -109,7 +109,7 @@ Nguồn: skill `frontend-design` (Anthropic), `web-quality-audit`/`accessibility
 ## Đặt tên
 
 - File: `kebab-case.ts(x)`. Component export: `PascalCase` (named export, không default, trừ `page.tsx` / `layout.tsx` / `route.ts`).
-- Route URL: tiếng Việt không dấu, gạch nối (`/da-choi`, `/de-xuat`, `/thong-ke`).
+- Route URL: tiếng Việt không dấu, gạch nối (`/da-choi`, `/de-xuat`, `/kho-quote`).
 - Nội dung UI viết tiếng Việt. Comment trong code và tên biến viết tiếng Anh.
 - **Xưng hô lễ phép** (bảng trong `docs/research/2026-11-09-trends.md`): luôn “anh Độ” / “anh Độ Mixi” / “anh Moi”, “Kênh MixiGaming”, “Tộc Trưởng”, “Bộ Tộc” — như tên riêng; không gọi trống “Độ” (test `honorifics.test.ts` chặn). Trích tiêu đề video thì giữ nguyên văn. Tên trang luôn là “Góc Bộ Tộc”.
 - Slug game: `kebab-case` tiếng Anh/không dấu (`gta-v`, `viewer-made`).
@@ -130,6 +130,17 @@ Nguồn: skill `frontend-design` (Anthropic), `web-quality-audit`/`accessibility
 - Dữ liệu `jsonb` phải validate khi map (`src/features/*/lib/mapper.ts`), để một hàng hỏng không làm sập trang dùng chung cache.
 - Trang admin: **mỗi page tự gọi `await requireAdmin()`** ở dòng đầu. Không dựa vào layout.
 - Đọc dữ liệu trong `"use cache"` thì dùng `publicClient()` (không cookie). Đọc theo user thì dùng `serverClient()` và đặt dưới `<Suspense>`.
+
+## Supabase: những điều chỉ lộ ra khi chạy với project thật
+
+Các lỗi dưới đây smoke (dùng Supabase giả) không bắt được; chúng lộ ra khi chạy với project thật (2026-11-10, `node_modules/.cache/ui-audit/e2e.mjs`).
+
+- **Embed `profiles` phải chỉ rõ khóa:** viết `profiles!author_id(...)`, không viết `profiles(...)`. Bảng có bảng vote nối tới `profiles` (`suggestions` ↔ `suggestion_votes`) cho PostgREST hai đường đi, và nó báo "more than one relationship".
+- **`publicClient()` không có Auth** (`accessToken: async () => null`). Nếu có, supabase-js nạp phiên ở chế độ nền, gọi `Date.now()` sau khi phạm vi `"use cache"` đã trả về, và Cache Components báo lỗi.
+- **`serverClient()` gọi `await connection()` trước tiên.** Với `partialPrefetching`, các trang đọc cookie được render trước trong lúc prefetch, mà việc nạp phiên của supabase-js lại đọc đồng hồ.
+- **Gửi nội dung chờ duyệt thì gọi `refresh()`** (`next/cache`) trong action. Danh sách công khai không đổi, nhưng danh sách "đang chờ duyệt" của chính người gửi thì đổi.
+- **Form trong dialog dùng ô controlled** (giữ giá trị trong `useState`). React 19 tự xóa các ô uncontrolled sau mỗi action, nên nhập sai mã khóa một lần là mất luôn tên đăng nhập.
+- **Không đặt cookie phiên khi đang cần hiện thông tin cho người dùng.** Đặt cookie trong action sẽ render lại header và gỡ dialog đang mở. Vì vậy tạo tài khoản xong chỉ đăng nhập khi người dùng bấm "Tôi đã lưu".
 
 ## Next.js 16
 

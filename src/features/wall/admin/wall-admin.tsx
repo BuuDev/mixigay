@@ -10,7 +10,7 @@ export async function WallAdmin() {
   const supabase = await serverClient();
   const { data } = await supabase
     .from("wall_messages")
-    .select("id,author_id,body,approved,created_at,profiles(display_name,verified)")
+    .select("id,author_id,body,approved,created_at,profiles!author_id(display_name,verified)")
     .order("approved")
     .order("created_at", { ascending: false })
     .limit(300);

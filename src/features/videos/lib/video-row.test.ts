@@ -35,5 +35,16 @@ describe("toVideoColumns", () => {
     const row = toVideoColumns({ id: "v", snippet: { title: "Vlog", publishedAt: now.toISOString(), liveBroadcastContent: "none" } }, now);
     expect(row.live_state).toBe("none");
     expect(row.was_live).toBe(false);
+    expect(row.chapters).toBeNull();
+  });
+
+  it("stores chapters from the description it already has", () => {
+    const description = "Cảm ơn Bộ Tộc!\n0:00 Mở đầu\n5:00 Phần 1\n1:00:00 Phần 2";
+    const row = toVideoColumns({ id: "v", snippet: { title: "Stream", description, publishedAt: now.toISOString(), liveBroadcastContent: "none" } }, now);
+    expect(row.chapters).toEqual([
+      { t: 0, title: "Mở đầu" },
+      { t: 300, title: "Phần 1" },
+      { t: 3600, title: "Phần 2" },
+    ]);
   });
 });

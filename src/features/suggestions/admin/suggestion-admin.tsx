@@ -11,7 +11,7 @@ export async function SuggestionAdmin() {
   const [{ data }, games] = await Promise.all([
     supabase
       .from("suggestions")
-      .select("id,author_id,name,url,status,upvotes,hidden,approved,reason,linked_game_slug,created_at,profiles(display_name)")
+      .select("id,author_id,name,url,status,upvotes,hidden,approved,reason,linked_game_slug,created_at,profiles!author_id(display_name)")
       .order("approved")
       .order("hidden")
       .order("created_at", { ascending: false })
@@ -35,7 +35,8 @@ export async function SuggestionAdmin() {
   return (
     <Section title="Đề xuất – duyệt trước khi hiện">
       <p className="text-xs text-muted">
-        Đề xuất mới chỉ hiện công khai khi tick “duyệt”. Gặp người cố tình phá: dùng Cấm / Cấm ngầm (ẩn hết bài của họ), đừng xóa từng bài – xóa sẽ trả lại hạn mức gửi cho họ.
+        Đề xuất mới chỉ hiện công khai khi tick “duyệt”. Gặp người cố tình phá: dùng Cấm / Cấm ngầm (ẩn hết bài của họ), đừng xóa từng bài – xóa sẽ trả lại hạn
+        mức gửi cho họ.
       </p>
       <ul className="divide-y divide-border text-sm">
         {rows.map((s) => (
@@ -63,7 +64,11 @@ export async function SuggestionAdmin() {
                 <input type="checkbox" name="hidden" defaultChecked={s.hidden} /> ẩn (spam)
               </label>
               <button className={primary}>Lưu</button>
-              <button formAction={deleteSuggestion.bind(null, s.id)} className={button} title="Xóa hẳn (trả lại hạn mức gửi cho tác giả – với spam hãy dùng ẩn hoặc Cấm)">
+              <button
+                formAction={deleteSuggestion.bind(null, s.id)}
+                className={button}
+                title="Xóa hẳn (trả lại hạn mức gửi cho tác giả – với spam hãy dùng ẩn hoặc Cấm)"
+              >
                 Xóa hẳn
               </button>
             </form>

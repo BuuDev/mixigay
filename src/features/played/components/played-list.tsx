@@ -1,6 +1,9 @@
+import Image from "next/image";
 import type { Suggestion } from "@/features/suggestions/types";
+import type { GameCover } from "@/features/videos/lib/game-cover";
 import type { Game } from "@/features/videos/types";
 import { formatDate } from "@/shared/lib/format";
+import { youtubeUrl } from "@/shared/lib/links";
 import { Badge, type BadgeTone } from "@/shared/ui/badge";
 import { Card } from "@/shared/ui/card";
 import { IconCleared, IconDropped, IconLive } from "@/shared/ui/icons";
@@ -12,8 +15,16 @@ const SECTIONS: { status: PlayStatus; title: string; subtitle: string; tone: Bad
   { status: "dropped", title: "Đã drop", subtitle: "Đã xóa game trên sóng hoặc tạm cất vào kho kỷ niệm", tone: "muted", icon: IconDropped },
 ];
 
-/** "Độ đã chơi", grouped by status; marks games that came from fan suggestions. */
-export function PlayedList({ played, games, suggestions }: { played: PlayedGame[]; games: Game[]; suggestions: Suggestion[] }) {
+interface Props {
+  played: PlayedGame[];
+  games: Game[];
+  suggestions: Suggestion[];
+  /** Per game: the thumbnail of anh Độ's own stream of it (see gameCovers). Games without one keep the gradient. */
+  covers?: ReadonlyMap<string, GameCover>;
+}
+
+/** "Anh Độ đã chơi", grouped by status; marks games that came from fan suggestions. */
+export function PlayedList({ played, games, suggestions, covers }: Props) {
   const bySlug = new Map(games.map((g) => [g.slug, g]));
   const fromFans = new Map(suggestions.filter((s) => s.linkedGameSlug).map((s) => [s.linkedGameSlug!, s]));
 
@@ -35,18 +46,18 @@ export function PlayedList({ played, games, suggestions }: { played: PlayedGame[
                 const game = bySlug.get(p.gameSlug);
                 const fan = fromFans.get(p.gameSlug);
                 return (
-                  <Card key={p.gameSlug} className="flex items-center gap-3 p-3">
-                    <div className={`size-12 shrink-0 rounded-md bg-gradient-to-br ${game?.cover ?? "from-zinc-600 to-zinc-800"}`} />
-                    <div className="min-w-0">
-                      <div className="font-semibold">{game?.name ?? p.gameSlug}</div>
-                      <div className="text-xs text-muted">
-                        {p.sessions} buổi{p.lastPlayed && ` · lần cuối ${formatDate(p.lastPlayed)}`}
-                      </div>
+                  <Card key={p.gameSlug} className="flex h-full flex-col overflow-hidden">
+                    <PlayedCover cover={covers?.get(p.gameSlug)} gradient={game?.cover} />
+                    <div className="flex flex-1 flex-col gap-1 p-3">
+                      <h3 className="line-clamp-1 font-semibold">{game?.name ?? p.gameSlug}</h3>
                       {fan && (
-                        <Badge tone={tone} className="mt-1">
+                        <Badge tone={tone} className="self-start">
                           Fan đề xuất · {fan.upvotes} vote
                         </Badge>
                       )}
+                      <p className="mt-auto pt-1 text-xs text-muted">
+                        {p.sessions} buổi{p.lastPlayed && ` · lần cuối ${formatDate(p.lastPlayed)}`}
+                      </p>
                     </div>
                   </Card>
                 );
@@ -56,5 +67,27 @@ export function PlayedList({ played, games, suggestions }: { played: PlayedGame[
         );
       })}
     </>
+  );
+}
+
+/** 16:9 visual on top of a card: the stream thumbnail with a caption linking out to YouTube, or the gradient placeholder. */
+function PlayedCover({ cover, gradient }: { cover?: GameCover; gradient?: string }) {
+  if (!cover) return <div className={`aspect-video bg-gradient-to-br ${gradient ?? "from-zinc-600 to-zinc-800"}`} />;
+  return (
+    <div className="relative aspect-video bg-surface-raised">
+      <Image src={cover.thumbnailUrl} alt="" fill sizes="(min-width: 1024px) 22rem, (min-width: 640px) 50vw, 100vw" className="object-cover" />
+      {/* Dark scrim keeps the white caption above 4.5:1 on any thumbnail. */}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/60 to-transparent px-3 pt-6 pb-1.5">
+        <a
+          href={youtubeUrl(cover.videoId)}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={cover.title}
+          className="line-clamp-1 text-xs text-white underline underline-offset-2"
+        >
+          {cover.wasLive ? "Ảnh từ buổi stream" : "Ảnh từ video"} {formatDate(cover.publishedAt)}
+        </a>
+      </div>
+    </div>
   );
 }

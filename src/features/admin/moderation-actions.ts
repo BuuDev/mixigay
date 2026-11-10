@@ -15,14 +15,14 @@ const Mode = z.enum(["ban", "shadow", "unban"]);
 export async function moderateUser(userId: string, mode: "ban" | "shadow" | "unban") {
   const supabase = await adminDb();
   fail("moderateUser", (await supabase.rpc("moderate_user", { p_user: z.uuid().parse(userId), p_mode: Mode.parse(mode) })).error);
-  updateTag(TAGS.suggestions);
-  updateTag(TAGS.songs);
+  // Every public list that shows the user's content or name.
+  for (const tag of [TAGS.suggestions, TAGS.songs, TAGS.wall, TAGS.quotes, TAGS.glossary, TAGS.fanArt, TAGS.quiz]) updateTag(tag);
 }
 
 /** Replaces an offensive display name with "Fan ####". */
 export async function resetDisplayName(userId: string) {
   const supabase = await adminDb();
   fail("resetDisplayName", (await supabase.rpc("reset_display_name", { p_user: z.uuid().parse(userId) })).error);
-  updateTag(TAGS.suggestions);
-  updateTag(TAGS.songs);
+  // Every public list that shows the user's content or name.
+  for (const tag of [TAGS.suggestions, TAGS.songs, TAGS.wall, TAGS.quotes, TAGS.glossary, TAGS.fanArt, TAGS.quiz]) updateTag(tag);
 }

@@ -29,6 +29,7 @@ describe("validation", () => {
   });
   it("passphrase length", () => {
     expect(passphraseProblem("ngan")).not.toBeNull();
+    expect(passphraseProblem("1234567")).not.toBeNull();
     expect(passphraseProblem("du-dai-roi-1234")).toBeNull();
   });
   it("refuses common, numeric, repeated and handle-based passphrases", () => {
@@ -36,9 +37,11 @@ describe("validation", () => {
     expect(passphraseProblem("fancung2007-oke", { handle: "Fan Cứng 2007" })).not.toBeNull();
     expect(passphraseProblem(generatePassphrase(), { handle: "fan cung" })).toBeNull();
   });
-  it("admin / official accounts need 16+ characters", () => {
-    expect(passphraseProblem("du-dai-roi-1234", { privileged: true })).not.toBeNull();
-    expect(passphraseProblem(generatePassphrase(), { privileged: true })).toBeNull();
+  it("8 characters is enough for every account, admins included", () => {
+    expect(passphraseProblem("ngan-7c")).not.toBeNull();
+    expect(passphraseProblem("lua-trai8")).toBeNull();
+    expect(passphraseProblem("lua-trai8", { privileged: true })).toBeNull();
+    expect(passphraseProblem("12345678", { privileged: true })).not.toBeNull();
   });
 });
 

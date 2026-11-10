@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { signOut } from "@/features/auth/actions";
 import { PassphraseForm } from "@/features/auth/components/passphrase-form";
 import { getViewer } from "@/features/auth/server/viewer";
+import { SceneArt } from "@/shared/ui/brand-art";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { PageHeader } from "@/shared/ui/page-header";
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: "Tài khoản – Góc Bộ Tộc", r
 export default function AccountPage() {
   return (
     <div className="mx-auto max-w-md space-y-4">
-      <PageHeader title="Tài khoản" />
+      <PageHeader title="Tài khoản" art={<SceneArt scene="11-dang-ky" size={112} />} />
       <Suspense fallback={<p className="text-sm text-muted">Đang tải…</p>}>
         <Account />
       </Suspense>

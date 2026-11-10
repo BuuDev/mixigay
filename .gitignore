@@ -46,3 +46,9 @@ next-env.d.ts
 
 # Owner uploads before review (raw photos, official logos): never served, never committed.
 /assets-raw/
+
+# Original artwork (large PNGs); the site uses the WebP copies in public/art
+/design-src/
+
+# Supabase CLI cache (linked project ref, pooler URL)
+/supabase/.temp/

@@ -18,7 +18,7 @@ export async function getFanSongs(): Promise<FanSong[]> {
   const rows = check<FanSongRow[]>(
     await publicClient()
       .from("fan_songs")
-      .select("id,title,artist,url,note,approved,created_at,upvotes")
+      .select("id,title,artist,url,note,approved,created_at,upvotes,thumbnail_url")
       .eq("approved", true)
       .order("created_at", { ascending: false })
       .limit(200),

@@ -14,8 +14,12 @@ const NAV = [
   { href: "/admin/da-choi", label: "Đã chơi" },
   { href: "/admin/nhac", label: "Nhạc nịnh" },
   { href: "/admin/fan-art", label: "Tranh Fan Art" },
-  { href: "/admin/quiz", label: "Đố vui Quiz" },
+  { href: "/admin/quiz", label: "Link quiz" },
   { href: "/admin/tuong", label: "Bức tường" },
+  { href: "/admin/quote", label: "Kho quote" },
+  { href: "/admin/tu-dien", label: "Từ điển" },
+  { href: "/admin/giai-dau", label: "Giải đấu" },
+  { href: "/admin/skin", label: "Skin theo dịp" },
   { href: "/admin/quan-tri", label: "Quản trị viên" },
 ];
 

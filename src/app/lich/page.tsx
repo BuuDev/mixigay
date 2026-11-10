@@ -6,6 +6,7 @@ import { EventRadar } from "@/features/events/components/event-radar";
 import { WeekSchedule } from "@/features/schedule/components/week-schedule";
 import { getSchedule, getScheduleOverrides } from "@/features/schedule/server/queries";
 import { getGames } from "@/features/videos/server/queries";
+import { SceneArt } from "@/shared/ui/brand-art";
 import { IconSchedule } from "@/shared/ui/icons";
 import { PageHeader } from "@/shared/ui/page-header";
 
@@ -15,7 +16,7 @@ export default async function SchedulePage() {
   const [status, schedule, overrides, games] = await Promise.all([getLiveStatus(), getSchedule(), getScheduleOverrides(), getGames()]);
   return (
     <div className="space-y-6">
-      <PageHeader title="Lịch stream tuần này" icon={<IconSchedule size={26} className="text-accent" />} />
+      <PageHeader title="Lịch stream tuần này" icon={<IconSchedule size={26} className="text-accent" />} art={<SceneArt scene="06-lich-live" size={128} />} />
       <LiveHero status={status} schedule={schedule} overrides={overrides} />
       <AttendanceBlock schedule={schedule} overrides={overrides} />
       <WeekSchedule schedule={schedule} games={games} overrides={overrides} />

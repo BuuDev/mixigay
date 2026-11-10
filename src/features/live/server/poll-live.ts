@@ -93,8 +93,6 @@ export async function pollLive({ db, yt, channelId }: JobContext, now: Date, opt
   if (changed) {
     revalidateTag(TAGS.live, "max");
     revalidateTag(TAGS.videos, "max");
-    // A stream just started or ended: /thong-ke shows it without waiting for the hourly cache.
-    revalidateTag(TAGS.stats, "max");
   }
 
   let notified: string[] = [];

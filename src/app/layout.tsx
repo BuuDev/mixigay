@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { AuthButton } from "@/features/auth/components/auth-button";
 import { LiveDockSlot } from "@/features/live/components/live-dock-slot";
 import { BgMusicPlayer } from "@/features/music/components/bg-music-player";
+import { ServiceWorkerRegister } from "@/features/pwa/components/service-worker-register";
+import { SeasonalSkin } from "@/features/themes/components/seasonal-skin";
 import { BottomNav } from "@/shared/layout/bottom-nav";
 import { SiteFooter } from "@/shared/layout/site-footer";
 import { SiteHeader } from "@/shared/layout/site-header";
@@ -45,6 +47,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <LiveDockSlot />
           <BottomNav />
         </MotionProvider>
+        <SeasonalSkin />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

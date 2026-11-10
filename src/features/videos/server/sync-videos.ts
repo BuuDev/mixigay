@@ -38,7 +38,10 @@ export async function syncVideos({ db, yt, channelId }: JobContext, now: Date, o
   // 2. Refresh stats: everything recent, plus a batch of older videos not updated for a week.
   const day = 86_400_000;
   const [recentRes, staleRes] = await Promise.all([
-    db.from("videos").select("video_id").gte("published_at", new Date(now.getTime() - RECENT_DAYS * day).toISOString()),
+    db
+      .from("videos")
+      .select("video_id")
+      .gte("published_at", new Date(now.getTime() - RECENT_DAYS * day).toISOString()),
     db
       .from("videos")
       .select("video_id")
@@ -53,6 +56,7 @@ export async function syncVideos({ db, yt, channelId }: JobContext, now: Date, o
       ...((staleRes.data ?? []) as { video_id: string }[]).map((r) => r.video_id),
     ]),
   ];
+  // videos.list part=snippet already carries the description, so chapters come along for free (toVideoColumns).
   const items = ids.length ? await yt.videos(ids) : [];
   for (let i = 0; i < items.length; i += 500) {
     const rows = items.slice(i, i + 500).map((v) => toVideoColumns(v, now));
@@ -65,9 +69,10 @@ export async function syncVideos({ db, yt, channelId }: JobContext, now: Date, o
   for (let page = 0; page < PLAYLIST_MAX_PAGES; page++) {
     const { playlists, nextPageToken } = await yt.channelPlaylists(channelId, playlistToken);
     if (playlists.length) {
-      await db
-        .from("playlist_game_map")
-        .upsert(playlists.map((p) => ({ playlist_id: p.id, playlist_title: p.title })), { onConflict: "playlist_id" });
+      await db.from("playlist_game_map").upsert(
+        playlists.map((p) => ({ playlist_id: p.id, playlist_title: p.title })),
+        { onConflict: "playlist_id" },
+      );
     }
     if (!nextPageToken) break;
     playlistToken = nextPageToken;

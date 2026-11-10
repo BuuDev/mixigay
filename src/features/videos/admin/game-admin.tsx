@@ -5,15 +5,13 @@ import { button, GameSelect, input, primary, Section } from "@/features/admin/ui
 
 export async function GameAdmin() {
   const supabase = await serverClient();
-  const [games, { data: playlists }] = await Promise.all([
-    getGames(),
-    supabase.from("playlist_game_map").select("*").order("playlist_title"),
-  ]);
+  const [games, { data: playlists }] = await Promise.all([getGames(), supabase.from("playlist_game_map").select("*").order("playlist_title")]);
   return (
     <div className="space-y-4">
       <Section title="Game & từ khóa">
         <p className="text-xs text-muted">
-          Từ khóa: chữ thường, cách nhau dấu phẩy, so khớp một phần trong tiêu đề video. Game có “vlog” được xét sau cùng. Lưu xong sẽ phân loại lại toàn bộ video.
+          Từ khóa: chữ thường, cách nhau dấu phẩy, so khớp một phần trong tiêu đề video. Game có “vlog” được xét sau cùng. Lưu xong sẽ phân loại lại toàn bộ
+          video.
         </p>
         {[...games, { slug: "", name: "", keywords: [], isVlog: false, cover: "" }].map((g) => (
           <form key={g.slug || "new"} action={saveGame} className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
@@ -33,7 +31,9 @@ export async function GameAdmin() {
         ))}
       </Section>
       <Section title="Playlist chính chủ → game">
-        <p className="text-xs text-muted">Danh sách do job sync-videos lấy về. Gán game cho playlist thì mọi video trong đó được phân loại theo game ấy (ưu tiên hơn từ khóa).</p>
+        <p className="text-xs text-muted">
+          Danh sách do job sync-videos lấy về. Gán game cho playlist thì mọi video trong đó được phân loại theo game ấy (ưu tiên hơn từ khóa).
+        </p>
         <ul className="divide-y divide-border text-sm">
           {(playlists ?? []).map((p) => (
             <li key={p.playlist_id as string} className="flex flex-wrap items-center gap-2 py-2">

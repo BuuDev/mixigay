@@ -1,11 +1,17 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { REASONS, REPORT_KINDS } from "./reasons";
 
-const sql = readFileSync(join(process.cwd(), "supabase/migrations/20261110110000_reports_song_votes_steam.sql"), "utf8");
+const dir = join(process.cwd(), "supabase/migrations");
+// The newest migration that (re)defines the check wins.
+const sql = readdirSync(dir)
+  .sort()
+  .map((f) => readFileSync(join(dir, f), "utf8"))
+  .join("\n");
 const listIn = (column: string) => {
-  const m = sql.match(new RegExp(`${column} text not null check \\(${column} in \\(([^)]*)\\)\\)`));
+  const all = [...sql.matchAll(new RegExp(`check \\(${column} in \\(([^)]*)\\)\\)`, "g"))];
+  const m = all.at(-1);
   return (m?.[1] ?? "").split(",").map((s) => s.trim().replace(/'/g, ""));
 };
 

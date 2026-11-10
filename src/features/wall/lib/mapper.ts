@@ -9,7 +9,7 @@ export interface WallMessageRow {
   profiles: { display_name: string | null; verified?: boolean | null } | null;
 }
 
-export const WALL_SELECT = "id,author_id,body,approved,created_at,profiles(display_name,verified)";
+export const WALL_SELECT = "id,author_id,body,approved,created_at,profiles!author_id(display_name,verified)";
 
 /** Null for a row with no visible text (dropped, not rendered as an empty card). */
 export function mapWallMessage(r: WallMessageRow): WallMessage | null {

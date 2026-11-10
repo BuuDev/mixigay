@@ -1,10 +1,32 @@
 import Image from "next/image";
 
-// Brand artwork lives as static SVG files in public/brand (generated from
-// docs/design/brand.html by `npm run brand`), so it costs no JavaScript.
-// SVGs are served as-is (`unoptimized`): the image optimizer does not process SVG.
+// Logo and SVG illustrations live as static files in public/brand (generated from
+// docs/design/brand.html by `npm run brand`); SVGs are served as-is (`unoptimized`)
+// because the image optimizer does not process SVG.
+// Character art lives in public/art as transparent 640×640 WebP and goes through the optimizer:
+//   public/art/cu-dem   — Cú Đêm, the site's own owl mascot (never a depiction of anh Độ).
+//   public/art/do-mixi  — fan-made drawings of anh Độ with Cú Đêm, used only as content.
+// Neither set is ever site identity (logo, favicon, app icons, manifest, OG image).
 
-export type MascotPose = "hello" | "live" | "wait" | "sleep" | "sad" | "win";
+export type MascotPose =
+  | "hello"
+  | "live"
+  | "wait"
+  | "sleep"
+  | "sad"
+  | "win"
+  | "king"
+  | "chat"
+  | "notify"
+  | "gaming"
+  | "vod"
+  | "subscribe"
+  | "stage"
+  | "download"
+  | "esport"
+  | "night"
+  | "campfire";
+
 export type IllustrationName =
   | "empty-offday"
   | "empty-suggestions"
@@ -19,19 +41,138 @@ export type IllustrationName =
   | "giftbox-open"
   | "thumb-placeholder";
 
-const MASCOT_ALT: Record<MascotPose, string> = {
-  hello: "Cú Tộc chào Bộ Tộc",
-  live: "Cú Tộc đang xem live",
-  wait: "Cú Tộc đang hóng",
-  sleep: "Cú Tộc đang ngủ",
-  sad: "Cú Tộc buồn",
-  win: "Cú Tộc ăn mừng",
+const MASCOT: Record<MascotPose, { file: string; alt: string }> = {
+  hello: { file: "01-trang-chu", alt: "Cú Đêm chào Bộ Tộc trước ngôi nhà nhỏ" },
+  live: { file: "02-dang-live", alt: "Cú Đêm ngồi trước máy tính, biển LIVE đang sáng" },
+  king: { file: "03-toc-truong-do", alt: "Cú Đêm ngồi trên ngai vàng" },
+  chat: { file: "04-phong-chat", alt: "Cú Đêm đeo tai nghe, cạnh bong bóng chat" },
+  wait: { file: "06-lich-live", alt: "Cú Đêm chỉ vào lịch 22:22, đang hóng" },
+  notify: { file: "07-thong-bao", alt: "Cú Đêm cầm loa thông báo, cạnh chiếc chuông" },
+  gaming: { file: "09-tro-choi-game", alt: "Cú Đêm cầm tay cầm chơi game" },
+  vod: { file: "10-xem-lai-vod", alt: "Cú Đêm với cuộn phim và nút phát dưới trăng" },
+  subscribe: { file: "11-dang-ky-subs", alt: "Cú Đêm giơ biển SUBSCRIBE" },
+  stage: { file: "12-su-kien-offline", alt: "Các bạn cú trên sân khấu dưới ánh đèn" },
+  win: { file: "13-meme-giai-tri", alt: "Cú Đêm cười lăn lộn" },
+  download: { file: "14-tai-nguyen-tai-ve", alt: "Cú Đêm bên hộp tải về" },
+  sad: { file: "15-ung-ho-support", alt: "Cú Đêm nhắm mắt, bối rối" },
+  esport: { file: "17-giai-dau-esport", alt: "Cú Đêm đội mũ đấu sĩ, ôm cúp" },
+  night: { file: "18-che-do-cu-dem", alt: "Cú Đêm đeo kính râm trước vầng trăng" },
+  campfire: { file: "19-cong-dong-fan", alt: "Các bạn cú quây quần bên đống lửa" },
+  sleep: { file: "20-dang-xuat-di-ngu", alt: "Cú Đêm đang ngủ say" },
 };
 
-/** The site's original mascot — never a depiction of Độ (brand rules). */
-export function Mascot({ pose, size = 96, className, decorative = false }: { pose: MascotPose; size?: number; className?: string; decorative?: boolean }) {
+/** Public path of a mascot pose (e.g. for a service-worker precache list). */
+export function mascotSrc(pose: MascotPose): string {
+  return `/art/cu-dem/${MASCOT[pose].file}.webp`;
+}
+
+/** Cú Đêm — the site's original owl mascot, never a depiction of anh Độ (brand rules). */
+export function Mascot({
+  pose,
+  size = 96,
+  className,
+  decorative = false,
+  sizes,
+  loading,
+  unoptimized,
+}: {
+  pose: MascotPose;
+  size?: number;
+  className?: string;
+  decorative?: boolean;
+  /** Override when CSS renders the image at another size than `size` on some breakpoints. */
+  sizes?: string;
+  loading?: "eager" | "lazy";
+  /** Only for pages that must work offline (the service worker precaches the raw file, not optimizer URLs). */
+  unoptimized?: boolean;
+}) {
   return (
-    <Image src={`/brand/mascot/cu-toc-${pose}.svg`} alt={decorative ? "" : MASCOT_ALT[pose]} width={size} height={size} unoptimized className={className} />
+    <Image
+      src={mascotSrc(pose)}
+      alt={decorative ? "" : MASCOT[pose].alt}
+      width={size}
+      height={size}
+      sizes={sizes ?? `${size}px`}
+      loading={loading}
+      unoptimized={unoptimized}
+      className={className}
+    />
+  );
+}
+
+export type Scene =
+  | "01-trang-chu"
+  | "02-dang-live"
+  | "03-toc-truong"
+  | "04-phong-chat"
+  | "05-cua-hang"
+  | "06-lich-live"
+  | "07-thong-bao"
+  | "09-tro-choi"
+  | "10-xem-lai-vod"
+  | "11-dang-ky"
+  | "12-su-kien-offline"
+  | "13-meme-giai-tri"
+  | "14-tai-nguyen"
+  | "15-ung-ho-support"
+  | "16-bang-xep-hang"
+  | "17-giai-dau-esport"
+  | "18-che-do-cu-dem"
+  | "19-cong-dong-bo-toc"
+  | "20-di-ngu";
+
+// Each alt says it is a fan-made drawing; none of them puts words in anh Độ's mouth.
+const SCENE_ALT: Record<Scene, string> = {
+  "01-trang-chu": "Tranh vẽ anh Độ và Cú Đêm vẫy chào trước ngôi nhà (fan làm)",
+  "02-dang-live": "Tranh vẽ anh Độ và Cú Đêm lúc đang live (fan làm)",
+  "03-toc-truong": "Tranh vẽ anh Độ ngồi trên ngai cùng Cú Đêm (fan làm)",
+  "04-phong-chat": "Tranh vẽ anh Độ và Cú Đêm ở phòng chat (fan làm)",
+  "05-cua-hang": "Tranh vẽ anh Độ và Cú Đêm với giỏ đồ (fan làm)",
+  "06-lich-live": "Tranh vẽ anh Độ và Cú Đêm ở lịch live 22:22 (fan làm)",
+  "07-thong-bao": "Tranh vẽ anh Độ và Cú Đêm cầm loa thông báo (fan làm)",
+  "09-tro-choi": "Tranh vẽ anh Độ và Cú Đêm cầm tay cầm chơi game (fan làm)",
+  "10-xem-lai-vod": "Tranh vẽ anh Độ và Cú Đêm bên cửa sổ đêm (fan làm)",
+  "11-dang-ky": "Tranh vẽ anh Độ và Cú Đêm giơ biển SUBSCRIBE (fan làm)",
+  "12-su-kien-offline": "Tranh vẽ anh Độ cầm mic trên sân khấu cùng Cú Đêm (fan làm)",
+  "13-meme-giai-tri": "Tranh vẽ anh Độ và Cú Đêm cười vui (fan làm)",
+  "14-tai-nguyen": "Tranh vẽ anh Độ và Cú Đêm bên hộp tải về (fan làm)",
+  "15-ung-ho-support": "Tranh vẽ anh Độ đặt tay lên ngực cùng Cú Đêm (fan làm)",
+  "16-bang-xep-hang": "Tranh vẽ anh Độ trên bục số 1 cùng Cú Đêm (fan làm)",
+  "17-giai-dau-esport": "Tranh vẽ anh Độ cầm cúp cùng Cú Đêm (fan làm)",
+  "18-che-do-cu-dem": "Tranh vẽ anh Độ đeo kính râm trước vầng trăng cùng Cú Đêm (fan làm)",
+  "19-cong-dong-bo-toc": "Tranh vẽ anh Độ và các bạn cú quây quần bên lửa trại (fan làm)",
+  "20-di-ngu": "Tranh vẽ anh Độ và Cú Đêm đang ngủ (fan làm)",
+};
+
+/**
+ * Fan-made drawing of anh Độ with Cú Đêm. Content illustration only (page headers,
+ * empty states, section art): never the logo, an icon or a share image.
+ */
+export function SceneArt({
+  scene,
+  size = 160,
+  className,
+  decorative = false,
+  alt,
+  sizes,
+}: {
+  scene: Scene;
+  size?: number;
+  className?: string;
+  decorative?: boolean;
+  alt?: string;
+  /** Override when CSS renders the image at another size than `size` on some breakpoints. */
+  sizes?: string;
+}) {
+  return (
+    <Image
+      src={`/art/do-mixi/${scene}.webp`}
+      alt={decorative ? "" : (alt ?? SCENE_ALT[scene])}
+      width={size}
+      height={size}
+      sizes={sizes ?? `${size}px`}
+      className={className}
+    />
   );
 }
 

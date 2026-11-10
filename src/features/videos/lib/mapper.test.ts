@@ -18,6 +18,32 @@ describe("videos mappers", () => {
     expect(v.thumbnailUrl).toBe("https://i.ytimg.com/vi/abcDEF12345/hqdefault.jpg");
     expect(v.durationMinutes).toBe(60);
     expect(v.autoGameSlug).toBe("pubg");
+    expect(v.chapters).toBeUndefined();
+    expect(v.isShort).toBe(false);
+  });
+
+  it("keeps a valid chapter list and the Short flag", () => {
+    const chapters = [
+      { t: 0, title: "Mở đầu" },
+      { t: 60, title: "Phần 1" },
+      { t: 120, title: "Phần 2" },
+    ];
+    const v = mapVideo({
+      video_id: "s",
+      title: "t",
+      published_at: "2026-01-01T00:00:00Z",
+      duration_seconds: 45,
+      view_count: 1,
+      thumbnail_url: null,
+      was_live: false,
+      playlist_ids: [],
+      manual_game_slug: null,
+      auto_game_slug: null,
+      chapters,
+      is_short: true,
+    });
+    expect(v.chapters).toEqual(chapters);
+    expect(v.isShort).toBe(true);
   });
 
   it("flattens keywords and assigns a placeholder cover", () => {
