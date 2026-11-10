@@ -13,9 +13,10 @@ export async function AdminOverview() {
   const supabase = await serverClient();
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
   const dayAgo = hoursAgo(24);
-  const [usage, live, unclassified, pending, queue, newAccounts, rejected] = await Promise.all([
+  const [usage, live, poll, unclassified, pending, queue, newAccounts, rejected] = await Promise.all([
     supabase.from("api_usage").select("endpoint, units").eq("day", today),
     supabase.from("live_status").select("*").single(),
+    supabase.from("live_poll_state").select("checked_at, next_check_at, reason").maybeSingle(),
     supabase.from("videos").select("video_id", { count: "exact", head: true }).is("manual_game_slug", null).is("auto_game_slug", null),
     supabase.from("suggestions").select("id", { count: "exact", head: true }).eq("status", "pending").eq("approved", true).eq("hidden", false),
     getPendingCounts(),
@@ -72,7 +73,11 @@ export async function AdminOverview() {
         <p>
           <strong>{live.data?.state ?? "?"}</strong> {live.data?.title && `– ${live.data.title}`}
         </p>
-        <p className="text-xs text-muted">Kiểm tra lần cuối: {live.data?.checked_at ? new Date(live.data.checked_at).toLocaleString("vi-VN") : "chưa chạy"}</p>
+        <p className="text-xs text-muted">Kiểm tra lần cuối: {poll.data?.checked_at ? vnTime(poll.data.checked_at as string) : "chưa chạy"}</p>
+        <p className="text-xs text-muted">
+          Lần kiểm tra kế tiếp: {poll.data?.next_check_at ? vnTime(poll.data.next_check_at as string) : "?"}
+          {poll.data?.reason ? ` (${POLL_REASON[poll.data.reason as string] ?? (poll.data.reason as string)})` : ""}
+        </p>
       </Section>
       <Section title="Cần xử lý">
         <p>{unclassified.count ?? 0} video chưa phân loại</p>
@@ -80,4 +85,21 @@ export async function AdminOverview() {
       </Section>
     </div>
   );
+}
+
+// Why poll-live sleeps until the next check (src/features/live/lib/live.ts nextCheckAt).
+const POLL_REASON: Record<string, string> = {
+  live: "đang live, 10 phút một lần",
+  upcoming_soon: "sắp tới giờ hẹn, mỗi phút",
+  upcoming_wait: "chờ tới 2 phút trước giờ hẹn",
+  slot_window: "trong khung giờ lịch, mỗi phút",
+  next_slot: "chờ khung giờ lịch kế tiếp",
+  safety: "kiểm tra dự phòng 2 tiếng một lần",
+  schedule_changed: "lịch vừa đổi, kiểm tra ngay",
+  websub: "YouTube vừa báo có stream, kiểm tra ngay",
+  retry: "lần trước lỗi, thử lại sau 5 phút",
+};
+
+function vnTime(iso: string): string {
+  return new Date(iso).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
 }

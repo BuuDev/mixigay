@@ -31,7 +31,13 @@ Một codebase TypeScript duy nhất (Next.js). Supabase dùng cho **dữ liệu
 
 Đây là luồng duy nhất cần gần như realtime. Nó phải **rẻ về quota**.
 
-1. `pg_cron` gọi `POST /api/cron/poll-live` mỗi **1 phút** khi đang live hoặc trong khoảng ±2 giờ quanh một slot lịch, và mỗi **5 phút** vào các giờ còn lại. Route tự quyết có bỏ qua lần gọi hay không, nên cron chỉ cần một lịch `* * * * *`.
+1. Kiểm tra theo **hẹn giờ** ([ADR-018](08-decisions.md#adr-018)). Sau mỗi lần kiểm tra, poll-live tính lần kế tiếp (`nextCheckAt` trong `src/features/live/lib/live.ts`) và lưu vào `live_poll_state.next_check_at`:
+   - trong **khung giờ lịch** (10 phút trước → 60 phút sau một slot, tính cả lịch đột xuất/dời/hủy): **mỗi phút**;
+   - đã có **stream hẹn giờ** (`upcoming`): ngủ tới **2 phút trước giờ hẹn**, rồi mỗi phút tới **1 giờ sau giờ hẹn** (bỏ stream chờ không bao giờ lên sóng). Lấy kế hoạch **sớm hơn** giữa stream hẹn giờ và khung lịch, nên một buổi đặc biệt hẹn khuya không che mất khung giờ thường;
+   - **đang live**: **10 phút một lần** (chỉ để biết khi nào kết thúc + lấy mẫu người xem);
+   - live vừa kết thúc (stream bắt đầu trong khung này), hoặc ngoài khung: ngủ tới khung kế tiếp, nhưng **không quá 2 giờ** (lưới an toàn khi WebSub sót). Ngay khi stream đã biết kết thúc, poll-live đọc RSS thêm một lần để bắt buổi phát lại trên video mới;
+   - **trước mọi lần gọi ra ngoài**, poll-live đặt hẹn giờ +5 phút (`reason='retry'`): lần chạy lỗi không bị gọi lại mỗi phút, và hai tick chồng nhau không cùng kiểm tra.
+   `pg_cron` vẫn chạy `* * * * *` nhưng chỉ gọi app khi `public.poll_live_due()` đúng, nên ngoài giờ live không tốn lần gọi Vercel, đơn vị YouTube hay tin Realtime nào. Admin sửa lịch → trigger đặt hẹn giờ về `now()`; WebSub thấy video `live`/`upcoming` → cũng đánh thức (luồng 3). `?force=1` bỏ qua hẹn giờ.
 2. Route lấy danh sách **videoId ứng viên**:
    - các video có `live_state in ('live','upcoming')` trong DB,
    - 15 video mới nhất từ RSS `https://www.youtube.com/feeds/videos.xml?channel_id=…` (**0 quota**),
@@ -75,13 +81,13 @@ Trang `/admin/*`, bảo vệ 2 lớp:
 
 | Việc | Tần suất | Đơn vị/lần | Đơn vị/ngày |
 |---|---|---|---|
-| poll-live (`videos.list`) | tối đa 1.440 lần (mỗi phút) | 1 | ≤ 1.440 |
+| poll-live (`videos.list`) | khung lịch ~70 lần + live ~25 lần + lưới an toàn ~12 lần (ADR-018) | 1 | ~30–110 |
 | sync-videos: `playlistItems.list` | 4 lần × ~1 trang | 1 | ~4 |
 | sync-videos: `videos.list` cập nhật lượt xem (~300 video gần đây) | 4 lần × 6 lô | 1 | ~24 |
 | WebSub ingest (`videos.list`) | mỗi thông báo video mới/cập nhật (~1–5/ngày) | 1 | ~5 |
 | playlist chính chủ | 1 lần/ngày × ~10 trang | 1 | ~10 |
 | Backfill toàn kênh (một lần, ~3.000 video) | 1 lần | ~120 | (một lần) |
-| **Tổng thường ngày** | | | **≈ 1.500 (15%)** |
+| **Tổng thường ngày** | | | **≈ 150 (1,5%)** |
 
 **Cấm dùng `search.list`** (100 đơn vị/lần) trong job định kỳ. Nếu cần tìm videoId của buổi live mà các nguồn trên đều bỏ sót, chỉ gọi tay từ trang admin.
 

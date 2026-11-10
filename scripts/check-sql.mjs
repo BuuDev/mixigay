@@ -141,6 +141,34 @@ await allowed("admin edits schedule", async () => {
   if (!rows.length) throw new Error("0 rows");
 });
 
+// ----- Live poll timer (migration 20261111120000) -----
+console.log("Live poll timer");
+await denied("anon reads live_poll_state", () => as(null, () => q(`select * from public.live_poll_state`)));
+await denied("fan reads live_poll_state", () => as(fan.id, () => q(`select * from public.live_poll_state`)));
+eq("admin reads live_poll_state", (await as(adm.id, () => q(`select count(*)::int n from public.live_poll_state`)))[0].n, 1);
+await denied("admin moves the poll timer", () => as(adm.id, () => q(`update public.live_poll_state set next_check_at = now() returning id`)));
+await denied("anon asks poll_live_due", () => as(null, () => q(`select public.poll_live_due()`)));
+await db.exec(`update public.live_poll_state set next_check_at = now() + interval '2 hours', reason = 'next_slot'`);
+eq("not due while the timer is ahead", (await q(`select public.poll_live_due() d`))[0].d, false);
+// Zero-row writes that RLS filters out must not wake the timer (anyone has the anon key).
+for (const [who, uid] of [
+  ["anon", null],
+  ["fan", fan.id],
+]) {
+  await as(uid, () => q(`update public.schedule_slots set note = 'x'`)).catch(() => {});
+  await as(uid, () => q(`update public.schedule_slots set note = 'x' where false`)).catch(() => {});
+  await as(uid, () => q(`delete from public.schedule_overrides`)).catch(() => {});
+  eq(`${who} zero-row schedule writes do not wake poll-live`, (await q(`select public.poll_live_due() d`))[0].d, false);
+}
+await as(adm.id, () => q(`update public.schedule_slots set note = 'ok2' returning id`));
+eq("a schedule change wakes poll-live", (await q(`select public.poll_live_due() d, reason from public.live_poll_state`))[0], {
+  d: true,
+  reason: "schedule_changed",
+});
+await as(adm.id, () => q(`insert into public.schedule_overrides (date_vn, cancelled) values ('2099-01-01', true)`));
+eq("an override also wakes it", (await q(`select reason from public.live_poll_state`))[0].reason, "schedule_changed");
+await db.exec(`delete from public.schedule_overrides where date_vn = '2099-01-01'`);
+
 // ----- Suggestions & votes -----
 console.log("Suggestions & votes");
 // Lets the 10-minute posting cooldown pass for `uid` (rows stay inside the 24-hour window).
@@ -986,11 +1014,23 @@ await denied("fan calls admin_profiles", () => as(fan.id, () => q(`select * from
   const shadowed = await serverCreateUser("adminprof1", "Người Bị Ẩn_%");
   await q(`update public.profiles set trust = -2 where id = $1`, [shadowed.id]);
   const byId = await as(adm.id, () => q(`select id, trust from public.admin_profiles(p_ids => $1::uuid[])`, [[shadowed.id]]));
-  eq("admin reads trust through admin_profiles", byId.map((r) => r.trust), [-2]);
+  eq(
+    "admin reads trust through admin_profiles",
+    byId.map((r) => r.trust),
+    [-2],
+  );
   const byTrust = await as(adm.id, () => q(`select id from public.admin_profiles(p_trust => -2::smallint, p_limit => 200)`));
-  eq("admin filters by trust", byTrust.some((r) => r.id === shadowed.id), true);
+  eq(
+    "admin filters by trust",
+    byTrust.some((r) => r.id === shadowed.id),
+    true,
+  );
   const literal = await as(adm.id, () => q(`select id from public.admin_profiles(p_q => '_%')`));
-  eq("search treats % and _ literally", literal.map((r) => r.id), [shadowed.id]);
+  eq(
+    "search treats % and _ literally",
+    literal.map((r) => r.id),
+    [shadowed.id],
+  );
 }
 
 console.log("Polls (20261110220000)");
@@ -1182,6 +1222,21 @@ console.log("Polls (20261110220000)");
     false,
   );
   eq("the draft is still invisible to fans", await as(fan.id, () => q(`select id from public.polls where id = $1`, [made.id])), []);
+}
+
+console.log("Production reference seed (supabase/seed-prod.sql)");
+{
+  const prodSeed = readFileSync(join(root, "seed-prod.sql"), "utf8");
+  const counts = async () =>
+    (
+      await q(
+        `select (select count(*) from public.games)::int g, (select count(*) from public.game_keywords)::int k, (select count(*) from public.schedule_slots)::int s`,
+      )
+    )[0];
+  const before = await counts();
+  await allowed("seed-prod.sql applies", () => db.exec(prodSeed));
+  await allowed("seed-prod.sql applies a second time", () => db.exec(prodSeed));
+  eq("re-running seed-prod adds nothing over the dev seed", await counts(), before);
 }
 
 console.log(failures ? `\nDB_CHECK=fail (${failures})` : "\nDB_CHECK=pass");

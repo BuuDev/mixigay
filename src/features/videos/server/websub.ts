@@ -9,8 +9,8 @@ import { upsertYtVideos } from "./upsert";
 
 // YouTube WebSub: the hub pushes an Atom notification when the channel publishes or
 // updates a video. We fetch those ids with one videos.list call (1 unit for ≤ 50 ids)
-// and upsert them like poll-live does; a new upcoming/live row then becomes a
-// poll-live candidate on its next run. WebSub never replaces poll-live for live state.
+// and upsert them like poll-live does. A live/upcoming video also wakes poll-live's timer,
+// so an unscheduled stream is picked up on the next minute; poll-live still owns live_status.
 // See docs/02-architecture.md flow 3 and docs/04-integrations.md "WebSub".
 
 export const WEBSUB_CALLBACK_PATH = "/api/webhooks/youtube";
@@ -51,13 +51,20 @@ export async function readBodyLimited(request: Request, limit: number): Promise<
 }
 
 /** Fetches and upserts the notified videos. 1 YouTube unit (ids are capped at 50 by parseFeed). */
-export async function ingestVideos({ db, yt }: JobContext, ids: string[], now: Date = new Date()): Promise<{ fetched: number }> {
+export async function ingestVideos({ db, yt }: JobContext, ids: string[], now: Date = new Date()): Promise<{ fetched: number; woke?: boolean }> {
   const batch = [...new Set(ids)].slice(0, WEBSUB_MAX_IDS);
   if (!batch.length) return { fetched: 0 };
   const items = await yt.videos(batch);
   const fetched = await upsertYtVideos(db, items, now);
   if (fetched) revalidateTag(TAGS.videos, "max");
-  return { fetched };
+  // A stream that is live or newly scheduled — often outside any slot — wakes poll-live
+  // for the next pg_cron tick instead of waiting for its timer (ADR-018).
+  const woke = items.some((v) => v.snippet.liveBroadcastContent === "live" || v.snippet.liveBroadcastContent === "upcoming");
+  if (woke) {
+    const wake = await db.from("live_poll_state").update({ next_check_at: now.toISOString(), reason: "websub" }).eq("id", true);
+    if (wake.error) console.warn(`websub: could not wake poll-live: ${wake.error.message}`);
+  }
+  return { fetched, woke };
 }
 
 /**

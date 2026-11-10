@@ -107,7 +107,7 @@ Copy `.env.example` → `.env.local` rồi điền. **Không commit `.env.local`
 1. Tạo project Supabase (region Singapore gần VN nhất). Có thể tạo qua **Vercel Marketplace → Supabase** để env tự đồng bộ sang Vercel.
 2. `supabase link --project-ref <ref>` rồi `supabase db push`.
 3. Import repo vào Vercel (framework Next.js, mặc định). Thêm env cho Production + Preview.
-4. Lưu URL app và `CRON_SECRET` vào Supabase Vault, rồi chạy `supabase/cron.sql` trong SQL editor. File này bật `pg_cron` + `pg_net` và lên lịch poll-live (mỗi phút) cùng sync-videos (mỗi 6 giờ). Nó cố ý **không** phải migration, để `supabase db reset` ở local không bắt đầu poll:
+4. Lưu URL app và `CRON_SECRET` vào Supabase Vault, rồi chạy `supabase/cron.sql` trong SQL editor. File này bật `pg_cron` + `pg_net` và lên lịch poll-live (tick mỗi phút, chỉ gọi app khi hẹn giờ tới hạn, ADR-018) cùng sync-videos (mỗi 6 giờ). Nó cố ý **không** phải migration, để `supabase db reset` ở local không bắt đầu poll:
 
    ```sql
    select vault.create_secret('https://<domain>', 'app_url');

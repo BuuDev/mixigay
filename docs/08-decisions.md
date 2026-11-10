@@ -196,3 +196,19 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 **Quyết định:** `src/shared/motion/features.ts` dùng `domMax` (thêm layout animation) thay cho `domAnimation`. Gói này vẫn được `MotionProvider` tải lười, không nằm trong chunk JS đầu tiên. Người bật giảm chuyển động không có layout animation (`layout` chỉ bật khi được phép).
 
 **Hệ quả:** Thêm khoảng 15 KB (gzip) vào chunk motion tải sau. Các component khác có thể dùng `layout` khi thật sự cần, không cần ADR mới.
+
+## ADR-018 – Kiểm tra live theo hẹn giờ, chỉ trong giờ live {#adr-018}
+
+**Bối cảnh:** poll-live chạy mỗi phút quanh lịch (±2 giờ) và 5 phút một lần mọi lúc còn lại: khoảng 1.440 lần gọi Vercel và ~560 đơn vị YouTube mỗi ngày. Mỗi lần kiểm tra còn ghi `checked_at` vào `live_status`, bảng nằm trong Realtime, nên mọi tab đang mở nhận một tin dù không có gì đổi (200 fan ≈ 3,4 triệu tin/tháng, quá hạn mức gói Free). Chủ dự án muốn chỉ kiểm tra trong giờ live, ngừng khi đã thấy trạng thái, không kiểm tra liên tục.
+
+**Quyết định:**
+- poll-live tự hẹn lần kiểm tra kế tiếp (`nextCheckAt`, lưu ở bảng mới `live_poll_state`): mỗi phút trong khung 10 phút trước → 60 phút sau slot; tới 2 phút trước giờ hẹn khi đã có stream `upcoming`; 10 phút một lần khi đang live; còn lại ngủ tới khung kế tiếp, tối đa 2 giờ (lưới an toàn).
+- pg_cron vẫn tick mỗi phút nhưng chỉ gọi app khi `poll_live_due()` đúng.
+- Sửa lịch (trigger) và WebSub thấy video `live`/`upcoming` thì đánh thức hẹn giờ ngay.
+- `live_status` chỉ được ghi khi thứ người xem thấy thay đổi; giờ kiểm tra nằm ở `live_poll_state` (không phát Realtime).
+- Khi đang live, poll-live chỉ hỏi video đã biết, bỏ RSS; khi video đó kết thúc thì đọc RSS thêm một lần để bắt buổi phát lại.
+- Stream hẹn giờ và khung lịch: lấy lần kiểm tra sớm hơn; stream hẹn giờ quá 1 giờ chưa lên sóng thì thôi theo dõi dày.
+- Trước khi gọi YouTube, poll-live tự đặt hẹn giờ +5 phút, nên lỗi lặp lại tốn tối đa 12 lần gọi/giờ thay vì 60. Trigger đánh thức khi sửa lịch là **theo dòng**: câu lệnh bị RLS lọc còn 0 dòng (khách cầm anon key) không đánh thức được.
+
+**Hệ quả:** ~30–110 lần gọi Vercel và đơn vị YouTube mỗi ngày (ngày không lịch gần 0 + 12 lần an toàn); khoảng 25 tin Realtime/fan/ngày. Đổi lại: biểu đồ người xem (`live_samples`) còn 10 phút một điểm; trang báo hết live chậm tối đa 10 phút; live ngoài lịch phụ thuộc WebSub (thường trễ vài phút) hoặc lưới an toàn 2 giờ. Thay phần "poll dày/thưa" của ADR-003 (pg_cron vẫn là đồng hồ).
+
