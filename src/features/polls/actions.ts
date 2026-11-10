@@ -57,7 +57,7 @@ async function writeVote(pollId: string, optionId: string): Promise<PollActionRe
     : await supabase.from("poll_votes").insert({ poll_id: parsed.data.pollId, option_id: parsed.data.optionId });
   if (error) return voteError(error);
   // Stale-while-revalidate, like suggestion votes: vote spam must not keep emptying the
-  // shared cache. The voter sees their vote optimistically; others get it via Realtime.
+  // shared cache. The voter sees their vote optimistically; others see it on their next visit.
   revalidateTag(TAGS.polls, "max");
   return { ok: true };
 }

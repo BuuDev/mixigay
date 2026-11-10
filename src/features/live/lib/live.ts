@@ -56,16 +56,18 @@ function viewers(v: YtVideo): number {
 export const WINDOW_BEFORE_MS = 10 * 60_000;
 /** …and keep looking this long after it, in case the stream starts late. */
 export const WINDOW_AFTER_MS = 60 * 60_000;
-/** Every check inside the window, or once a scheduled stream is about to start. */
-export const DENSE_EVERY_MS = 60_000;
-/** While live we only need the end of the stream and a viewer sample. */
-export const LIVE_EVERY_MS = 10 * 60_000;
+/** Start of a shift: how often we look until the stream is on (ADR-019). */
+export const DENSE_EVERY_MS = 2 * 60_000;
+/** A stream usually runs about this long: the one check that looks for its end. */
+export const LIVE_SHIFT_MS = 4 * 3_600_000;
+/** Still live after the shift: look again this often until it ends. */
+export const OVERTIME_EVERY_MS = 15 * 60_000;
 /** A scheduled stream is watched from this long before its start time. */
 export const UPCOMING_LEAD_MS = 2 * 60_000;
 /** Safety net when WebSub misses an unscheduled stream; never sleep longer than this. */
-export const SAFETY_EVERY_MS = 2 * 3_600_000;
+export const SAFETY_EVERY_MS = 6 * 3_600_000;
 
-export type PollReason = "live" | "upcoming_soon" | "upcoming_wait" | "slot_window" | "next_slot" | "safety";
+export type PollReason = "live_end" | "live_overtime" | "upcoming_soon" | "upcoming_wait" | "slot_window" | "next_slot" | "safety";
 
 export interface NextCheck {
   at: Date;
@@ -73,11 +75,12 @@ export interface NextCheck {
 }
 
 /**
- * When poll-live should look again, given what this check found (ADR-018). Off-hours
- * the answer is "at the next slot window" (capped by the 2-hour safety net), so pg_cron
- * does not call the app at all in between. Unscheduled streams reach us through WebSub,
- * which wakes the timer. One-day overrides count: a moved or extra stream gets a window,
- * a cancelled day does not.
+ * When poll-live should look again, given what this check found (ADR-018, made minimal in
+ * ADR-019): every 2 minutes at the start of a shift until the stream is on, then nothing
+ * until about 4 hours after it started (one check for the end, then every 15 minutes while
+ * it runs over). Off-hours: sleep until the next slot window, at most 6 hours. Unscheduled
+ * streams and early ends reach us through WebSub, which wakes the timer. One-day overrides
+ * count: a moved or extra stream gets a window, a cancelled day does not.
  */
 export function nextCheckAt(opts: {
   now: Date;
@@ -92,11 +95,16 @@ export function nextCheckAt(opts: {
   const { now, live, previous, previousStart, schedule, overrides } = opts;
   const t = now.getTime();
   const safety = t + SAFETY_EVERY_MS;
-  const at = (ms: number, reason: PollReason): NextCheck => ({ at: new Date(Math.max(ms, t + DENSE_EVERY_MS)), reason });
+  // Rounded up to the minute: pg_cron ticks on the minute, so "12:52:03" would only run at 12:53.
+  const at = (ms: number, reason: PollReason): NextCheck => ({ at: new Date(Math.ceil(Math.max(ms, t + DENSE_EVERY_MS) / 60_000) * 60_000), reason });
 
-  if (live.state === "live") return at(t + LIVE_EVERY_MS, "live");
+  if (live.state === "live") {
+    const started = live.startTime ? Date.parse(live.startTime) : t;
+    const shiftEnd = started + LIVE_SHIFT_MS;
+    return shiftEnd > t + DENSE_EVERY_MS ? at(shiftEnd, "live_end") : at(t + OVERTIME_EVERY_MS, "live_overtime");
+  }
 
-  // The schedule's plan: every minute inside a slot window, else sleep until the next one.
+  // The schedule's plan: every 2 minutes inside a slot window, else sleep until the next one.
   const current = prevSlot(schedule, new Date(t + WINDOW_BEFORE_MS), overrides);
   const windowStart = current ? current.at.getTime() - WINDOW_BEFORE_MS : -Infinity;
   const inWindow = current !== null && t <= current.at.getTime() + WINDOW_AFTER_MS;
@@ -111,7 +119,7 @@ export function nextCheckAt(opts: {
     plan = opens <= safety ? at(opens, "next_slot") : at(safety, "safety");
   }
 
-  // A scheduled stream: watch from 2 minutes before its start until an hour after it
+  // A scheduled stream: watch from 2 minutes before its start until an hour after it, every 2 minutes
   // (a placeholder that never starts must not keep us polling). Whichever plan is earlier wins,
   // so a scheduled special later tonight never hides the regular slot.
   if (live.state === "upcoming" && live.startTime) {

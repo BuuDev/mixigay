@@ -57,9 +57,12 @@ export async function ingestVideos({ db, yt }: JobContext, ids: string[], now: D
   const items = await yt.videos(batch);
   const fetched = await upsertYtVideos(db, items, now);
   if (fetched) revalidateTag(TAGS.videos, "max");
-  // A stream that is live or newly scheduled — often outside any slot — wakes poll-live
-  // for the next pg_cron tick instead of waiting for its timer (ADR-018).
-  const woke = items.some((v) => v.snippet.liveBroadcastContent === "live" || v.snippet.liveBroadcastContent === "upcoming");
+  // Wake poll-live for the next pg_cron tick instead of its timer (ADR-018/019) when a stream
+  // is live or newly scheduled (often outside any slot), or when the stream we show as live
+  // was updated: that is usually its end, long before the 4-hour end-of-shift check.
+  const liveRes = await db.from("live_status").select("state, video_id").maybeSingle();
+  const shownLive = (liveRes.data as { state: string; video_id: string | null } | null)?.state === "live" ? liveRes.data?.video_id : null;
+  const woke = items.some((v) => v.snippet.liveBroadcastContent === "live" || v.snippet.liveBroadcastContent === "upcoming" || v.id === shownLive);
   if (woke) {
     const wake = await db.from("live_poll_state").update({ next_check_at: now.toISOString(), reason: "websub" }).eq("id", true);
     if (wake.error) console.warn(`websub: could not wake poll-live: ${wake.error.message}`);

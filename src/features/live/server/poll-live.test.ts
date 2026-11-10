@@ -42,6 +42,8 @@ function fakeDb(tables: Record<string, unknown[]>) {
       },
       upsert: async (values: Record<string, unknown>) => {
         writes.push({ table, op: "upsert", values });
+        // The single timer row is replaced, like the real upsert (poll-live re-reads it).
+        if (table === "live_poll_state") tables[table] = [{ ...values }];
         return { error: null };
       },
       then: (resolve: (r: unknown) => unknown) => resolve(write ? { error: null } : result()),
@@ -93,19 +95,19 @@ describe("pollLive", () => {
     expect(r.nextCheckAt).toBe("2026-11-09T15:12:00.000Z");
   });
 
-  it("writes live_status once the stream goes live, notifies, and then checks every 10 minutes", async () => {
+  it("writes live_status once the stream goes live, notifies, then sleeps until the end of the shift", async () => {
     const live = video("v1", "live", { actualStartTime: "2026-11-09T15:20:00Z", concurrentViewers: "1200" });
     const { context, writes } = ctx({ live_status: [offlineStatus], live_poll_state: [{ next_check_at: "2026-11-09T15:21:00Z" }], schedule_slots: [SLOT] }, [
       live,
     ]);
     const r = await pollLive(context, new Date("2026-11-09T15:21:00Z"));
-    expect(writes.find((w) => w.table === "live_status")?.values).toMatchObject({ state: "live", video_id: "v1", concurrent_viewers: 1200 });
-    expect(lastTimer(writes)?.values).toMatchObject({ next_check_at: "2026-11-09T15:31:00.000Z", reason: "live" });
+    expect(writes.find((w) => w.table === "live_status")?.values).toMatchObject({ state: "live", video_id: "v1", concurrent_viewers: null });
+    expect(lastTimer(writes)?.values).toMatchObject({ next_check_at: "2026-11-09T19:20:00.000Z", reason: "live_end" });
     expect(r.notified).toEqual(["telegram"]);
   });
 
   it("while live, follows only the known stream (no RSS) and skips the write when nothing moved", async () => {
-    const status = { state: "live", video_id: "v1", title: "t-v1", start_time: "2026-11-09T15:20:00+00:00", concurrent_viewers: 1200, checked_at: null };
+    const status = { state: "live", video_id: "v1", title: "t-v1", start_time: "2026-11-09T15:20:00+00:00", concurrent_viewers: null, checked_at: null };
     const live = video("v1", "live", { actualStartTime: "2026-11-09T15:20:00Z", concurrentViewers: "1200" });
     const { context, writes } = ctx(
       { live_status: [status], live_poll_state: [{ next_check_at: "2026-11-09T15:31:00Z" }], schedule_slots: [SLOT], videos: [{ video_id: "v1" }] },
@@ -124,7 +126,7 @@ describe("pollLive", () => {
     );
     await pollLive(context, new Date("2026-11-09T15:51:00Z"));
     expect(writes.find((w) => w.table === "live_status")?.values).toMatchObject({ state: "offline" });
-    expect(lastTimer(writes)?.values).toMatchObject({ next_check_at: "2026-11-09T17:51:00.000Z", reason: "safety" });
+    expect(lastTimer(writes)?.values).toMatchObject({ next_check_at: "2026-11-09T21:51:00.000Z", reason: "safety" });
   });
 
   it("force=1 checks even when the timer is not due", async () => {
@@ -159,6 +161,22 @@ describe("pollLive", () => {
     expect(rss).toHaveBeenCalledTimes(1);
     expect(videos).toHaveBeenLastCalledWith(["rss1"]);
     expect(r).toMatchObject({ state: "live", videoId: "rss1" });
-    expect(lastTimer(writes)?.values).toMatchObject({ reason: "live" });
+    expect(lastTimer(writes)?.values).toMatchObject({ reason: "live_end" });
+  });
+
+  it("keeps a WebSub wake that landed while the check was running", async () => {
+    const tables: Record<string, unknown[]> = {
+      live_status: [offlineStatus],
+      live_poll_state: [{ next_check_at: "2026-11-09T12:00:00Z" }],
+      schedule_slots: [SLOT],
+    };
+    const { db, writes } = fakeDb(tables);
+    // WebSub writes its wake right after poll-live's lease, before the plan is written.
+    const videos = vi.fn(async () => {
+      tables.live_poll_state = [{ next_check_at: "2026-11-09T12:00:30Z", reason: "websub" }];
+      return [video("rss1", "none")];
+    });
+    await pollLive({ db, yt: { videos } as never, channelId: "UC" }, new Date("2026-11-09T12:00:00Z"));
+    expect(lastTimer(writes)?.values).toMatchObject({ next_check_at: "2026-11-09T12:01:00.000Z", reason: "websub" });
   });
 });

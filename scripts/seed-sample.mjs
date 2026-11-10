@@ -229,7 +229,7 @@ for (const [i, s] of mockSongs.entries()) {
 }
 console.log(`Fan songs: ${mockSongs.length} real tracks.`);
 
-// ---- Wall + attendance: plain wishes from the sample fans, nothing about real events ----
+// ---- Wall: plain wishes from the sample fans, nothing about real events ----
 const WALL = [
   ["mau01", "Chúc anh Độ và cả team luôn khỏe, mỗi buổi live đều vui, mạng khỏe, không lag!"],
   ["mau02", "Bộ Tộc điểm danh từ Hà Nội, tan làm là mở kênh chờ giờ lên sóng."],
@@ -240,13 +240,5 @@ for (const [by, body] of WALL) {
   const exists = must("wall check", await db.from("wall_messages").select("id").eq("author_id", ids[by]).eq("body", body).maybeSingle());
   if (!exists) must("wall", await db.from("wall_messages").insert({ author_id: ids[by], body, approved: true }));
 }
-const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
-must(
-  "attendance",
-  await db.from("attendance").upsert(
-    FANS.slice(0, 5).map((f) => ({ date_vn: today, user_id: ids[f.handle] })),
-    { onConflict: "date_vn,user_id", ignoreDuplicates: true },
-  ),
-);
-console.log(`Wall: ${WALL.length} messages · RSVP today (${today}): 5 sample fans.`);
+console.log(`Wall: ${WALL.length} messages.`);
 console.log("Done. Remove everything with: node scripts/seed-sample.mjs --remove");

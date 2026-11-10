@@ -89,12 +89,13 @@ export async function AdminOverview() {
 
 // Why poll-live sleeps until the next check (src/features/live/lib/live.ts nextCheckAt).
 const POLL_REASON: Record<string, string> = {
-  live: "đang live, 10 phút một lần",
-  upcoming_soon: "sắp tới giờ hẹn, mỗi phút",
+  live_end: "đang live, kiểm tra lúc kết ca (4 tiếng sau giờ bắt đầu)",
+  live_overtime: "live quá giờ, 15 phút một lần",
+  upcoming_soon: "sắp tới giờ hẹn, 2 phút một lần",
   upcoming_wait: "chờ tới 2 phút trước giờ hẹn",
-  slot_window: "trong khung giờ lịch, mỗi phút",
+  slot_window: "đầu ca, 2 phút một lần tới khi lên sóng",
   next_slot: "chờ khung giờ lịch kế tiếp",
-  safety: "kiểm tra dự phòng 2 tiếng một lần",
+  safety: "kiểm tra dự phòng 6 tiếng một lần",
   schedule_changed: "lịch vừa đổi, kiểm tra ngay",
   websub: "YouTube vừa báo có stream, kiểm tra ngay",
   retry: "lần trước lỗi, thử lại sau 5 phút",

@@ -11,13 +11,13 @@ import type { Poll, PollBoard, PollViewer } from "../types";
 
 /**
  * The newest open poll and the newest closed one, with counts (RLS hides drafts from
- * the anon client). Counts may be a few minutes old: the card refreshes them through
- * Realtime. A failed read hides the card instead of breaking the home page.
+ * the anon client). Counts may be a few minutes old and are not pushed to open tabs
+ * (ADR-019). A failed read hides the card instead of breaking the home page.
  */
 export async function getPollBoard(): Promise<PollBoard> {
   "use cache";
   cacheTag(TAGS.polls);
-  cacheLife("minutes");
+  cacheLife("hours"); // invalidated by its tag on every write; "minutes" re-rendered pages every 60 s (ADR-019)
   if (!isSupabaseConfigured) return mock.board;
   const db = publicClient();
   const [open, closed] = await Promise.all([

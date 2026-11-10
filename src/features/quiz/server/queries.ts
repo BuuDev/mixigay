@@ -16,7 +16,7 @@ import type { QuizLink } from "../types";
 export async function getQuizLinks(): Promise<QuizLink[]> {
   "use cache";
   cacheTag(TAGS.quiz);
-  cacheLife("minutes");
+  cacheLife("hours"); // invalidated by its tag on every write; "minutes" re-rendered pages every 60 s (ADR-019)
   if (!isSupabaseConfigured) return [];
   const rows = check<QuizLinkRow[]>(
     await publicClient().from("quiz_links").select(QUIZ_LINK_SELECT).eq("approved", true).order("created_at", { ascending: false }).limit(120),

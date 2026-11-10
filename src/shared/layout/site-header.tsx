@@ -45,7 +45,7 @@ export function SiteHeader({ account }: { account?: ReactNode }) {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-safe py-2.5 2xl:max-w-[88rem]">
-        <Link href="/" className="shrink-0" aria-label="Góc Bộ Tộc – trang chủ">
+        <Link prefetch={false} href="/" className="shrink-0" aria-label="Góc Bộ Tộc – trang chủ">
           <Logo height={28} />
         </Link>
         <nav aria-label="Điều hướng chính" className="hidden min-w-0 flex-1 items-center gap-1 text-sm lg:flex">
@@ -81,6 +81,7 @@ export function SiteHeader({ account }: { account?: ReactNode }) {
                     {MORE.filter((n) => n.group === g.key).map((n) => (
                       <li key={n.href} className={n.primary ? "xl:hidden" : undefined}>
                         <Link
+                          prefetch={false}
                           href={n.href}
                           aria-current={isActive(n.href, pathname) ? "page" : undefined}
                           onClick={() => menu.current?.hidePopover()}
@@ -109,10 +110,13 @@ export function SiteHeader({ account }: { account?: ReactNode }) {
  * Contribution pages get an accent "+" and an accent hover; the active pill stays
  * ember on night (6.5:1) either way.
  */
+// Layout links never prefetch (prefetch={false}): on every page view they were ~14 background
+// requests (ADR-019). Pages are static on the CDN, so a click still loads fast, with NavProgress.
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const { href, label, short, contribute } = item;
   return (
     <Link
+      prefetch={false}
       href={href}
       title={short ? label : undefined}
       aria-current={active ? "page" : undefined}

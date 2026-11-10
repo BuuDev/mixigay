@@ -14,7 +14,7 @@ import type { Quote, QuoteVideoOption } from "../types";
 export async function getQuotes(): Promise<Quote[]> {
   "use cache";
   cacheTag(TAGS.quotes);
-  cacheLife("minutes");
+  cacheLife("hours"); // invalidated by its tag on every write; "minutes" re-rendered pages every 60 s (ADR-019)
   if (!isSupabaseConfigured) return mock.quotes;
   const rows = check<QuoteRow[]>(
     await publicClient().from("quotes").select(QUOTE_SELECT).eq("approved", true).order("created_at", { ascending: false }).limit(120),

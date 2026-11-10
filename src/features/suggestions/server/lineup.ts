@@ -18,7 +18,7 @@ export interface TonightLineupData {
 export async function getTonightLineup(): Promise<TonightLineupData> {
   "use cache";
   cacheTag(TAGS.suggestions);
-  cacheLife("minutes");
+  cacheLife("hours"); // invalidated by its tag on every write; "minutes" re-rendered pages every 60 s (ADR-019)
   const suggestions = await getSuggestions();
   const rankedAt = Date.now();
   return { picks: tonightLineup(suggestions, rankedAt), rankedAt };

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import { startTransition, useEffect, useRef, useState, ViewTransition } from "react";
 import { useOverlayFlag } from "@/shared/hooks/use-overlay-flag";
 import { AnimatePresence, duration, ease, m, spring } from "@/shared/motion";

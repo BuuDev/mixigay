@@ -25,9 +25,10 @@ export interface PollLiveResult {
 }
 
 /**
- * One check of the channel's live state, then plans the next one (ADR-018): every minute
- * around a slot or a scheduled start, every 10 minutes while live, otherwise not until the
- * next slot window (2-hour safety net). See docs/02-architecture.md, flow 1.
+ * One check of the channel's live state, then plans the next one (ADR-018/019): every
+ * 2 minutes at the start of a shift until the stream is on, one check about 4 hours after
+ * it started (then every 15 minutes while it runs over), otherwise not until the next slot
+ * window (6-hour safety net). See docs/02-architecture.md, flow 1.
  */
 export async function pollLive({ db, yt, channelId }: JobContext, now: Date, opts: { force?: boolean } = {}): Promise<PollLiveResult> {
   // Overrides from yesterday (Vietnam time can be a day ahead of UTC) onwards.
@@ -86,15 +87,6 @@ export async function pollLive({ db, yt, channelId }: JobContext, now: Date, opt
     });
     const up = await db.from("videos").upsert(rows, { onConflict: "video_id" });
     if (up.error) throw new Error(`videos upsert: ${up.error.message}`);
-
-    const samples = rows
-      .filter((r) => r.live_state === "live")
-      .map((r) => ({
-        video_id: r.video_id,
-        sampled_at: new Date(Math.floor(now.getTime() / 60_000) * 60_000).toISOString(),
-        concurrent_viewers: Number(items.find((v) => v.id === r.video_id)?.liveStreamingDetails?.concurrentViewers ?? 0),
-      }));
-    if (samples.length) await db.from("live_samples").upsert(samples, { onConflict: "video_id,sampled_at", ignoreDuplicates: true });
   }
 
   // Streams we tracked as active that YouTube no longer returns were deleted or made private.
@@ -108,16 +100,16 @@ export async function pollLive({ db, yt, channelId }: JobContext, now: Date, opt
     video_id: next.videoId ?? null,
     title: next.title ?? null,
     start_time: next.startTime ?? null,
-    concurrent_viewers: next.concurrentViewers ?? null,
+    // The site no longer shows viewer counts (ADR-019): with two checks a stream it would only be stale.
+    concurrent_viewers: null,
   };
-  // live_status is in the Realtime publication: every write reaches every open tab, so it
-  // is written only when something a visitor sees changed (the check time lives elsewhere).
+  // Written only when something a visitor sees changed; the check time lives in live_poll_state.
   const differs =
     prev.state !== row.state ||
     (prev.video_id ?? null) !== row.video_id ||
     (prev.title ?? null) !== row.title ||
     !sameInstant(prev.start_time, row.start_time) ||
-    (prev.concurrent_viewers ?? null) !== row.concurrent_viewers;
+    (prev.concurrent_viewers ?? null) !== null;
   if (differs) {
     const upd = await db
       .from("live_status")
@@ -126,14 +118,33 @@ export async function pollLive({ db, yt, channelId }: JobContext, now: Date, opt
     if (upd.error) throw new Error(`live_status update: ${upd.error.message}`);
   }
 
-  const plan = nextCheckAt({ now, live: next, previous: prev.state, previousStart: prev.start_time ?? undefined, schedule, overrides });
+  let plan: { at: Date; reason: string } = nextCheckAt({
+    now,
+    live: next,
+    previous: prev.state,
+    previousStart: prev.start_time ?? undefined,
+    schedule,
+    overrides,
+  });
+  // WebSub or a schedule edit may have woken the timer while this check ran (after our lease):
+  // keep that earlier wake instead of overwriting it with a plan hours away.
+  const woken = (await db.from("live_poll_state").select("next_check_at, reason").maybeSingle()).data as {
+    next_check_at: string;
+    reason: string | null;
+  } | null;
+  if (woken && woken.reason !== "retry" && Date.parse(woken.next_check_at) < plan.at.getTime()) {
+    plan = { at: new Date(Math.max(Date.parse(woken.next_check_at), now.getTime() + 60_000)), reason: woken.reason ?? "websub" };
+  }
   await setTimer(db, { checked_at: now.toISOString(), next_check_at: plan.at.toISOString(), reason: plan.reason });
 
+  // /api/live carries nextCheckAt: refresh it after every check (one small route). A 30 s
+  // stale window instead of 0: if a regeneration fails, readers keep the last copy instead of
+  // turning every tab read into a function call; tabs read 90 s after the plan anyway. Pages only when what they show changed,
+  // so the start-of-shift checks every 2 minutes do not regenerate every page.
+  revalidateTag(TAGS.liveTimer, { expire: 30 });
+  if (differs) revalidateTag(TAGS.live, "max");
   const changed = prev.state !== next.state || (prev.video_id ?? undefined) !== next.videoId;
-  if (changed) {
-    revalidateTag(TAGS.live, "max");
-    revalidateTag(TAGS.videos, "max");
-  }
+  if (changed) revalidateTag(TAGS.videos, "max");
 
   let notified: string[] = [];
   if (becameLive(prev.state, next, prev.video_id ?? undefined) && next.videoId) {

@@ -5,10 +5,8 @@ import { formatCountdown } from "@/features/schedule/lib/countdown";
 import { nextSlot } from "@/features/schedule/lib/schedule";
 import type { ScheduleOverride, ScheduleSlot } from "@/features/schedule/types";
 import { useNow } from "@/shared/hooks/use-now";
-import { formatViews } from "@/shared/lib/format";
 import { youtubeUrl } from "@/shared/lib/links";
 import { m, pop, press } from "@/shared/motion";
-import { CountUp } from "@/shared/motion/count-up";
 import { IconUpcoming } from "@/shared/ui/icons";
 import { useLiveStatus } from "../hooks/use-live-status";
 import type { LiveStatus } from "../types";
@@ -52,11 +50,6 @@ export function LiveDock({ status: initial, schedule, overrides }: { status: Liv
         >
           <Equalizer />
           ĐANG LIVE
-          {status.concurrentViewers ? (
-            <span className="font-mono tabular-nums">
-              · <CountUp value={status.concurrentViewers} format={(n) => formatViews(n)} />
-            </span>
-          ) : null}
           <span className="sr-only">(mở YouTube ở tab mới)</span>
         </m.a>
       </m.div>

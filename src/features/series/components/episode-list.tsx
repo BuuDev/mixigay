@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import { ChapterTimeline } from "@/features/videos/components/chapter-timeline";
 import { formatDate, formatViews } from "@/shared/lib/format";
 import { youtubeUrl } from "@/shared/lib/links";
@@ -17,7 +17,7 @@ export function EpisodeList({ series }: { series: Series }) {
             className="group flex gap-3 rounded-lg border border-border bg-surface p-2 shadow-card transition-colors hover:border-accent/60"
           >
             <div className="relative aspect-video w-36 shrink-0 overflow-hidden rounded-md bg-surface-raised sm:w-48">
-              {e.thumbnailUrl && <Image src={e.thumbnailUrl} alt="" fill sizes="12rem" className="object-cover" />}
+              {e.thumbnailUrl && <Image src={e.thumbnailUrl} alt="" fill sizes="12rem" ytSize="mq" className="object-cover" />}
               {e.episode !== undefined && (
                 <span className="absolute top-1 left-1 rounded-sm bg-black/70 px-1.5 text-xs font-bold text-white">#{e.episode}</span>
               )}

@@ -12,7 +12,7 @@ import type { Suggestion } from "../types";
 export async function getSuggestions(): Promise<Suggestion[]> {
   "use cache";
   cacheTag(TAGS.suggestions);
-  cacheLife("minutes");
+  cacheLife("hours"); // invalidated by its tag on every write; "minutes" re-rendered pages every 60 s (ADR-019)
   if (!isSupabaseConfigured) return mock.suggestions;
   // The most-voted AND the newest: ordering only by votes with a cap would drop a new
   // low-vote suggestion before the "Đang hot" ranking (lib/ranking.ts) ever saw it.

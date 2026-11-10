@@ -29,8 +29,3 @@ const QUIET_PREFIXES = ["/admin", "/moi", "/gui-anh-do"];
 export function isQuietPath(pathname: string): boolean {
   return QUIET_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
-
-/** Should the radio start now (on load, or on the first interaction)? */
-export function shouldAutoStart({ pref, pathname, alreadyActive }: { pref: BgmPref; pathname: string; alreadyActive: boolean }): boolean {
-  return !alreadyActive && pref !== "off" && !isQuietPath(pathname);
-}

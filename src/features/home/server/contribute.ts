@@ -27,7 +27,7 @@ async function publicCount(kind: CountedKind): Promise<number | null> {
   "use cache";
   const { table, tag } = SOURCE[kind];
   cacheTag(tag);
-  cacheLife("minutes");
+  cacheLife("hours"); // invalidated by its tag on every write; "minutes" re-rendered pages every 60 s (ADR-019)
   const base = publicClient().from(table).select("id", { count: "exact", head: true });
   const { count, error } = await (kind === "suggestions" ? base.eq("hidden", false) : base.eq("approved", true));
   if (error) {

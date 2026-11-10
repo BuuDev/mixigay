@@ -46,13 +46,17 @@ Giai đoạn 7  Góc Bộ Tộc v2 (docs/design)        nền xong – các kh�
 - [x] Route `/api/cron/sync-videos`: backfill lần đầu, sau đó chạy tăng dần. Phân loại `auto_game_slug` bằng `classify.ts` + `playlist_game_map`.
 - [x] Route `/api/cron/poll-live`: RSS + DB → `videos.list`, cập nhật `live_status`, `live_samples`. Có logic thưa/dày theo lịch.
 - [x] Bảo vệ cron bằng `CRON_SECRET`. Lên lịch `pg_cron` + `pg_net` trong Supabase (`supabase/cron.sql`, chạy tay ở production).
-- [x] `LiveBanner` subscribe Realtime `live_status`
+- [x] ~~`LiveBanner` subscribe Realtime `live_status`~~ → đọc `/api/live` theo hẹn giờ (ADR-019)
 - [x] Áp dụng `"use cache"` / `cacheTag` / `revalidateTag` theo bảng trong [02-architecture.md](02-architecture.md)
 - [x] `next/image` cho thumbnail `i.ytimg.com`
 - [x] Test: parse duration, chuyển trạng thái live, quyết định poll dày/thưa, map dữ liệu YouTube → hàng DB
 - [x] Chạy với Supabase thật: project dev trên cloud, 8 migration + seed, cài đặt Auth bằng `config push`, kiểm thử 16 bước qua giao diện (tài khoản, lời mời, bức tường, điểm danh)
 - [x] Kiểm tra live theo hẹn giờ, chỉ trong giờ live ([ADR-018](08-decisions.md#adr-018)): `nextCheckAt` + `live_poll_state` + `poll_live_due()` trong cron, WebSub đánh thức, `live_status` chỉ ghi khi đổi. Test `live.test.ts`, `poll-live.test.ts`, RLS trong `db:check`
-- [ ] **(cần bạn)** Chạy lại `supabase/cron.sql` trên production sau khi đẩy migration `20261111120000_live_poll_timer`
+- [x] Chạy lại `supabase/cron.sql` trên production sau khi đẩy migration `20261111120000_live_poll_timer`
+- [x] Hướng tới gói miễn phí ([ADR-019](08-decisions.md#adr-019)): bỏ phòng cảm xúc, "Tối nay tôi có mặt", số người xem; kiểm tra live đầu ca + kết ca; không Realtime (`/api/live` trên CDN theo hẹn giờ); function `sin1`; `/video` lọc trong DB + animation loading; ảnh YouTube trực tiếp; ít font, ít prefetch; nhạc chỉ tải khi mở đài
+- [ ] **(cần bạn)** Đẩy 3 migration `20261111140000`–`20261111160000` lên production và deploy
+- [ ] Nếu trang đông hơn khoảng 1 triệu request/tháng: Vercel Pro (20 USD) hoặc cân nhắc Cloudflare
+- [ ] Lỗi có từ trước (thấy cả ở commit 439fb51): ngay sau khi admin làm mới cache (`updateTag`), trang đôi khi chứa **hai** `<dialog>` đăng nhập (người dùng chỉ thấy một, E2E `community.spec.ts` lúc đạt lúc hỏng vì strict mode). Nghi do Next phục vụ bản cũ trong lúc render lại trang PPR; cần tái hiện riêng
 - [ ] Test tích hợp các job cron (poll-live, sync-videos) với Supabase thật: cần `YOUTUBE_API_KEY` / `YOUTUBE_CHANNEL_ID`
 
 **Hoàn thành khi:** chạy 48 giờ trên production, `api_usage` < 3.000 đơn vị/ngày, banner tự chuyển trạng thái khi Độ lên sóng mà không cần reload.
@@ -113,7 +117,7 @@ Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mas
 - [x] §2 Đếm ngược vòng tròn + khối ngày kiểu poster + lịch tháng (popover) + "Thêm vào lịch" (Google Calendar)
 - [x] §2 Lịch đặc biệt do admin ghi đè (nối vào lịch tháng, lịch tuần, đếm ngược, màn mở đầu, nhịp poll)
 - [x] §3 Nút nổi "Đang live" (live: equalizer + ping + số người xem; idle: đếm ngược rút gọn), ẩn khi có overlay
-- [x] §4 "Tối nay tôi có mặt" (RSVP) — bảng `attendance`; khách chỉ lưu trên thiết bị, không tính vào tổng
+- [x] ~~§4 "Tối nay tôi có mặt" (RSVP)~~ (đã gỡ, ADR-019)
 - [x] §5 Bức tường Bộ tộc (lưu bút ≤140 ký tự, duyệt trước, 3 tin/ngày) — `/bo-toc`, chữ to trên `/gui-anh-do`, duyệt ở `/admin/tuong`
 - [x] Nút báo cáo cho lời nhắn đã duyệt trên Bức tường (`reports.target_kind = 'wall_message'`)
 - [x] Đổi tên trang thành **Góc Bộ Tộc** (ADR-011); bìa thiệp khung vòm có ảnh anh Độ, album polaroid + lightbox, ảnh hiện lên từ đống lửa ở màn mở đầu

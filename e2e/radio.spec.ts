@@ -29,30 +29,34 @@ async function expectSilentFor(page: Page, ms: number) {
   expect((await audioState(page)).anyPlaying).toBe(false);
 }
 
-// The player tries to play on load. Headless Chromium sometimes allows that and sometimes
-// rejects it with NotAllowedError (seen both ways across runs of the full suite), so this
-// spec accepts either path: playing on open, or at the latest on the first click.
-test("plays Airport Lounge at volume 0.3 on open or on the first click; 'Tắt hẳn nhạc' sticks", async ({ page }) => {
+// No autoplay (ADR-019): the audio file is only downloaded by visitors who open the radio.
+test("stays silent on load and on clicks elsewhere; opening the radio plays Airport Lounge at 0.3; 'Tắt hẳn nhạc' sticks", async ({ page }) => {
+  const audioRequests: string[] = [];
+  page.on("request", (r) => {
+    if (r.url().includes("/music/")) audioRequests.push(r.url());
+  });
   await page.goto("/lich");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   expect((await audioState(page)).count).toBeGreaterThan(0);
-  await page.waitForTimeout(2000);
-  if (!(await audioState(page)).anyPlaying) await clickEmptyArea(page);
+  await clickEmptyArea(page);
+  await expectSilentFor(page, 2000);
+  expect(audioRequests, "no music downloaded before the radio is opened").toEqual([]);
+
+  await page.getByRole("button", { name: "Mở đài phát thanh Bộ Tộc" }).click();
   await expect.poll(async () => (await audioState(page)).anyPlaying, { timeout: 15_000 }).toBe(true);
   const first = await audioState(page);
   expect(first.volume).toBeCloseTo(0.3, 2);
   expect(first.src).toMatch(/\/music\/airport-lounge\.m4a$/);
   await expect.poll(async () => (await audioState(page)).currentTime, { timeout: 10_000 }).toBeGreaterThan(first.currentTime + 0.5);
 
-  // Open the radio panel and turn it off for good.
-  await page.getByRole("button", { name: /^Đang phát nhạc nền/ }).click();
+  // Turn it off for good: opening the radio later does not start it.
   await page.getByRole("button", { name: "Tắt hẳn nhạc" }).click();
   await expect.poll(async () => (await audioState(page)).anyPlaying).toBe(false);
   expect(await page.evaluate(() => localStorage.getItem("gbt:bgm"))).toBe("off");
 
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await clickEmptyArea(page);
+  await page.getByRole("button", { name: "Mở đài phát thanh Bộ Tộc" }).click();
   await expectSilentFor(page, 2000);
 });
 

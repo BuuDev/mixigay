@@ -49,7 +49,7 @@ export function SiteFooter() {
           <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1">
             {EXPLORE.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className={linkClass}>
+                <Link prefetch={false} href={item.href} className={linkClass}>
                   {item.label}
                 </Link>
               </li>
@@ -84,7 +84,7 @@ export function SiteFooter() {
           . Trang này không nhận tiền dưới bất kỳ hình thức nào.
         </p>
         <p>
-          <Link href="/gioi-thieu" className="underline underline-offset-2 hover:text-foreground">
+          <Link prefetch={false} href="/gioi-thieu" className="underline underline-offset-2 hover:text-foreground">
             Giới thiệu & liên hệ gỡ nội dung
           </Link>
         </p>

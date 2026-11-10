@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import { useState, type ReactNode } from "react";
 import { BGM_PAUSE_EVENT } from "../lib/bgm";
 import { ReportButton } from "@/features/reports/components/report-button";

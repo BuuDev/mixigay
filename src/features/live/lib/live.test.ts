@@ -46,7 +46,7 @@ describe("deriveLiveStatus", () => {
 });
 
 describe("nextCheckAt", () => {
-  // Monday 20:00 VN = 13:00Z; `now` (12:00Z) is one hour before it.
+  // Monday 20:00 VN = 13:00Z; `now` (12:00Z) is one hour before it. Its window: 12:50Z–14:00Z.
   const slots: ScheduleSlot[] = [{ id: "mon", dayOfWeek: 1, time: "20:00", title: "Mon" }];
   const offline: DerivedLive = { state: "offline" };
   const at = (iso: string) => new Date(iso);
@@ -63,69 +63,75 @@ describe("nextCheckAt", () => {
     expect(check("2026-11-09T12:00:00Z")).toEqual({ at: at("2026-11-09T12:50:00Z"), reason: "next_slot" });
   });
 
-  it("never sleeps longer than the 2-hour safety net", () => {
-    expect(check("2026-11-09T03:00:00Z")).toEqual({ at: at("2026-11-09T05:00:00Z"), reason: "safety" });
-    expect(check("2026-11-09T03:00:00Z", offline, "offline", undefined, [])).toEqual({ at: at("2026-11-09T05:00:00Z"), reason: "safety" });
+  it("never sleeps longer than the 6-hour safety net", () => {
+    expect(check("2026-11-09T03:00:00Z")).toEqual({ at: at("2026-11-09T09:00:00Z"), reason: "safety" });
+    expect(check("2026-11-09T03:00:00Z", offline, "offline", undefined, [])).toEqual({ at: at("2026-11-09T09:00:00Z"), reason: "safety" });
   });
 
-  it("checks every minute from 10 minutes before to 60 minutes after a slot", () => {
-    expect(check("2026-11-09T12:50:00Z")).toEqual({ at: at("2026-11-09T12:51:00Z"), reason: "slot_window" });
+  it("checks every 2 minutes from 10 minutes before to 60 minutes after a slot", () => {
+    expect(check("2026-11-09T12:50:00Z")).toEqual({ at: at("2026-11-09T12:52:00Z"), reason: "slot_window" });
     expect(check("2026-11-09T13:30:00Z").reason).toBe("slot_window");
     expect(check("2026-11-09T14:00:00Z").reason).toBe("slot_window");
-    // Window over without a stream: wait for next Monday's window, capped by the safety net.
-    expect(check("2026-11-09T14:01:00Z")).toEqual({ at: at("2026-11-09T16:01:00Z"), reason: "safety" });
+    // Window over without a stream: next Monday is a week away, so the safety net decides.
+    expect(check("2026-11-09T14:01:00Z")).toEqual({ at: at("2026-11-09T20:01:00Z"), reason: "safety" });
   });
 
-  it("checks every 10 minutes while live", () => {
+  it("once live, sleeps until about 4 hours after the start (end of the shift)", () => {
     const live: DerivedLive = { state: "live", videoId: "v", startTime: "2026-11-09T13:02:00Z" };
-    expect(check("2026-11-09T13:05:00Z", live, "live")).toEqual({ at: at("2026-11-09T13:15:00Z"), reason: "live" });
+    expect(check("2026-11-09T13:04:00Z", live, "offline")).toEqual({ at: at("2026-11-09T17:02:00Z"), reason: "live_end" });
+    // Start time unknown: four hours from now.
+    expect(check("2026-11-09T13:04:00Z", { state: "live", videoId: "v" }, "offline")).toEqual({ at: at("2026-11-09T17:04:00Z"), reason: "live_end" });
+  });
+
+  it("still live after the shift: every 15 minutes until it ends", () => {
+    const live: DerivedLive = { state: "live", videoId: "v", startTime: "2026-11-09T13:02:00Z" };
+    expect(check("2026-11-09T17:02:00Z", live, "live")).toEqual({ at: at("2026-11-09T17:17:00Z"), reason: "live_overtime" });
   });
 
   it("stops checking once the stream ended, even inside its window", () => {
-    expect(check("2026-11-09T13:40:00Z", offline, "live")).toEqual({ at: at("2026-11-09T15:40:00Z"), reason: "safety" });
+    expect(check("2026-11-09T13:40:00Z", offline, "live", undefined, slots, "2026-11-09T13:01:00Z")).toEqual({
+      at: at("2026-11-09T19:40:00Z"),
+      reason: "safety",
+    });
   });
 
-  it("waits for a scheduled stream until 2 minutes before it, then every minute", () => {
+  it("a stream that started before the window does not close it when it ends", () => {
+    expect(check("2026-11-09T12:55:00Z", offline, "live", undefined, slots, "2026-11-09T09:00:00Z").reason).toBe("slot_window");
+  });
+
+  it("waits for a scheduled stream until 2 minutes before it, then every 2 minutes", () => {
     // No weekly slot here, so only the scheduled stream drives the plan.
     const upcoming: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-09T13:30:00Z" };
     const c = (iso: string, l: DerivedLive) => check(iso, l, "offline", undefined, []);
     expect(c("2026-11-09T12:00:00Z", upcoming)).toEqual({ at: at("2026-11-09T13:28:00Z"), reason: "upcoming_wait" });
-    expect(c("2026-11-09T13:28:00Z", upcoming)).toEqual({ at: at("2026-11-09T13:29:00Z"), reason: "upcoming_soon" });
-    // Late start: keep looking every minute.
+    expect(c("2026-11-09T13:28:00Z", upcoming)).toEqual({ at: at("2026-11-09T13:30:00Z"), reason: "upcoming_soon" });
     expect(c("2026-11-09T13:45:00Z", upcoming).reason).toBe("upcoming_soon");
-    // Scheduled far ahead: the safety net still looks every 2 hours (it may be moved earlier).
-    const far: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-09T20:00:00Z" };
-    expect(c("2026-11-09T12:00:00Z", far)).toEqual({ at: at("2026-11-09T14:00:00Z"), reason: "safety" });
+    // Scheduled far ahead: the safety net still looks every 6 hours (it may be moved earlier).
+    const far: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-10T03:00:00Z" };
+    expect(c("2026-11-09T12:00:00Z", far)).toEqual({ at: at("2026-11-09T18:00:00Z"), reason: "safety" });
   });
 
   it("a scheduled special later tonight does not hide the regular slot window", () => {
     const special: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-09T16:00:00Z" }; // 23:00 VN
     expect(check("2026-11-09T12:00:00Z", special)).toEqual({ at: at("2026-11-09T12:50:00Z"), reason: "next_slot" });
     expect(check("2026-11-09T12:55:00Z", special).reason).toBe("slot_window");
-    // Tonight's slot scheduled on YouTube and started early: the slot window already looks from 12:50Z.
-    const tonight: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-09T13:00:00Z" };
-    expect(check("2026-11-09T12:50:00Z", tonight).reason).toBe("slot_window");
   });
 
   it("gives up on a scheduled stream an hour after its start time", () => {
-    const stale: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-09T09:00:00Z" };
-    expect(check("2026-11-09T09:30:00Z", stale).reason).toBe("upcoming_soon");
-    expect(check("2026-11-09T10:01:00Z", stale)).toEqual({ at: at("2026-11-09T12:01:00Z"), reason: "safety" });
+    const stale: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-09T05:00:00Z" };
+    expect(check("2026-11-09T05:30:00Z", stale).reason).toBe("upcoming_soon");
+    expect(check("2026-11-09T06:01:00Z", stale)).toEqual({ at: at("2026-11-09T12:01:00Z"), reason: "safety" });
   });
 
-  it("a stream that started before the window does not close it when it ends", () => {
-    expect(check("2026-11-09T12:55:00Z", offline, "live", undefined, slots, "2026-11-09T09:00:00Z").reason).toBe("slot_window");
-    expect(check("2026-11-09T13:40:00Z", offline, "live", undefined, slots, "2026-11-09T13:01:00Z").reason).toBe("safety");
-  });
-
-  it("never schedules sooner than one minute ahead", () => {
-    expect(check("2026-11-09T12:59:30Z").at).toEqual(at("2026-11-09T13:00:30Z"));
+  it("never schedules sooner than 2 minutes ahead, rounded up to pg_cron's minute tick", () => {
+    expect(check("2026-11-09T12:49:30Z").at).toEqual(at("2026-11-09T12:52:00Z"));
+    expect(check("2026-11-09T12:50:03Z")).toEqual({ at: at("2026-11-09T12:53:00Z"), reason: "slot_window" });
   });
 
   it("follows one-day overrides: moved, cancelled and extra streams", () => {
     // Monday 20:00 VN moved to 23:00 VN (16:00Z): its window opens at 15:50Z.
     const moved = [{ dateVn: "2026-11-09", cancelled: false, time: "23:00" }];
-    expect(check("2026-11-09T12:50:00Z", offline, "offline", moved).reason).not.toBe("slot_window");
+    expect(check("2026-11-09T12:55:00Z", offline, "offline", moved).reason).not.toBe("slot_window");
     expect(check("2026-11-09T14:00:00Z", offline, "offline", moved)).toEqual({ at: at("2026-11-09T15:50:00Z"), reason: "next_slot" });
     expect(check("2026-11-09T15:55:00Z", offline, "offline", moved).reason).toBe("slot_window");
     // Monday cancelled: no window at all.

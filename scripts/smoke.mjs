@@ -22,7 +22,6 @@ const env = {
 // ----- Stub Supabase -----
 const now = new Date().toISOString();
 const tables = {
-  attendance_count: 1240,
   live_status: { state: "live", video_id: "dQw4w9WgXcQ", title: "SMOKE live title", start_time: now, concurrent_viewers: 4321, checked_at: now },
   games: [{ slug: "pubg", name: "PUBG", is_vlog: false, cover_url: null, sort_order: 0, game_keywords: [{ keyword: "pubg" }] }],
   schedule_slots: [{ id: "00000000-0000-0000-0000-000000000001", day_of_week: 1, time_vn: "20:00:00", title: "SMOKE slot", game_slug: "pubg", note: null }],
@@ -208,7 +207,9 @@ try {
   await expectBody("/", "/", {
     has: ["SMOKE live title", "SMOKE PUBG video", "Vào Bộ Tộc", "không liên kết chính thức", "Đếm ngược", "Chạm để mở", "Trang không nhận tiền"],
   });
-  await expectBody("/lich", "/lich", { has: ["SMOKE slot", "Tối nay tôi có mặt", "người Bộ Tộc đã hẹn"] });
+  // RSVP and viewer counts were removed (ADR-019): the stub still has concurrent_viewers 4321, it must not show.
+  await expectBody("/lich", "/lich", { has: ["SMOKE slot"], lacks: ["Tối nay tôi có mặt", "người Bộ Tộc đã hẹn", "4.321", "4321"] });
+  await expectBody("/api/live", "/api/live", { has: ['"state":"live"', "SMOKE live title"], lacks: ["concurrentViewers"] });
   await expectStatus("stats page was removed (YouTube Studio has it)", "/thong-ke", 404);
   await expectBody("/bo-toc wall", "/bo-toc", { has: ["Bức tường Bộ Tộc"] });
   await expectBody("/video timeline + shorts", "/video", { has: ["Timeline buổi stream gần nhất", "SMOKE mở đầu", "Shorts mới"] });

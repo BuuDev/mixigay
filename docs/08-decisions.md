@@ -212,3 +212,19 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 
 **Hệ quả:** ~30–110 lần gọi Vercel và đơn vị YouTube mỗi ngày (ngày không lịch gần 0 + 12 lần an toàn); khoảng 25 tin Realtime/fan/ngày. Đổi lại: biểu đồ người xem (`live_samples`) còn 10 phút một điểm; trang báo hết live chậm tối đa 10 phút; live ngoài lịch phụ thuộc WebSub (thường trễ vài phút) hoặc lưới an toàn 2 giờ. Thay phần "poll dày/thưa" của ADR-003 (pg_cron vẫn là đồng hồ).
 
+## ADR-019 – Hướng tới gói miễn phí: không Realtime, kiểm tra live đầu ca và kết ca {#adr-019}
+
+**Bối cảnh:** Kênh của anh Độ có khoảng 47 nghìn người xem cùng lúc ngay cả lúc restream, mỗi buổi live khoảng 1,2 triệu lượt xem, nên vài phần trăm khán giả mở trang là hàng nghìn tab cùng lúc. Đo trên prod: khoảng 100 request tới Vercel cho mỗi lượt xem trang (34–45 ảnh qua Vercel Image, 25 JS, 17–20 file font, 14 prefetch), lọc video mất 5–7 giây (function ở `iad1`, DB ở Singapore, mỗi lần lọc đọc cả 3.000 video). Realtime giữ một kết nối mỗi tab (Free 200, Pro 500) và phòng thả cảm xúc nhân tin theo N². Chủ dự án muốn tối ưu chi phí nhất, hướng tới miễn phí.
+
+**Quyết định:**
+- **Bỏ** phòng "Bộ Tộc đang ở đây" (cảm xúc + đếm online), "Tối nay tôi có mặt" (bảng `attendance`, chuỗi, huy hiệu), số người xem và mẫu `live_samples`.
+- **Kiểm tra live tối thiểu** (thay lịch của ADR-018): đầu ca 2 phút một lần tới khi thấy live; một lần kiểm tra kết ca 4 giờ sau giờ bắt đầu, rồi 15 phút một lần nếu vẫn live; lưới an toàn 6 giờ. WebSub đánh thức khi có live ngoài lịch hoặc khi video đang live có cập nhật (thường là lúc kết thúc).
+- **Không Realtime ở đâu cả.** Trạng thái live: `/api/live` tĩnh trên CDN; tab đọc đúng sau giờ server hẹn (`live_next_check_at()`), rải trong 1 phút. Bình chọn: số phiếu lúc tải trang + phiếu của mình.
+- **Function ở `sin1`** (`vercel.json`), cạnh DB Singapore. `/video` lọc, sắp xếp, cắt trang trong DB (`videos.game_slug`, `video_game_counts()`), không lấy `chapters` cho danh sách.
+- **Ít request mỗi lượt xem:** thumbnail YouTube tải thẳng từ `i.ytimg.com` (`SmartImage`), font 3 độ đậm + Dancing Script variable, link điều hướng chung `prefetch={false}`, nhạc nền chỉ tải khi mở đài.
+- Dữ liệu trang trước đây cache `"minutes"` (bình chọn, đề xuất, tường, quiz, quote, từ điển, số đóng góp, từ khóa cấm) chuyển sang `"hours"`: chúng đã được làm mới bằng tag ở mỗi lần ghi, còn `"minutes"` làm 7 trang render lại mỗi phút (vượt hạn mức ISR write của Hobby).
+- Hẹn giờ của `/api/live` có tag riêng `live-timer` (làm mới sau mỗi lần kiểm tra, `expire: 30`); `live` (mọi trang) chỉ làm mới khi trạng thái đổi.
+- Bộ lọc `/video` có phản hồi: chip vừa bấm quay, lưới mờ + shimmer, thanh tiến trình trên đầu cho mọi lần chuyển trang.
+
+**Hệ quả:** Đo bản build mới: trang chủ 98 → 54 request tới Vercel, `/video` 105 → 34 (ảnh YouTube nằm ngoài hạn mức Vercel). YouTube khoảng 10–45 đơn vị/ngày cho live. Supabase không còn kết nối Realtime. Đổi lại: không có số người xem và biểu đồ; trang báo hết live chậm tối đa 15 phút sau mốc 4 giờ nếu WebSub không báo; số phiếu bình chọn của người khác chỉ thấy ở lần tải sau; nhạc không tự phát. Không làm: chuyển nút tài khoản sang client (nhiều trang vẫn đọc người dùng trên server, lợi ích nhỏ), hạ nhạc xuống 32 kbps (nhạc giờ chỉ tải khi có người mở đài). Vượt khoảng 1 triệu request/tháng của Hobby thì lên Vercel Pro hoặc cân nhắc Cloudflare.
+

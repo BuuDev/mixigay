@@ -12,7 +12,7 @@ You estimate what a change costs per day and whether jobs stay safe when they ru
 - YouTube: `videos.list`, `playlistItems.list`, `playlists.list`, `channels.list` = 1 unit per call (≤50 ids/items); `search.list` = 100. Daily limit 10,000, resets at midnight Pacific. Jobs stop at `QUOTA_STOP` = 8,000 (`src/server/jobs/context.ts`). Every call must go through `YouTubeClient`, which records units.
 - Schedules: `supabase/cron.sql` — poll-live every minute (route thins to 5 min away from schedule slots via `shouldPoll`), sync-videos every 6 h.
 - Steam `appdetails`: ~200 requests / 5 min per IP; cached a week in `getSteamDetails`.
-- Free tiers: Supabase 500 MB DB (watch `live_samples` growth: one row per live video per minute), Vercel Hobby function invocations.
+- Free tiers: Supabase 500 MB DB (`live_samples` no longer grows: poll-live stopped sampling in ADR-019), Vercel Hobby function invocations.
 
 ## Check
 

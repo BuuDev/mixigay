@@ -167,6 +167,11 @@ eq("a schedule change wakes poll-live", (await q(`select public.poll_live_due() 
 });
 await as(adm.id, () => q(`insert into public.schedule_overrides (date_vn, cancelled) values ('2099-01-01', true)`));
 eq("an override also wakes it", (await q(`select reason from public.live_poll_state`))[0].reason, "schedule_changed");
+eq(
+  "anon reads when poll-live looks next (and nothing else of the timer)",
+  typeof (await as(null, () => q(`select public.live_next_check_at() t`)))[0].t?.getTime,
+  "function",
+);
 await db.exec(`delete from public.schedule_overrides where date_vn = '2099-01-01'`);
 
 // ----- Suggestions & votes -----
@@ -275,6 +280,17 @@ await allowed("fan may call set_auto_game", () =>
 eq("set_auto_game by a fan changes nothing (RLS)", (await q(`select auto_game_slug from public.videos where video_id = 'fxVid3'`))[0].auto_game_slug, null);
 await q(`select public.set_auto_game($1::jsonb)`, [JSON.stringify([{ video_id: "fxVid3", auto_game_slug: "vlog" }])]);
 eq("set_auto_game by service role", (await q(`select auto_game_slug from public.videos where video_id = 'fxVid3'`))[0].auto_game_slug, "vlog");
+// /video filters in the DB (migration 20261111140000): game_slug = manual ?? auto ?? 'unclassified'.
+eq("game_slug follows the auto guess", (await q(`select game_slug from public.videos where video_id = 'fxVid3'`))[0].game_slug, "vlog");
+await q(`update public.videos set manual_game_slug = 'pubg' where video_id = 'fxVid3'`);
+eq("game_slug: the admin's tag wins", (await q(`select game_slug from public.videos where video_id = 'fxVid3'`))[0].game_slug, "pubg");
+await q(`update public.videos set manual_game_slug = null where video_id = 'fxVid3'`);
+await denied("nobody writes game_slug directly", () => q(`update public.videos set game_slug = 'x' where video_id = 'fxVid3' returning video_id`));
+await allowed("anon counts videos per game", async () => {
+  const rows = await as(null, () => q(`select * from public.video_game_counts()`));
+  const total = (await q(`select count(*)::int n from public.videos where not is_short and live_state <> 'upcoming'`))[0].n;
+  if (rows.reduce((t, r) => t + Number(r.n), 0) !== total) throw new Error(`counts do not add up to ${total}`);
+});
 await q(`select public.set_playlist_members('PL1', array['fxVid1','fxVid2'])`);
 await q(`select public.set_playlist_members('PL1', array['fxVid2'])`);
 eq("set_playlist_members replaces membership", await q(`select video_id, playlist_ids from public.videos where video_id in ('fxVid1','fxVid2') order by 1`), [
@@ -668,7 +684,7 @@ eq(
   [true, false],
 );
 
-// ----- Wall, attendance, live_samples compaction (20261110130000) -----
+// ----- Wall, live_samples compaction (20261110130000) -----
 console.log("Wall messages");
 const wall = (uid, body) => as(uid, () => q(`insert into public.wall_messages (body) values ($1)`, [body]));
 await allowed("fan writes on the wall (pending)", () => wall(fan.id, "Chúc anh Độ stream vui nha!"));
@@ -701,19 +717,10 @@ await denied("admin cannot publish a shadow-banned author's message", () =>
   as(adm.id, () => q(`update public.wall_messages set approved = true where id = $1 returning id`, [fw.id])),
 );
 
-console.log("Attendance");
-const today = (await q(`select public.today_vn()::text d`))[0].d;
-const attend = (uid, d = today) => as(uid, () => q(`insert into public.attendance (date_vn) values ($1)`, [d]));
-await allowed("fan taps “Tối nay tôi có mặt”", () => attend(fan.id));
-await denied("same fan taps twice", () => attend(fan.id));
-await denied("tap for another day", () => attend(fan2.id, "2020-01-01"));
-await denied("anon taps", () => attend(null));
-await allowed("second fan taps", () => attend(fan2.id));
-await allowed("shadow-banned tap reports success…", () => attend(fresh2.id));
-eq("…and the public count excludes it", (await as(null, () => q(`select public.attendance_count($1::date) n`, [today])))[0].n, 2);
-eq("fans cannot list who attends", (await as(fan2.id, () => q(`select user_id from public.attendance`))).length, 1);
-await as(fan2.id, () => q(`delete from public.attendance where user_id = $1`, [fan2.id]));
-eq("un-tap lowers the count", (await q(`select public.attendance_count($1::date) n`, [today]))[0].n, 1);
+console.log("Removed: RSVP + reaction room (20261111150000)");
+eq("attendance table is gone", (await q(`select to_regclass('public.attendance') t`))[0].t, null);
+eq("attendance_count is gone", (await q(`select count(*)::int n from pg_proc where proname in ('attendance_count', 'drop_shadow_attendance')`))[0].n, 0);
+await allowed("moderate_user still runs without the attendance table", () => as(adm.id, () => q(`select public.moderate_user($1, 'ban')`, [fresh2.id])));
 
 console.log("live_samples compaction");
 await q(`insert into public.live_samples (video_id, sampled_at, concurrent_viewers)

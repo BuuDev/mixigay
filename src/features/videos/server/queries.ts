@@ -6,8 +6,8 @@ import { TAGS } from "@/shared/lib/cache-tags";
 import { isSupabaseConfigured } from "@/shared/lib/env";
 import { thumbnailFor } from "@/shared/lib/links";
 import { classifyVideo, UNCLASSIFIED } from "../lib/classify";
-import { gameCovers } from "../lib/game-cover";
-import { selectVideos, videoTabs, type VideoSort } from "../lib/video-query";
+import { gameCovers, type GameCover } from "../lib/game-cover";
+import { selectVideos, videoTabs, type VideoSort, type VideoTab } from "../lib/video-query";
 import { mapGame, mapVideo, type GameRow, type VideoRow } from "../lib/mapper";
 import * as mock from "../mock";
 import type { ClassifiedVideo, Game } from "../types";
@@ -82,16 +82,94 @@ export async function getShorts(limit = 24): Promise<ClassifiedVideo[]> {
   return rows.filter((r) => r.is_short === true).map(toClassified);
 }
 
+/** List columns without chapters: a card never shows them. */
+const LIST_COLUMNS = "video_id,title,published_at,duration_seconds,view_count,thumbnail_url,was_live,playlist_ids,manual_game_slug,auto_game_slug,is_short";
+
 /**
  * One screen of /video: tabs with counts, the cards for the query and the selected game's
- * cover. Cached per (game, sort, limit), so the full channel never leaves the server.
+ * cover. Cached per (game, sort, limit). With Supabase the filter, sort and page cut run in
+ * the database (videos.game_slug + partial indexes, migration 20261111140000): one small
+ * indexed query instead of reading the whole channel for every filter click.
  */
 export async function getVideoPage(game: string, sort: VideoSort, limit: number) {
   "use cache";
   cacheTag(TAGS.videos, TAGS.games);
   cacheLife("hours");
-  const [videos, games] = await Promise.all([getVideos(), getGames()]);
-  const { items, total } = selectVideos(videos, { game, sort, limit });
-  const cover = game !== "all" ? (gameCovers(videos, games).get(game) ?? null) : null;
-  return { tabs: videoTabs(videos, games), items, total, cover, games };
+  if (!isSupabaseConfigured) {
+    const [videos, games] = await Promise.all([getVideos(), getGames()]);
+    const { items, total } = selectVideos(videos, { game, sort, limit });
+    const cover = game !== "all" ? (gameCovers(videos, games).get(game) ?? null) : null;
+    return { tabs: videoTabs(videos, games), items, total, cover, games };
+  }
+  const db = publicClient();
+  let list = db.from("videos").select(LIST_COLUMNS).eq("is_short", false).neq("live_state", "upcoming");
+  if (game !== "all") list = list.eq("game_slug", game);
+  list =
+    sort === "views"
+      ? list.order("view_count", { ascending: false }).order("published_at", { ascending: false })
+      : list.order("published_at", { ascending: false });
+  const [games, counts, rows, cover] = await Promise.all([
+    getGames(),
+    getVideoCounts(),
+    list.limit(limit),
+    game !== "all" && game !== UNCLASSIFIED ? getGameCover(game) : null,
+  ]);
+  const items = check<VideoRow[]>(rows, "video page").map(toClassified);
+  const tabs = tabsFromCounts(counts, games);
+  const total = game === "all" ? (tabs[0]?.count ?? 0) : (counts.get(game) ?? 0);
+  return { tabs, items, total, cover, games };
+}
+
+/** Videos per game_slug (Shorts and upcoming placeholders excluded). */
+async function getVideoCounts(): Promise<Map<string, number>> {
+  const rows = check<{ game_slug: string; n: number }[]>(await publicClient().rpc("video_game_counts"), "video counts");
+  return new Map(rows.map((r) => [r.game_slug, Number(r.n)]));
+}
+
+function tabsFromCounts(counts: Map<string, number>, games: readonly Game[]): VideoTab[] {
+  let all = 0;
+  for (const n of counts.values()) all += n;
+  return [
+    { slug: "all", label: "Tất cả", count: all },
+    ...games.map((g) => ({ slug: g.slug, label: g.name, count: counts.get(g.slug) ?? 0 })),
+    { slug: UNCLASSIFIED, label: "Chưa phân loại", count: counts.get(UNCLASSIFIED) ?? 0 },
+  ].filter((t) => t.slug === "all" || t.count > 0);
+}
+
+/** Same rule as gameCovers(): the newest past stream of the game, else its newest upload. */
+async function getGameCover(game: string): Promise<GameCover | null> {
+  const rows = check<VideoRow[]>(
+    await publicClient()
+      .from("videos")
+      .select(LIST_COLUMNS)
+      .eq("game_slug", game)
+      .eq("is_short", false)
+      .not("thumbnail_url", "is", null)
+      .order("was_live", { ascending: false })
+      .order("published_at", { ascending: false })
+      .order("video_id", { ascending: true })
+      .limit(1),
+    "game cover",
+  );
+  const v = rows[0] ? toClassified(rows[0]) : null;
+  return v?.thumbnailUrl ? { thumbnailUrl: v.thumbnailUrl, videoId: v.videoId, title: v.title, publishedAt: v.publishedAt, wasLive: v.wasLive } : null;
+}
+
+/** The newest past streams with their chapters, for the timeline on /video (a few rows, not the channel). */
+export async function getRecentStreams(limit = 8): Promise<ClassifiedVideo[]> {
+  "use cache";
+  cacheTag(TAGS.videos, TAGS.games);
+  cacheLife("hours");
+  if (!isSupabaseConfigured) return (await getVideos()).filter((v) => v.wasLive).slice(0, limit);
+  const rows = check<VideoRow[]>(
+    await publicClient()
+      .from("videos")
+      .select(VIDEO_COLUMNS)
+      .eq("was_live", true)
+      .neq("live_state", "upcoming")
+      .order("published_at", { ascending: false })
+      .limit(limit),
+    "recent streams",
+  );
+  return rows.map(toClassified);
 }

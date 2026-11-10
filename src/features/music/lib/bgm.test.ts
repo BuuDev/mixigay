@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BGM_DEFAULT_VOLUME, isQuietPath, parseBgmPref, parseVolume, shouldAutoStart } from "./bgm";
+import { BGM_DEFAULT_VOLUME, isQuietPath, parseBgmPref, parseVolume } from "./bgm";
 import { BGM_DEFAULT_SLUG, BGM_TRACKS, defaultTrackIndex, nextIndex, playlistMinutes, trackSrc } from "./bgm-tracks";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -23,20 +23,6 @@ describe("isQuietPath", () => {
     expect(isQuietPath("/")).toBe(false);
     expect(isQuietPath("/administrator")).toBe(false);
     expect(isQuietPath("/moitruong")).toBe(false);
-  });
-});
-
-describe("shouldAutoStart", () => {
-  it("starts on first interaction by default", () => {
-    expect(shouldAutoStart({ pref: null, pathname: "/", alreadyActive: false })).toBe(true);
-    expect(shouldAutoStart({ pref: "on", pathname: "/lich", alreadyActive: false })).toBe(true);
-  });
-  it("never restarts music the visitor turned off", () => {
-    expect(shouldAutoStart({ pref: "off", pathname: "/", alreadyActive: false })).toBe(false);
-  });
-  it("does nothing when already playing or on a quiet page", () => {
-    expect(shouldAutoStart({ pref: null, pathname: "/", alreadyActive: true })).toBe(false);
-    expect(shouldAutoStart({ pref: null, pathname: "/admin", alreadyActive: false })).toBe(false);
   });
 });
 

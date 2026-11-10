@@ -9,7 +9,6 @@ import { overrideFor, vnDateKey } from "@/features/schedule/lib/overrides";
 import type { ScheduleOverride, ScheduleSlot } from "@/features/schedule/types";
 import { useNow } from "@/shared/hooks/use-now";
 import { useOverlayFlag } from "@/shared/hooks/use-overlay-flag";
-import { formatViews } from "@/shared/lib/format";
 import { youtubeUrl } from "@/shared/lib/links";
 import { AnimatePresence, duration, m, pop, rise, useReducedMotion } from "@/shared/motion";
 import { Burst } from "@/shared/motion/burst";
@@ -149,7 +148,7 @@ function TodayLine({ initial, schedule, overrides }: { initial: LiveStatus; sche
     return (
       <div className="flex flex-col items-center gap-3">
         <Mascot pose="live" size={88} decorative />
-        <LiveBadge viewers={status.concurrentViewers ? formatViews(status.concurrentViewers) : undefined} />
+        <LiveBadge />
         <ButtonLink href={youtubeUrl(status.videoId)} external>
           Xem trên YouTube
         </ButtonLink>

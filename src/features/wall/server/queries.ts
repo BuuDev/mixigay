@@ -13,7 +13,7 @@ import type { WallMessage } from "../types";
 export async function getWallMessages(): Promise<WallMessage[]> {
   "use cache";
   cacheTag(TAGS.wall);
-  cacheLife("minutes");
+  cacheLife("hours"); // invalidated by its tag on every write; "minutes" re-rendered pages every 60 s (ADR-019)
   if (!isSupabaseConfigured) return mock.wallMessages;
   const rows = check<WallMessageRow[]>(
     await publicClient().from("wall_messages").select(WALL_SELECT).eq("approved", true).order("created_at", { ascending: false }).limit(60),

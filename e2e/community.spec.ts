@@ -332,7 +332,7 @@ test("moderation center: reject with a reason, approve, the author sees why, adm
   await admin.context().close();
 });
 
-test("community corner: admin opens a poll, a fan votes on the home page, reactions reach another visitor live", async ({ page, browser, supabaseAdmin }) => {
+test("community corner: admin opens a poll and a fan votes on the home page", async ({ page, browser, supabaseAdmin }) => {
   expect(adminState, "admin session from the invite test").toBeDefined();
   const question = `E2E bình chọn ${tag}?`;
   const optA = `E2E lựa chọn A ${tag}`;
@@ -379,8 +379,14 @@ test("community corner: admin opens a poll, a fan votes on the home page, reacti
     await page.goto("/");
     await dismissIntro(page);
     const card = page.getByRole("region", { name: "Bình chọn của Bộ Tộc" }).or(page.locator('[aria-label="Bình chọn của Bộ Tộc"]')).first();
-    await card.scrollIntoViewIfNeeded();
-    await expect(card).toContainText(question, { timeout: 15_000 });
+    // The admin's updateTag expires the cached home page; the first request after it may still
+    // be answered from the old copy while the new one renders (stale-while-revalidate), so a
+    // reload is allowed — but the new poll must show within a few seconds, not an hour.
+    await expect(async () => {
+      await page.reload();
+      await card.scrollIntoViewIfNeeded();
+      await expect(card).toContainText(question, { timeout: 2_000 });
+    }).toPass({ timeout: 20_000, intervals: [1000, 2000, 3000] });
     await card.getByRole("button", { name: new RegExp(optA) }).click();
     await expect(card.getByText("Bạn đã chọn")).toBeVisible({ timeout: 15_000 });
     // The card updates optimistically; the vote row and the trigger-kept count land a moment later.
@@ -393,24 +399,6 @@ test("community corner: admin opens a poll, a fan votes on the home page, reacti
         { timeout: 15_000 },
       )
       .toBe(1);
-
-    // 3. Reactions are shared live: the fan taps 🔥, an anonymous visitor's counter goes up.
-    const guest = await newPage(browser);
-    await guest.goto("/");
-    await dismissIntro(guest);
-    const guestRoom = guest.getByRole("group", { name: "Thả cảm xúc" });
-    await guestRoom.scrollIntoViewIfNeeded();
-    await expect(guestRoom).toBeVisible({ timeout: 15_000 });
-    const guestFire = guestRoom.getByRole("button", { name: /Cháy/ });
-    const before = Number((await guestFire.innerText()).match(/\d+/)?.[0] ?? 0);
-    const fanRoom = page.getByRole("group", { name: "Thả cảm xúc" });
-    await fanRoom.scrollIntoViewIfNeeded();
-    await expect(async () => {
-      await fanRoom.getByRole("button", { name: /Cháy/ }).click();
-      const now = Number((await guestFire.innerText()).match(/\d+/)?.[0] ?? 0);
-      expect(now).toBeGreaterThan(before);
-    }).toPass({ timeout: 20_000, intervals: [1000] });
-    await guest.context().close();
   } finally {
     await supabaseAdmin.from("polls").delete().eq("question", question);
   }

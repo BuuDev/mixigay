@@ -15,7 +15,7 @@ import { isTermCategory } from "./lib/terms";
 export async function getBlockedTerms(): Promise<ExtraTerm[]> {
   "use cache";
   cacheTag(TAGS.blockedTerms);
-  cacheLife("minutes");
+  cacheLife("hours"); // invalidated by its tag on every write; "minutes" re-rendered pages every 60 s (ADR-019)
   if (!isSupabaseConfigured || !process.env.SUPABASE_SERVICE_ROLE_KEY) return [];
   const { data, error } = await adminClient().from("blocked_terms").select("term,category");
   if (error) {

@@ -80,7 +80,7 @@ export default async function Home() {
       {/* First thing after the cover: what only the community has (YouTube has none of it). */}
       <Block id="tuong-tac">
         <SectionHeader eyebrow="Chỉ có ở Góc Bộ Tộc" title="Góc tương tác" icon={<IconTribe size={26} className="text-accent" />} />
-        <InteractionHub live={status.state === "live"} schedule={schedule} overrides={overrides} />
+        <InteractionHub />
       </Block>
 
       {/* Right after: what fans can add themselves (owner feedback: contributions first and easy to see). */}

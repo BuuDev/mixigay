@@ -5,7 +5,7 @@ import { ShortsRail } from "@/features/videos/components/shorts-rail";
 import { VideoBrowser } from "@/features/videos/components/video-browser";
 import { latestStreamWithChapters } from "@/features/videos/lib/chapters";
 import { PAGE, parseVideoQuery } from "@/features/videos/lib/video-query";
-import { getGames, getShorts, getVideoPage, getVideos } from "@/features/videos/server/queries";
+import { getGames, getRecentStreams, getShorts, getVideoPage } from "@/features/videos/server/queries";
 import { isSupabaseConfigured } from "@/shared/lib/env";
 import { formatDate } from "@/shared/lib/format";
 import { youtubeUrl } from "@/shared/lib/links";
@@ -18,8 +18,8 @@ export const metadata: Metadata = { title: "Video theo game – Góc Bộ Tộc"
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function VideosPage({ searchParams }: { searchParams: SearchParams }) {
-  const [videos, shorts] = await Promise.all([getVideos(), getShorts()]);
-  const stream = latestStreamWithChapters(videos);
+  const [streams, shorts] = await Promise.all([getRecentStreams(), getShorts()]);
+  const stream = latestStreamWithChapters(streams);
   return (
     <div className="space-y-8">
       <PageHeader title="Video theo game" icon={<IconGameMisc size={26} className="text-accent" />} art={<SceneArt scene="10-xem-lai-vod" size={128} />}>
