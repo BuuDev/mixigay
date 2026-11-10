@@ -23,7 +23,10 @@ describe("steamAppIdFromUrl", () => {
 describe("parseAppDetails", () => {
   it("maps price and genres", () => {
     const body = {
-      "10": { success: true, data: { name: "CS", header_image: "h.jpg", price_overview: { final_formatted: "120.000₫" }, genres: [{ description: "Hành động" }] } },
+      "10": {
+        success: true,
+        data: { name: "CS", header_image: "h.jpg", price_overview: { final_formatted: "120.000₫" }, genres: [{ description: "Hành động" }] },
+      },
     };
     expect(parseAppDetails(10, body)).toEqual({ appId: 10, name: "CS", headerImage: "h.jpg", price: "120.000₫", genres: ["Hành động"] });
   });

@@ -43,7 +43,7 @@ Bộ test nằm trong `e2e/`, cấu hình ở `playwright.config.ts`. Chạy b�
 | Spec | Chế độ | Nội dung |
 |---|---|---|
 | `public.spec.ts` | mock + dev | lịch tuần và thẻ trạng thái live không trống, lọc video theo game, menu "Thêm ▾", thanh tab điện thoại, `/thong-ke` 404, không lỗi console/hydration trên các trang chính |
-| `radio.spec.ts` | mock + dev, desktop | đài nhạc nền im lặng tới cú chạm đầu tiên, phát ở âm lượng 0.3, "Tắt hẳn nhạc" được nhớ, không phát trên `/gui-anh-do` |
+| `radio.spec.ts` | mock + dev, desktop | đài nhạc nền phát Airport Lounge ở âm lượng 0.3 ngay khi mở trang hoặc muộn nhất ở cú chạm đầu (Chromium headless lúc cho lúc chặn tự phát), "Tắt hẳn nhạc" được nhớ, không phát trên `/gui-anh-do` |
 | `community.spec.ts` | chỉ dev, desktop | đăng ký qua dialog → gửi đề xuất (chỉ tác giả thấy) → admin duyệt → fan thứ hai upvote, sai mã khóa, header admin không chồng chéo ở 1024/1366 px |
 
 Test chạy trên **bản build production** ở cổng 3311. `webServer` tự chạy `npm run start -- -p 3311` nếu cổng còn trống, hoặc dùng lại server đang chạy. Vì vậy luôn build trước:

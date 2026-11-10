@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BGM_DEFAULT_VOLUME, isQuietPath, parseBgmPref, parseVolume, shouldAutoStart } from "./bgm";
-import { BGM_TRACKS, nextIndex, playlistMinutes, trackSrc } from "./bgm-tracks";
+import { BGM_DEFAULT_SLUG, BGM_TRACKS, defaultTrackIndex, nextIndex, playlistMinutes, trackSrc } from "./bgm-tracks";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
@@ -57,6 +57,12 @@ describe("playlist", () => {
     expect(nextIndex(BGM_TRACKS.length - 1)).toBe(0);
     expect(nextIndex(0)).toBe(1);
     expect(nextIndex(3, 0)).toBe(0);
+  });
+  it("opens with Airport Lounge, and still has a track if it is removed", () => {
+    expect(BGM_DEFAULT_SLUG).toBe("airport-lounge");
+    expect(BGM_TRACKS[defaultTrackIndex()].title).toBe("Airport Lounge");
+    expect(defaultTrackIndex(BGM_TRACKS.filter((t) => t.slug !== BGM_DEFAULT_SLUG))).toBe(0);
+    expect(defaultTrackIndex([])).toBe(0);
   });
   it.each(BGM_TRACKS)("ships the file for $title", (t) => {
     expect(existsSync(join(process.cwd(), "public", trackSrc(t)))).toBe(true);

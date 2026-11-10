@@ -31,8 +31,8 @@ export default function AboutPage() {
           dưới.
         </li>
         <li>
-          Cho fan gửi link bài “nhạc nịnh” tự làm. Bài chỉ hiện sau khi được duyệt và luôn mở ở nền tảng gốc (YouTube, SoundCloud…); trang không lưu hay phát
-          nhạc.
+          Cho fan gửi link bài “nhạc nịnh” tự làm. Bài chỉ hiện sau khi được duyệt. Trang không lưu file nhạc của fan: bài trên SoundCloud nghe được ngay qua
+          trình phát chính thức của SoundCloud, các nền tảng khác (YouTube, Spotify…) mở ở trang gốc.
         </li>
       </ul>
       <h2 className="text-lg font-semibold">Tiền bạc</h2>
@@ -59,7 +59,8 @@ export default function AboutPage() {
         <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" className="text-accent underline">
           CC BY 4.0
         </a>
-        ; nhạc chỉ bật sau lần chạm đầu tiên và tắt được bất cứ lúc nào.
+        ; trang thử phát nhạc khi bạn mở trang nếu trình duyệt cho phép (thường thì trình duyệt chặn, nhạc sẽ bật ở lần chạm đầu tiên), âm lượng nhỏ, không bao
+        giờ tự phát ở trang Gửi anh Độ, và bấm “Tắt hẳn nhạc” là lần sau không tự bật nữa.
       </p>
       <h2 id="lien-he" className="scroll-mt-20 text-lg font-semibold">
         Liên hệ / yêu cầu gỡ nội dung

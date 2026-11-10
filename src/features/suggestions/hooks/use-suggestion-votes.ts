@@ -18,7 +18,17 @@ function applyVote(items: Suggestion[], voted: Set<string>, { id, voted: on }: V
  * "live": server props are the truth, votes go through the toggleVote action.
  * "demo" (no backend): everything stays in this browser tab.
  */
-export function useSuggestionVotes({ initial, votedIds, mode, signedIn }: { initial: Suggestion[]; votedIds: string[]; mode: "live" | "demo"; signedIn: boolean }) {
+export function useSuggestionVotes({
+  initial,
+  votedIds,
+  mode,
+  signedIn,
+}: {
+  initial: Suggestion[];
+  votedIds: string[];
+  mode: "live" | "demo";
+  signedIn: boolean;
+}) {
   const [demo, setDemo] = useState({ items: initial, voted: new Set<string>() });
   const base = mode === "demo" ? demo : { items: initial, voted: new Set(votedIds) };
   const [optimistic, addOptimistic] = useOptimistic(base, (state, action: VoteAction) => applyVote(state.items, state.voted, action));
