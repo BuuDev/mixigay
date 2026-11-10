@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getFanArt } from "@/features/fan-art/server/queries";
-import { selectLatestArtForStream, selectLatestSongsForStream, selectTopGamesForStream } from "@/features/for-anh-do/lib/curate";
+import { selectLatestArtForStream, selectLatestSongsForStream, streamReadyFromLineup } from "@/features/for-anh-do/lib/curate";
+import { getTonightLineup } from "@/features/suggestions/server/lineup";
 import { PLATFORM_LABEL } from "@/features/music/lib/song-url";
 import { getFanSongs } from "@/features/music/server/queries";
-import { getSuggestions } from "@/features/suggestions/server/queries";
+import { GameThumb } from "@/features/suggestions/components/game-thumb";
+import { REASON_TONE, SOURCE } from "@/features/suggestions/components/labels";
 import { WallStreamList } from "@/features/wall/components/wall-stream-list";
 import { ScrollReveal } from "@/shared/motion/scroll-reveal";
 import { Badge } from "@/shared/ui/badge";
@@ -19,12 +21,9 @@ export const metadata: Metadata = {
   description: "Trang tổng hợp chữ to, gọn gàng để anh Độ Mixi xem nhanh trên sóng: top game Bộ Tộc đề xuất, nhạc nịnh và tranh fan art đã duyệt.",
 };
 
-// Reference timestamp used when filtering recent suggestions in cached renders.
-const STREAM_REF_MS = Date.parse("2026-11-09T12:00:00Z");
-
 export default async function ForAnhDoPage() {
-  const [suggestions, songs, fanArt] = await Promise.all([getSuggestions(), getFanSongs(), getFanArt()]);
-  const topGames = selectTopGamesForStream(suggestions, STREAM_REF_MS, 6);
+  const [lineup, songs, fanArt] = await Promise.all([getTonightLineup(), getFanSongs(), getFanArt()]);
+  const topGames = streamReadyFromLineup(lineup.picks);
   const topSongs = selectLatestSongsForStream(songs, 4);
   const latestArt = selectLatestArtForStream(fanArt, 6);
 
@@ -45,21 +44,21 @@ export default async function ForAnhDoPage() {
       </header>
 
       <ScrollReveal as="section">
-        <SectionHeader
-          eyebrow="Bộ Tộc bình chọn nhiều nhất"
-          title="Top Game Bộ Tộc đề xuất tuần này"
-          icon={<IconSuggest size={28} className="text-accent" />}
-        />
+        <SectionHeader eyebrow="Bộ Tộc đề xuất cho buổi live tới" title="Ứng viên tối nay" icon={<IconSuggest size={28} className="text-accent" />} />
+        <p className="-mt-2 mb-5 text-center text-base text-muted">
+          Đây là {topGames.length} game Bộ Tộc đề xuất: game đang hot, game mới đề xuất và game Bộ Tộc tự làm.
+        </p>
         <div className="grid gap-4 md:grid-cols-2">
-          {topGames.map((g, idx) => (
-            <Card key={g.id} className="flex flex-col justify-between border-2 border-border p-5 transition-colors hover:border-accent">
-              <div>
+          {topGames.map((g) => (
+            <Card key={g.id} className="flex flex-col justify-between overflow-hidden border-2 border-border transition-colors hover:border-accent">
+              <GameThumb sources={g.imageSources} name={g.name} sizes="(min-width: 768px) 50vw, 100vw" className="aspect-[460/215] w-full rounded-none" />
+              <div className="px-5 pt-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="flex size-8 items-center justify-center rounded-pill bg-accent font-mono text-sm font-black text-background">
-                      #{idx + 1}
-                    </span>
-                    <Badge tone="steam">{g.sourceLabel}</Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone={REASON_TONE[g.pick]} className="px-3 py-1 text-sm">
+                      {g.pickLabel}
+                    </Badge>
+                    <Badge tone={SOURCE[g.source].tone}>{g.sourceLabel}</Badge>
                     {g.price && <span className="font-mono text-xs text-muted">{g.price}</span>}
                   </div>
                   <span className="inline-flex items-center gap-1.5 rounded-pill bg-accent/15 px-3 py-1 font-mono text-sm font-bold text-accent">
@@ -81,7 +80,7 @@ export default async function ForAnhDoPage() {
                 )}
               </div>
 
-              <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-sm">
+              <div className="mx-5 mt-4 mb-5 flex items-center justify-between border-t border-border pt-3 text-sm">
                 <span className="text-xs text-muted">Đã duyệt nội dung</span>
                 {g.safeUrl ? (
                   <a href={g.safeUrl} target="_blank" rel="noopener noreferrer nofollow ugc" className="font-bold text-accent hover:underline">
@@ -95,7 +94,7 @@ export default async function ForAnhDoPage() {
           ))}
         </div>
         <p className="mt-4 text-center text-sm text-muted">
-          Xem toàn bộ danh sách và bộ lọc theo thể loại tại trang{" "}
+          Xem toàn bộ danh sách (đang hot, mới đề xuất, Bộ Tộc tự làm, nhiều vote nhất) tại trang{" "}
           <Link href="/de-xuat" className="font-semibold text-accent underline underline-offset-2">
             Đề xuất game
           </Link>

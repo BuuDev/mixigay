@@ -15,7 +15,7 @@ Trang đi theo hướng **chỉ dẫn link về kênh gốc**: lượt xem, ủn
 
 - Footer mọi trang ghi rõ: **"Trang do fan làm, không liên kết chính thức với Độ Mixi / MixiGaming."**
 - Logo MixiGaming / Refund Gaming và ảnh anh Độ **được dùng, kể cả làm nhận diện** (header, favicon, icon app, ảnh chia sẻ) — chủ dự án xác nhận đã được cho phép ([ADR-016](08-decisions.md#adr-016)). Ảnh lấy từ nguồn chính chủ (ảnh đại diện/banner kênh, thumbnail video, ảnh chủ dự án cung cấp), không cần ghi nguồn. Footer luôn giữ dòng "trang do fan làm, không phải kênh chính thức".
-- Ảnh anh Độ và tranh fan vẽ được dùng làm **nội dung** (album, ảnh bìa trang chủ, màn mở đầu – [ADR-011](08-decisions.md#adr-011)), luôn có chú thích nguồn và cách xin gỡ. Không dùng làm favicon, logo header hay OG image.
+- Ảnh anh Độ và tranh fan vẽ được dùng làm **nội dung** (album, ảnh bìa trang chủ, màn mở đầu – [ADR-011](08-decisions.md#adr-011)), không bắt buộc chú thích nguồn từ ADR-016 (vẫn giữ cách xin gỡ ở trang Giới thiệu); logo và ảnh chính chủ được dùng làm nhận diện, xem dòng trên.
 - Không nhúng player làm mặc định; card video/live mở `youtube.com/watch?v=…` ở tab mới.
 - Không nhận tiền dưới bất kỳ hình thức nào. Link donate/merch/ủng hộ trỏ về kênh chính chủ.
 - Nội dung do fan gửi (đề xuất, quote, fan art) phải có cơ chế ẩn/xóa của admin. Fan art phải duyệt trước khi hiện.

@@ -1,10 +1,13 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { PhotoAlbum } from "@/features/album/components/photo-album";
 import { ALBUM } from "@/features/album/lib/photos";
-import { AttendanceBlock } from "@/features/attendance/components/attendance-block";
 import { EventRadar } from "@/features/events/components/event-radar";
+import { ContributeHub } from "@/features/home/components/contribute-hub";
+import { getTonightLineup } from "@/features/suggestions/server/lineup";
 import { HeroCover } from "@/features/home/components/hero-cover";
+import { InteractionHub } from "@/features/home/components/interaction-hub";
+import { OnThisDaySection } from "@/features/home/components/on-this-day-section";
 import { MomentsMarquee } from "@/features/home/components/moments-marquee";
 import { channelStats, MIN_ROW, pickMoments } from "@/features/home/lib/moments";
 import { IntroRitual } from "@/features/intro/components/intro-ritual";
@@ -19,12 +22,25 @@ import { GiftBox } from "@/features/support/components/gift-box";
 import { TrendBoard } from "@/features/tribe/components/trend-board";
 import { TribeVibe } from "@/features/tribe/components/tribe-vibe";
 import { newestPublishedAt, trendingTopics } from "@/features/tribe/lib/trends";
+import { TonightLineup } from "@/features/suggestions/components/tonight-lineup";
 import { ShortsRail } from "@/features/videos/components/shorts-rail";
 import { VideoRail } from "@/features/videos/components/video-rail";
 import { getGames, getShorts, getVideos } from "@/features/videos/server/queries";
 import { ScrollReveal } from "@/shared/motion/scroll-reveal";
 import { SceneArt } from "@/shared/ui/brand-art";
-import { IconAlbum, IconCampfire, IconEvent, IconGameMisc, IconLive, IconSchedule, IconTimeline, IconTribe, IconUpcoming, IconVlog } from "@/shared/ui/icons";
+import {
+  IconAlbum,
+  IconCampfire,
+  IconEvent,
+  IconFanart,
+  IconGameMisc,
+  IconLive,
+  IconSchedule,
+  IconTimeline,
+  IconTribe,
+  IconUpcoming,
+  IconVlog,
+} from "@/shared/ui/icons";
 import { Ornament } from "@/shared/ui/ornament";
 import { SectionHeader } from "@/shared/ui/section-header";
 
@@ -44,8 +60,9 @@ function Block({ id, children }: { id?: string; children: ReactNode }) {
 
 export default async function Home() {
   const shortsPromise = getShorts(12);
+  const lineupPromise = getTonightLineup();
   const [status, schedule, overrides, videos, games] = await Promise.all([getLiveStatus(), getSchedule(), getScheduleOverrides(), getVideos(), getGames()]);
-  const shorts = await shortsPromise;
+  const [shorts, lineup] = await Promise.all([shortsPromise, lineupPromise]);
   const latest = [...videos].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt)).slice(0, 8);
   const hotSeries = groupSeries(videos).slice(0, 6);
   const topics = trendingTopics(videos, newestPublishedAt(videos)).slice(0, 4);
@@ -60,14 +77,30 @@ export default async function Home() {
       {/* Invitation cover: anh Độ in the arch over the banner band, the evening's status beside him. */}
       <HeroCover status={status} schedule={schedule} overrides={overrides} stats={stats} />
 
+      {/* First thing after the cover: what only the community has (YouTube has none of it). */}
+      <Block id="tuong-tac">
+        <SectionHeader eyebrow="Chỉ có ở Góc Bộ Tộc" title="Góc tương tác" icon={<IconTribe size={26} className="text-accent" />} />
+        <InteractionHub live={status.state === "live"} schedule={schedule} overrides={overrides} />
+      </Block>
+
+      {/* Right after: what fans can add themselves (owner feedback: contributions first and easy to see). */}
+      <Block id="gop-suc">
+        <SectionHeader eyebrow="Bộ Tộc góp gì hôm nay?" title="Góp sức cùng Bộ Tộc" icon={<IconFanart size={26} className="text-accent" />} />
+        <ContributeHub />
+      </Block>
+
+      {/* One game a night: 3 "đang hot" + the best new one + the best fan-made one (lib/ranking.ts). */}
+      {lineup.picks.length > 0 && (
+        <Block id="ung-vien">
+          <TonightLineup picks={lineup.picks} moreHref="/de-xuat" />
+        </Block>
+      )}
+
       <Block id="dem-nguoc">
         <SectionHeader eyebrow="Buổi kế tiếp" title="Đếm ngược" icon={<IconUpcoming size={26} className="text-accent" />} />
         <div className="grid items-center gap-10 lg:grid-cols-2">
           <CountdownRing schedule={schedule} overrides={overrides} />
           <MonthCalendar schedule={schedule} overrides={overrides} />
-        </div>
-        <div className="mt-10">
-          <AttendanceBlock schedule={schedule} overrides={overrides} />
         </div>
       </Block>
 
@@ -82,6 +115,10 @@ export default async function Home() {
           </p>
         </Block>
       )}
+
+      <Suspense fallback={null}>
+        <OnThisDayBlock />
+      </Suspense>
 
       <Block id="album">
         <SectionHeader eyebrow="Kỷ niệm của Bộ Tộc" title="Album anh Độ" icon={<IconAlbum size={26} className="text-accent" />} />
@@ -159,4 +196,10 @@ export default async function Home() {
       </Block>
     </>
   );
+}
+
+/** Wraps the request-time section in the same Block chrome; renders nothing without matches. */
+async function OnThisDayBlock() {
+  const section = await OnThisDaySection();
+  return section ? <Block id="nam-xua">{section}</Block> : null;
 }

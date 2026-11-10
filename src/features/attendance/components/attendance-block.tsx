@@ -5,13 +5,14 @@ import type { ScheduleOverride, ScheduleSlot } from "@/features/schedule/types";
 import { isSupabaseConfigured } from "@/shared/lib/env";
 import { IconAttend, IconTribe } from "@/shared/ui/icons";
 import { attendanceDay } from "../lib/tonight";
-import { getAttendanceCount, getMyAttendance } from "../server/queries";
+import { getAttendanceCount, getMyAttendanceDates } from "../server/queries";
 import { AttendButton } from "./attend-button";
 
 /**
  * "Tối nay tôi có mặt" (spec §4) for a page that already has the schedule. The
  * count and the viewer's own tap are read per request, so it streams in under
- * <Suspense> while the rest of the page stays static.
+ * <Suspense> while the rest of the page stays static. The viewer's own streak
+ * comes from their own rows (signed in) or this device (guest).
  */
 export function AttendanceBlock({ schedule, overrides }: { schedule: ScheduleSlot[]; overrides?: ScheduleOverride[] }) {
   return (
@@ -25,10 +26,13 @@ async function Attendance({ schedule, overrides }: { schedule: ScheduleSlot[]; o
   await connection(); // "today" is read at request time, never prerendered
   const dateVn = attendanceDay(new Date());
   const [viewer, count] = await Promise.all([getViewer(), getAttendanceCount(dateVn)]);
-  const attended = viewer ? await getMyAttendance(viewer.id, dateVn) : false;
+  // The viewer's own days only (RLS): today's row is the RSVP state, the rest feed the personal streak.
+  const dates = viewer ? await getMyAttendanceDates(viewer.id) : [];
+  const attended = dates.includes(dateVn);
+  const history = dates.filter((d) => d !== dateVn);
   return (
     <>
-      <AttendButton schedule={schedule} overrides={overrides} snapshot={{ dateVn, count, attended, signedIn: Boolean(viewer) }} />
+      <AttendButton schedule={schedule} overrides={overrides} snapshot={{ dateVn, count, attended, signedIn: Boolean(viewer), history }} />
       {!isSupabaseConfigured && <p className="mt-2 text-center text-xs text-muted">Chế độ demo: số người hẹn là dữ liệu mẫu.</p>}
     </>
   );
@@ -46,6 +50,7 @@ function AttendanceSkeleton() {
         <IconTribe size={20} className="text-accent" />
         Đang đếm người Bộ Tộc đã hẹn…
       </p>
+      <div className="min-h-24 w-full" />
     </div>
   );
 }

@@ -19,4 +19,5 @@ export const TAGS = {
   tournaments: "tournaments",
   themes: "themes",
   blockedTerms: "blocked-terms",
+  polls: "polls",
 } as const;

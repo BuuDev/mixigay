@@ -6,6 +6,8 @@ import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/ssr/ArrowSquareOu
 import { ArrowsOutIcon } from "@phosphor-icons/react/dist/ssr/ArrowsOut";
 import { BellIcon } from "@phosphor-icons/react/dist/ssr/Bell";
 import { DiscordLogoIcon } from "@phosphor-icons/react/dist/ssr/DiscordLogo";
+import { MusicNotesIcon } from "@phosphor-icons/react/dist/ssr/MusicNotes";
+import { SealQuestionIcon } from "@phosphor-icons/react/dist/ssr/SealQuestion";
 import { FacebookLogoIcon } from "@phosphor-icons/react/dist/ssr/FacebookLogo";
 import { YoutubeLogoIcon } from "@phosphor-icons/react/dist/ssr/YoutubeLogo";
 import { BroadcastIcon } from "@phosphor-icons/react/dist/ssr/Broadcast";
@@ -111,6 +113,10 @@ export const IconYoutube = icon("youtube", YoutubeLogoIcon);
 export const IconFacebook = icon("facebook", FacebookLogoIcon);
 /** Discord chính chủ */
 export const IconDiscord = icon("discord", DiscordLogoIcon);
+/** Góc nhạc / gửi nhạc */
+export const IconMusic = icon("music", MusicNotesIcon);
+/** Quiz Bộ Tộc */
+export const IconQuiz = icon("quiz", SealQuestionIcon);
 /** Skin theo dịp */
 export const IconSkin = icon("skin", PaletteIcon);
 /** Timeline buổi stream */

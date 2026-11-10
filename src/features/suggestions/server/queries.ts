@@ -14,11 +14,15 @@ export async function getSuggestions(): Promise<Suggestion[]> {
   cacheTag(TAGS.suggestions);
   cacheLife("minutes");
   if (!isSupabaseConfigured) return mock.suggestions;
-  const rows = check<SuggestionRow[]>(
-    await publicClient().from("suggestions").select(SUGGESTION_SELECT).order("upvotes", { ascending: false }).limit(500),
-    "suggestions",
-  );
-  return rows.map(mapSuggestion);
+  // The most-voted AND the newest: ordering only by votes with a cap would drop a new
+  // low-vote suggestion before the "Đang hot" ranking (lib/ranking.ts) ever saw it.
+  const [top, fresh] = await Promise.all([
+    publicClient().from("suggestions").select(SUGGESTION_SELECT).order("upvotes", { ascending: false }).limit(250),
+    publicClient().from("suggestions").select(SUGGESTION_SELECT).order("created_at", { ascending: false }).limit(250),
+  ]);
+  const byId = new Map<string, SuggestionRow>();
+  for (const r of [...check<SuggestionRow[]>(top, "suggestions"), ...check<SuggestionRow[]>(fresh, "suggestions")]) byId.set(r.id, r);
+  return [...byId.values()].map(mapSuggestion);
 }
 
 /**

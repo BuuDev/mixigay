@@ -4,14 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef, type ComponentType } from "react";
 import { cn } from "../ui/cn";
-import { IconCampfire, IconMore, IconSchedule, IconSuggest, IconVlog, type IconProps } from "../ui/icons";
+import { IconCampfire, IconMore, IconMusic, IconQuiz, IconSuggest, type IconProps } from "../ui/icons";
 import { isActive, NAV } from "./nav";
 
-const ICONS: Record<string, ComponentType<IconProps>> = { "/": IconCampfire, "/lich": IconSchedule, "/video": IconVlog, "/de-xuat": IconSuggest };
+// Tabs: Trang chủ · Đề xuất · Nhạc · Quiz (+ "Thêm"). Lịch, Video, Ân xá, Bộ Tộc… live in the sheet.
+const ICONS: Record<string, ComponentType<IconProps>> = { "/": IconCampfire, "/de-xuat": IconSuggest, "/nhac": IconMusic, "/quiz": IconQuiz };
 
 /**
- * Phone navigation in thumb reach (hidden from lg up, where the header shows every
- * link). "Thêm" is a native popover: light-dismiss, Esc and focus return for free.
+ * Phone navigation in thumb reach: home plus three contribution tabs (hidden from lg up,
+ * where the header takes over). "Thêm" is a native popover: light-dismiss, Esc and focus return for free.
  * Hidden while a full-screen overlay is open (motion.css, `.td-bottom-nav`).
  */
 export function BottomNav() {
@@ -38,7 +39,7 @@ export function BottomNav() {
                 className={cn("flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium", active ? "text-accent" : "text-muted")}
               >
                 {Icon && <Icon size={24} />}
-                {n.short ?? n.label}
+                {n.tabLabel ?? n.short ?? n.label}
               </Link>
             </li>
           );
@@ -62,7 +63,7 @@ export function BottomNav() {
         ref={more}
         id="nav-more"
         popover="auto"
-        className="td-nav-more inset-auto right-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] m-0 min-w-44 rounded-lg border border-border bg-surface p-1 text-sm text-foreground shadow-card"
+        className="td-nav-more inset-auto right-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] m-0 max-h-[calc(100dvh-6rem-env(safe-area-inset-bottom))] min-w-48 overflow-y-auto overscroll-contain rounded-lg border border-border bg-surface p-1 text-sm text-foreground shadow-card"
       >
         <ul>
           {rest.map((n) => (
@@ -71,22 +72,17 @@ export function BottomNav() {
                 href={n.href}
                 aria-current={isActive(n.href, pathname) ? "page" : undefined}
                 onClick={() => more.current?.hidePopover()}
-                className="block rounded-md px-3 py-3 aria-[current=page]:text-accent hover:bg-surface-raised"
+                className="flex items-center gap-1.5 rounded-md px-3 py-3 hover:bg-surface-raised aria-[current=page]:text-accent"
               >
+                {n.contribute && (
+                  <span aria-hidden="true" className="text-xs font-black text-accent">
+                    +
+                  </span>
+                )}
                 {n.label}
               </Link>
             </li>
           ))}
-          <li>
-            <Link
-              href="/gioi-thieu"
-              aria-current={isActive("/gioi-thieu", pathname) ? "page" : undefined}
-              onClick={() => more.current?.hidePopover()}
-              className="block rounded-md px-3 py-3 text-muted hover:bg-surface-raised aria-[current=page]:text-accent"
-            >
-              Giới thiệu
-            </Link>
-          </li>
         </ul>
       </div>
     </nav>

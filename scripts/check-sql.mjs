@@ -993,5 +993,196 @@ await denied("fan calls admin_profiles", () => as(fan.id, () => q(`select * from
   eq("search treats % and _ literally", literal.map((r) => r.id), [shadowed.id]);
 }
 
+console.log("Polls (20261110220000)");
+{
+  const counts = async (pollId) =>
+    Object.fromEntries((await q(`select label, votes from public.poll_options where poll_id = $1 order by position`, [pollId])).map((r) => [r.label, r.votes]));
+  const realCounts = async (pollId) =>
+    Object.fromEntries(
+      (
+        await q(
+          `select o.label, count(v.user_id)::int n from public.poll_options o left join public.poll_votes v on v.option_id = o.id where o.poll_id = $1 group by o.label, o.position order by o.position`,
+          [pollId],
+        )
+      ).map((r) => [r.label, r.n]),
+    );
+  const newPoll = async (question, status = "draft", closesAt = null) => {
+    const [p] = await as(adm.id, () =>
+      q(`insert into public.polls (question, status, closes_at) values ($1, $2, $3) returning id`, [question, status, closesAt]),
+    );
+    const opts = await as(adm.id, () =>
+      q(`insert into public.poll_options (poll_id, label, position) values ($1, 'A', 0), ($1, 'B', 1), ($1, 'C', 2) returning id, label`, [p.id]),
+    );
+    return { id: p.id, opt: Object.fromEntries(opts.map((o) => [o.label, o.id])) };
+  };
+
+  await denied("fan creates a poll", () => as(fan.id, () => q(`insert into public.polls (question) values ('Fan tự tạo bình chọn?') returning id`)));
+  await denied("anon creates a poll", () => as(null, () => q(`insert into public.polls (question) values ('Khách tạo bình chọn?') returning id`)));
+  const draft = await newPoll("Bình chọn nháp chưa mở?");
+  eq("anon cannot see a draft poll", await as(null, () => q(`select id from public.polls where id = $1`, [draft.id])), []);
+  eq("fan cannot see a draft poll", await as(fan.id, () => q(`select id from public.polls where id = $1`, [draft.id])), []);
+  eq("fan cannot see a draft poll's options", await as(fan.id, () => q(`select id from public.poll_options where poll_id = $1`, [draft.id])), []);
+  eq("admin sees the draft", (await as(adm.id, () => q(`select id from public.polls where id = $1`, [draft.id]))).length, 1);
+  await denied("fan votes on a draft poll", () =>
+    as(fan.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [draft.id, draft.opt.A])),
+  );
+  await denied("fan opens a poll", () => as(fan.id, () => q(`update public.polls set status = 'open' where id = $1 returning id`, [draft.id])));
+  await denied("fan adds an option", () => as(fan.id, () => q(`insert into public.poll_options (poll_id, label) values ($1, 'X') returning id`, [draft.id])));
+  await denied("question shorter than 5 chars", () => as(adm.id, () => q(`insert into public.polls (question) values ('Hả?')`)));
+  await denied("admin writes votes directly", () =>
+    as(adm.id, () => q(`update public.poll_options set votes = 999 where poll_id = $1 returning id`, [draft.id])),
+  );
+  await denied("a 9th option", async () => {
+    await as(adm.id, () =>
+      q(`insert into public.poll_options (poll_id, label, position) values ($1, 'D', 3), ($1, 'E', 4), ($1, 'F', 5), ($1, 'G', 6), ($1, 'H', 7)`, [draft.id]),
+    );
+    return as(adm.id, () => q(`insert into public.poll_options (poll_id, label, position) values ($1, 'I', 8) returning id`, [draft.id]));
+  });
+  await denied("anon reads created_by", () => as(null, () => q(`select created_by from public.polls`)));
+
+  const open = await newPoll("Tối nay anh Độ nên chơi game gì?", "open");
+  eq("opening sets opened_at", (await q(`select opened_at is not null o from public.polls where id = $1`, [open.id]))[0].o, true);
+  eq("anon sees an open poll", (await as(null, () => q(`select id from public.polls where id = $1`, [open.id]))).length, 1);
+  eq("anon sees its options", (await as(null, () => q(`select id from public.poll_options where poll_id = $1`, [open.id]))).length, 3);
+  await denied("anon votes", () => as(null, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [open.id, open.opt.A])));
+
+  const pollNewbie = await serverCreateUser("pollnewbie", "Poll Newbie");
+  await denied("a new account (< 24 h) cannot vote", () =>
+    as(pollNewbie.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [open.id, open.opt.A])),
+  );
+
+  await allowed("aged fan votes", () => as(fan.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [open.id, open.opt.A])));
+  await allowed("second fan votes", () => as(fan2.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [open.id, open.opt.A])));
+  eq("counts after two votes", await counts(open.id), { A: 2, B: 0, C: 0 });
+  await denied("a second vote row on the same poll", () =>
+    as(fan.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [open.id, open.opt.B])),
+  );
+  await allowed("fan changes their vote", async () => {
+    const rows = await as(fan.id, () => q(`update public.poll_votes set option_id = $2 where poll_id = $1 returning option_id`, [open.id, open.opt.B]));
+    if (rows.length !== 1) throw new Error("not changed");
+  });
+  eq("changing a vote moves the count", await counts(open.id), { A: 1, B: 1, C: 0 });
+  await denied("vote for another poll's option", () =>
+    as(fan.id, () => q(`update public.poll_votes set option_id = $2 where poll_id = $1 returning option_id`, [open.id, draft.opt.A])),
+  );
+  await denied("fan moves their vote to another poll", () =>
+    as(fan.id, () => q(`update public.poll_votes set poll_id = $2 where poll_id = $1 returning option_id`, [open.id, draft.id])),
+  );
+  await denied("fan changes someone else's vote", () =>
+    as(fan.id, () => q(`update public.poll_votes set option_id = $3 where poll_id = $1 and user_id = $2 returning option_id`, [open.id, fan2.id, open.opt.C])),
+  );
+  await denied("fan deletes someone else's vote", () =>
+    as(fan.id, () => q(`delete from public.poll_votes where poll_id = $1 and user_id = $2 returning option_id`, [open.id, fan2.id])),
+  );
+  eq(
+    "fan reads only their own vote",
+    (await as(fan.id, () => q(`select user_id from public.poll_votes where poll_id = $1`, [open.id]))).map((r) => r.user_id),
+    [fan.id],
+  );
+  eq("anon reads no votes", await as(null, () => q(`select user_id from public.poll_votes`).catch(() => [])), []);
+  await denied("fan writes the rate-limit ledger", () => as(fan.id, () => q(`insert into public.poll_vote_events (user_id) values ($1)`, [fan.id])));
+
+  await allowed("fan withdraws their vote", async () => {
+    const rows = await as(fan.id, () => q(`delete from public.poll_votes where poll_id = $1 returning option_id`, [open.id]));
+    if (rows.length !== 1) throw new Error("not deleted");
+  });
+  eq("counts consistent after delete", await counts(open.id), await realCounts(open.id));
+  eq("…and match the votes", await counts(open.id), { A: 1, B: 0, C: 0 });
+
+  // Shadow-banned votes "succeed" but are not stored; a ban withdraws existing votes.
+  const pollShadow = await serverCreateUser("pollshadow", "Poll Shadow");
+  const pollBan = await serverCreateUser("pollban", "Poll Ban");
+  await q(`update public.profiles set created_at = now() - interval '3 days' where id = any($1::uuid[])`, [[pollShadow.id, pollBan.id]]);
+  await allowed("to-be-banned fan votes", () =>
+    as(pollBan.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [open.id, open.opt.C])),
+  );
+  eq("their vote counts while in good standing", (await counts(open.id)).C, 1);
+  await as(adm.id, () => q(`select public.moderate_user($1, 'ban')`, [pollBan.id]));
+  eq("a ban withdraws the poll vote", (await counts(open.id)).C, 0);
+  await denied("banned fan votes again", () =>
+    as(pollBan.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [open.id, open.opt.C])),
+  );
+  await as(adm.id, () => q(`select public.moderate_user($1, 'shadow')`, [pollShadow.id]));
+  await allowed("shadow-banned vote looks successful", () =>
+    as(pollShadow.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [open.id, open.opt.C])),
+  );
+  eq("…but is not counted", (await counts(open.id)).C, 0);
+  eq("…nor stored", (await q(`select count(*)::int n from public.poll_votes where user_id = $1`, [pollShadow.id]))[0].n, 0);
+
+  // Closed and expired polls take no votes, changes or withdrawals.
+  await as(adm.id, () => q(`update public.polls set status = 'closed' where id = $1`, [open.id]));
+  eq("closing sets closed_at", (await q(`select closed_at is not null c from public.polls where id = $1`, [open.id]))[0].c, true);
+  await denied("vote on a closed poll", () => as(fan.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [open.id, open.opt.B])));
+  await denied("change a vote on a closed poll", () =>
+    as(fan2.id, () => q(`update public.poll_votes set option_id = $2 where poll_id = $1 returning option_id`, [open.id, open.opt.B])),
+  );
+  await denied("withdraw a vote on a closed poll", () =>
+    as(fan2.id, () => q(`delete from public.poll_votes where poll_id = $1 returning option_id`, [open.id])),
+  );
+  eq("closed results stay", await counts(open.id), { A: 1, B: 0, C: 0 });
+  const expired = await newPoll("Bình chọn đã hết giờ?", "open", new Date(Date.now() - 60_000).toISOString());
+  await denied("vote on an expired poll", () =>
+    as(fan.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [expired.id, expired.opt.A])),
+  );
+
+  // Rate limit: 60 vote writes per hour.
+  const busy = await newPoll("Bình chọn để thử giới hạn?", "open");
+  await q(`insert into public.poll_vote_events (user_id, at) select $1, now() from generate_series(1, 60)`, [fan.id]);
+  await denied("the 61st vote write in an hour", () =>
+    as(fan.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [busy.id, busy.opt.A])),
+  );
+  await q(`delete from public.poll_vote_events where user_id = $1`, [fan.id]);
+
+  // Deleting an option or a whole poll keeps the remaining counts honest.
+  await as(fan.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [busy.id, busy.opt.A]));
+  await as(fan2.id, () => q(`insert into public.poll_votes (poll_id, option_id) values ($1, $2)`, [busy.id, busy.opt.B]));
+  await allowed("admin deletes an option with votes", () => as(adm.id, () => q(`delete from public.poll_options where id = $1`, [busy.opt.A])));
+  eq("votes for a deleted option go with it", await counts(busy.id), { B: 1, C: 0 });
+  eq("…counts still match", await counts(busy.id), await realCounts(busy.id));
+  await allowed("admin deletes a poll with votes", async () => {
+    const rows = await as(adm.id, () => q(`delete from public.polls where id = $1 returning id`, [busy.id]));
+    if (rows.length !== 1) throw new Error("not deleted");
+  });
+  eq("its votes are gone", (await q(`select count(*)::int n from public.poll_votes where poll_id = $1`, [busy.id]))[0].n, 0);
+
+  // Draft from the most-upvoted pending suggestions.
+  await denied("fan calls create_poll_from_suggestions", () => as(fan.id, () => q(`select public.create_poll_from_suggestions('Fan tự tạo từ đề xuất?', 4)`)));
+  await denied("anon calls create_poll_from_suggestions", () => as(null, () => q(`select public.create_poll_from_suggestions('Khách tạo từ đề xuất?', 4)`)));
+  const [s1] = await q(
+    `insert into public.suggestions (author_id, name, source, reason, approved, upvotes) values ($1, 'Poll Top Game Một', 'viewer-made', 'abcdef', true, 9000) returning id`,
+    [fan.id],
+  );
+  const [s2] = await q(
+    `insert into public.suggestions (author_id, name, source, reason, approved, upvotes) values ($1, 'Poll Top Game Hai', 'viewer-made', 'abcdef', true, 8000) returning id`,
+    [fan2.id],
+  );
+  await q(
+    `insert into public.suggestions (author_id, name, source, reason, approved, hidden, upvotes) values ($1, 'Poll Hidden Game', 'viewer-made', 'abcdef', true, true, 9999)`,
+    [fan.id],
+  );
+  await q(
+    `insert into public.suggestions (author_id, name, source, reason, approved, upvotes) values ($1, 'Poll Unapproved Game', 'viewer-made', 'abcdef', false, 9998)`,
+    [fan2.id],
+  );
+  await q(
+    `insert into public.suggestions (author_id, name, source, reason, approved, status, upvotes) values ($1, 'Poll Played Game', 'viewer-made', 'abcdef', true, 'played', 9997)`,
+    [fan.id],
+  );
+  const [made] = await as(adm.id, () => q(`select public.create_poll_from_suggestions('Game nào được Bộ Tộc muốn nhất?', 3) as id`));
+  eq("the new poll is a draft", (await q(`select status from public.polls where id = $1`, [made.id]))[0].status, "draft");
+  const madeOpts = await q(`select label, position, suggestion_id, votes from public.poll_options where poll_id = $1 order by position`, [made.id]);
+  eq("options are the top approved, visible, pending suggestions", madeOpts.slice(0, 2), [
+    { label: "Poll Top Game Một", position: 0, suggestion_id: s1.id, votes: 0 },
+    { label: "Poll Top Game Hai", position: 1, suggestion_id: s2.id, votes: 0 },
+  ]);
+  eq("p_limit caps the options", madeOpts.length <= 3, true);
+  eq(
+    "hidden, unapproved and played suggestions are skipped",
+    madeOpts.some((o) => o.label.startsWith("Poll Hidden") || o.label.startsWith("Poll Unapproved") || o.label.startsWith("Poll Played")),
+    false,
+  );
+  eq("the draft is still invisible to fans", await as(fan.id, () => q(`select id from public.polls where id = $1`, [made.id])), []);
+}
+
 console.log(failures ? `\nDB_CHECK=fail (${failures})` : "\nDB_CHECK=pass");
 process.exit(failures ? 1 : 0);

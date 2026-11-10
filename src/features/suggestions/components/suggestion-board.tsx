@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { GameCoverRecord } from "@/features/videos/lib/game-cover";
-import { AnimatePresence, m, rise } from "@/shared/motion";
+import { AnimatePresence, m, rise, useReducedMotion } from "@/shared/motion";
 import { Card } from "@/shared/ui/card";
 import { Chip } from "@/shared/ui/chip";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { useSuggestionVotes } from "../hooks/use-suggestion-votes";
+import { isFresh, risingIds, sortSuggestions } from "../lib/ranking";
 import type { Suggestion, SuggestionStatus } from "../types";
 import { DemoForm } from "./demo-form";
 import { STATUS } from "./labels";
 import { SuggestionForm } from "./suggestion-form";
 import { SuggestionItem } from "./suggestion-item";
+import { SortTabs, useSortParam } from "./sort-tabs";
 
 interface Props {
   initial: Suggestion[];
@@ -23,14 +25,19 @@ interface Props {
   signedIn: boolean;
   /** Stream thumbnails by game slug, for suggestions linked to a game anh Độ played. */
   covers?: GameCoverRecord;
+  /** Clock for hot scores (ms), from getTonightLineup().rankedAt so server and client rank alike. */
+  rankedAt: number;
 }
 
 const FILTERS = ["all", "pending", "played", "rejected"] as const;
 
-export function SuggestionBoard({ initial, votedIds, pending = [], mode, signedIn, covers }: Props) {
+export function SuggestionBoard({ initial, votedIds, pending = [], mode, signedIn, covers, rankedAt }: Props) {
   const { items, voted, vote, notice, addDemo, demoItems } = useSuggestionVotes({ initial, votedIds, mode, signedIn });
   const [filter, setFilter] = useState<SuggestionStatus | "all">("all");
-  const shown = items.filter((s) => filter === "all" || s.status === filter).sort((a, b) => b.upvotes - a.upvotes);
+  const [sort, setSort] = useSortParam();
+  const reduceMotion = useReducedMotion();
+  const shown = useMemo(() => sortSuggestions(items, sort, rankedAt).filter((s) => filter === "all" || s.status === filter), [items, sort, filter, rankedAt]);
+  const rising = useMemo(() => risingIds(items, rankedAt), [items, rankedAt]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
@@ -38,9 +45,10 @@ export function SuggestionBoard({ initial, votedIds, pending = [], mode, signedI
         <h2 id="ds-de-xuat" className="sr-only">
           Danh sách đề xuất
         </h2>
-        <div className="flex flex-wrap gap-2">
+        <SortTabs value={sort} onChange={setSort} />
+        <div role="group" aria-label="Lọc theo trạng thái" className="mt-2 flex flex-wrap gap-1.5">
           {FILTERS.map((f) => (
-            <Chip key={f} active={filter === f} onClick={() => setFilter(f)}>
+            <Chip key={f} active={filter === f} onClick={() => setFilter(f)} className="min-h-9 px-3 py-1 text-xs">
               {f === "all" ? "Tất cả" : STATUS[f].label}
             </Chip>
           ))}
@@ -52,14 +60,18 @@ export function SuggestionBoard({ initial, votedIds, pending = [], mode, signedI
         )}
         {shown.length ? (
           <ul className="mt-4 space-y-3">
-            <AnimatePresence initial={false}>
+            <AnimatePresence initial={false} mode="popLayout">
               {shown.map((s) => (
-                <m.li key={s.id} variants={rise} initial="hidden" animate="visible" exit="exit">
+                // Reorders glide to their new place when the tab or the votes change (layout needs
+                // the domMax feature bundle); reduced motion: items jump straight to the new order.
+                <m.li key={s.id} layout={reduceMotion ? false : "position"} variants={rise} initial="hidden" animate="visible" exit="exit">
                   <SuggestionItem
                     suggestion={s}
                     voted={voted.has(s.id)}
                     onVote={() => vote(s.id)}
                     gameCover={s.linkedGameSlug ? covers?.[s.linkedGameSlug] : undefined}
+                    fresh={s.status === "pending" && isFresh(s, rankedAt)}
+                    rising={rising.has(s.id)}
                   />
                 </m.li>
               ))}
@@ -67,9 +79,15 @@ export function SuggestionBoard({ initial, votedIds, pending = [], mode, signedI
           </ul>
         ) : (
           <div className="mt-4">
-            <EmptyState mascot="notify" title="Chưa có đề xuất nào ở mục này">
-              Hãy là người đầu tiên đề xuất một game cho anh Độ.
-            </EmptyState>
+            {sort === "fan" ? (
+              <EmptyState mascot="notify" title="Chưa có game Bộ Tộc tự làm nào ở mục này">
+                Bạn hoặc người quen làm game? Đề xuất để anh Độ thử nhé.
+              </EmptyState>
+            ) : (
+              <EmptyState mascot="notify" title="Chưa có đề xuất nào ở mục này">
+                Hãy là người đầu tiên đề xuất một game cho anh Độ.
+              </EmptyState>
+            )}
           </div>
         )}
       </section>

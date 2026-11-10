@@ -188,3 +188,11 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 - Thay ADR-011/ADR-014 ở phần nhận diện; Cú Đêm vẫn là linh vật của trang.
 
 **Hệ quả:** `AGENTS.md`, `docs/01-product.md` và agent `fan-site-guard` được cập nhật theo quy tắc mới. Nếu sau này anh Độ rút lại sự cho phép, chỉ cần đổi `Logo` trong `src/shared/ui/brand-art.tsx`, icon và ảnh OG về lửa trại.
+
+## ADR-017 – Bật layout animation (motion `domMax`) cho bảng đề xuất {#adr-017}
+
+**Bối cảnh:** Chủ dự án muốn chuyển động mượt và đưa game mới / game fan làm lên trước. Bảng đề xuất giờ có các tab sắp xếp "Đang hot / Mới đề xuất / Bộ Tộc tự làm / Nhiều vote nhất"; khi đổi tab, các thẻ nên trượt về vị trí mới thay vì nhảy.
+
+**Quyết định:** `src/shared/motion/features.ts` dùng `domMax` (thêm layout animation) thay cho `domAnimation`. Gói này vẫn được `MotionProvider` tải lười, không nằm trong chunk JS đầu tiên. Người bật giảm chuyển động không có layout animation (`layout` chỉ bật khi được phép).
+
+**Hệ quả:** Thêm khoảng 15 KB (gzip) vào chunk motion tải sau. Các component khác có thể dùng `layout` khi thật sự cần, không cần ADR mới.

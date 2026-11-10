@@ -11,6 +11,13 @@ import { IconSchedule } from "@/shared/ui/icons";
 
 const count = new Intl.NumberFormat("vi-VN");
 
+const INTERACT = [
+  { emoji: "🔥", label: "Thả cảm xúc cùng anh em", href: "#tuong-tac" },
+  { emoji: "🗳️", label: "Bình chọn", href: "#tuong-tac" },
+  { emoji: "✋", label: "Tối nay tôi có mặt", href: "#tuong-tac" },
+  { emoji: "✍️", label: "Góp sức", href: "#gop-suc" },
+] as const;
+
 /**
  * Invitation cover: a band of the channel banner's doodle pattern behind anh Độ in the
  * arch, and beside him the badge, the evening's status, where to go next and a few real
@@ -20,6 +27,7 @@ const count = new Intl.NumberFormat("vi-VN");
  * banner is requested at ≤ 640px wide (sizes="200px") and blurred, so its LCP weight (natural size) stays
  * far below the portrait's while it still reads as a soft pattern.
  */
+
 export function HeroCover({
   status,
   schedule,
@@ -67,6 +75,21 @@ export function HeroCover({
               Xem kênh YouTube
             </ButtonLink>
           </div>
+          {/* Shortcut to what YouTube doesn't have: the live room, the poll, tonight's RSVP, fan contributions. */}
+          <nav aria-label="Góc tương tác" className="flex w-full flex-wrap justify-center gap-2 lg:justify-start">
+            {INTERACT.map((c) => (
+              <a
+                key={c.label}
+                href={c.href}
+                className="group inline-flex min-h-10 items-center gap-1.5 rounded-pill border border-accent/40 bg-accent/10 px-3.5 py-1.5 text-sm font-semibold text-foreground transition-[transform,background-color,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent hover:bg-accent/20 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+              >
+                <span aria-hidden className="transition-transform duration-200 group-hover:scale-125 motion-reduce:transition-none">
+                  {c.emoji}
+                </span>
+                {c.label}
+              </a>
+            ))}
+          </nav>
           {stats.videos > 0 && (
             <dl className="grid w-full grid-cols-3 gap-3 text-center lg:max-w-lg lg:text-left">
               <Stat value={count.format(stats.videos)} label="video Góc Bộ Tộc đã lưu" />

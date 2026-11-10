@@ -17,6 +17,7 @@ const NAV = [
   { href: "/admin/video", label: "Video" },
   { href: "/admin/game", label: "Game & từ khóa" },
   { href: "/admin/de-xuat", label: "Đề xuất" },
+  { href: "/admin/binh-chon", label: "Bình chọn" },
   { href: "/admin/da-choi", label: "Đã chơi" },
   { href: "/admin/nhac", label: "Nhạc nịnh" },
   { href: "/admin/fan-art", label: "Tranh Fan Art" },

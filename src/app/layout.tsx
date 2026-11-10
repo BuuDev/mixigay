@@ -41,7 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </Suspense>
             }
           />
-          <main className="relative z-10 mx-auto w-full max-w-6xl flex-1 px-safe py-6">{children}</main>
+          <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-safe 2xl:max-w-[88rem] py-6">{children}</main>
           <SiteFooter />
           <BgMusicPlayer />
           <LiveDockSlot />

@@ -16,4 +16,10 @@ export interface AttendanceSnapshot {
   /** Whether the signed-in viewer already tapped today. */
   attended: boolean;
   signedIn: boolean;
+  /**
+   * The signed-in viewer's own earlier attendance days ("YYYY-MM-DD", today excluded:
+   * `attended` carries it), for the personal streak. Empty for guests (their days
+   * stay on the device) and in mock mode. Never anyone else's.
+   */
+  history: string[];
 }

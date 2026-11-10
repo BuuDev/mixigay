@@ -190,6 +190,7 @@ try {
     "/series",
     "/nhac",
     "/bo-toc",
+    "/quiz",
     "/an-xa",
     "/gui-anh-do",
     "/da-choi",
@@ -234,8 +235,11 @@ try {
       "SMOKE fan art",
     ],
   });
+  await expectBody("/quiz", "/quiz", { has: ["Quiz Bộ Tộc – Góc Bộ Tộc", "Bảng quiz Bộ Tộc làm cho anh Độ", "SMOKE quiz link", "Gửi link quiz của bạn"] });
+  await expectBody("/bo-toc quiz teaser", "/bo-toc", { has: ["Xem tất cả &amp; gửi quiz"] });
+  await expectBody("/ contribute hub", "/", { has: ["Góp sức cùng Bộ Tộc", "Gửi link quiz"] });
   await expectBody("/an-xa", "/an-xa", { has: ["TÒA ÁN ÂN XÁ", "Máy tạo Đơn hối lỗi xin về bờ", "Khai báo hồ sơ"] });
-  await expectBody("/gui-anh-do", "/gui-anh-do", { has: ["GỬI ANH ĐỘ MIXI", "Top Game Bộ Tộc đề xuất", "SMOKE song", "SMOKE fan art"] });
+  await expectBody("/gui-anh-do", "/gui-anh-do", { has: ["GỬI ANH ĐỘ MIXI", "Ứng viên tối nay", "SMOKE song", "SMOKE fan art"] });
   await expectBody("/lich", "/lich", { has: ["Radar sự kiện Bộ Tộc", "Sinh nhật Tộc Trưởng"] });
   await expectBody("/nhac", "/nhac", { has: ["Nhạc nịnh Bộ Tộc", "SMOKE song", "Nghe trực tiếp", "Bấm “Vào Bộ Tộc” (góc trên bên phải) để gửi link"] });
 
@@ -262,6 +266,7 @@ try {
     "Nhật ký kiểm duyệt",
     "Tìm theo tên hiển thị",
     "Thêm từ khóa chặn",
+    "Bình chọn của Bộ Tộc – quản lý",
   ];
   for (const path of [
     "/admin",
@@ -283,6 +288,7 @@ try {
     "/admin/nhat-ky",
     "/admin/nguoi-dung",
     "/admin/tu-khoa",
+    "/admin/binh-chon",
   ]) {
     await expectBody(path, path, { has: ["Không tìm thấy trang này"], lacks: adminMarkers });
   }
