@@ -8,9 +8,11 @@ import { getSeries, getSeriesBySlug } from "@/features/series/server/queries";
 import { formatViews } from "@/shared/lib/format";
 
 // Cache Components needs at least one param; an empty catalogue falls back to a
-// slug that renders the 404 page.
+// slug that renders the 404 page. Only the most recently active series are built
+// ahead; the rest render on first visit and are cached (dynamicParams stays on).
+const PREBUILT = 24;
 export async function generateStaticParams() {
-  const slugs = (await getSeries()).map((s) => ({ slug: s.slug }));
+  const slugs = (await getSeries()).slice(0, PREBUILT).map((s) => ({ slug: s.slug }));
   return slugs.length ? slugs : [{ slug: "phong-tra-an-lieng" }];
 }
 

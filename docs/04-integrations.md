@@ -27,14 +27,18 @@ Viết client mỏng tự làm trong `src/server/youtube/` bằng `fetch` (khôn
 
 `https://www.youtube.com/feeds/videos.xml?channel_id=<ID>` trả về 15 video mới nhất (Atom XML). Dùng làm nguồn videoId ứng viên cho poll-live. Parse bằng regex `<yt:videoId>` là đủ, không cần thư viện XML.
 
-### WebSub / PubSubHubbub (P1)
+### WebSub / PubSubHubbub (P1, đã làm)
 
 - Hub: `https://pubsubhubbub.appspot.com/subscribe`
 - Topic: `https://www.youtube.com/xml/feeds/videos.xml?channel_id=<ID>`
-- Đăng ký: POST form `hub.mode=subscribe`, `hub.topic`, `hub.callback=https://<domain>/api/webhooks/youtube`, `hub.secret=<WEBSUB_SECRET>`, `hub.lease_seconds=864000`.
-- Route `GET` trả lại `hub.challenge` để xác minh. Route `POST` kiểm tra `X-Hub-Signature: sha1=<hmac>` rồi lấy videoId.
-- Gia hạn: cron hằng ngày, đăng ký lại khi lease còn dưới 2 ngày.
-- Lưu ý: WebSub báo video mới/cập nhật, **không** báo "vừa bắt đầu live". Vì vậy vẫn cần poll-live để biết trạng thái.
+- Đăng ký: POST form `hub.mode=subscribe`, `hub.topic`, `hub.callback=https://<domain>/api/webhooks/youtube`, `hub.secret=<WEBSUB_SECRET>`, `hub.lease_seconds=864000`, `hub.verify=async`.
+- Code: logic thuần ở `src/features/videos/lib/websub.ts` (chữ ký, parse Atom, challenge; có test), phần server ở `src/features/videos/server/websub.ts`.
+- `GET /api/webhooks/youtube`: trả lại `hub.challenge` (text/plain) khi `hub.mode` là subscribe/unsubscribe và `hub.topic` đúng kênh; còn lại 404.
+- `POST /api/webhooks/youtube`: body tối đa 256 KB (quá thì 413). Kiểm tra `X-Hub-Signature: sha1=<hmac>` (chấp nhận cả `sha256=`) bằng `timingSafeEqual` **trước** mọi truy cập DB. Body không ký hoặc sai chữ ký: trả 202, không xử lý, ghi log. Body hợp lệ: lấy `<yt:videoId>` của đúng kênh (tối đa 50 id), gọi **một** `videos.list` (**1 đơn vị/thông báo**, qua `YouTubeClient` nên vẫn ghi `api_usage` và chịu ngưỡng 8.000) rồi upsert giống poll-live (`upsertYtVideos`: cột từ `toVideoColumns` + `auto_game_slug`), `revalidateTag('videos','max')`. Vượt ngưỡng quota: trả 202 để hub không gửi lại liên tục; sync-videos 6 giờ sẽ bù.
+- `<at:deleted-entry>` (video bị xóa/ẩn): không xóa hàng (sync-videos cũng không xóa); chỉ đưa hàng đang `upcoming`/`live` về `live_state='none'` như poll-live làm với stream biến mất, và ghi log.
+- Gia hạn: `POST /api/cron/websub-renew` (bảo vệ bằng `CRON_SECRET`), pg_cron gọi **hằng ngày** lúc 03:23 UTC (`supabase/cron.sql`). Lease 10 ngày nên đăng ký lại mỗi ngày là đủ, không cần lưu thời hạn lease. Không tốn quota YouTube.
+- Env: `WEBSUB_SECRET`, `YOUTUBE_CHANNEL_ID`, `NEXT_PUBLIC_SITE_URL` (domain public; khi là localhost thì renew trả `{skipped:"localhost"}` vì hub không gọi tới được), cùng `YOUTUBE_API_KEY` + service role để ingest. Thiếu `WEBSUB_SECRET`/`YOUTUBE_CHANNEL_ID`: cả hai route trả 503.
+- Lưu ý: WebSub báo video mới/cập nhật, **không** báo "vừa bắt đầu live". WebSub **không bao giờ thay** poll-live: nó chỉ đưa hàng mới (`upcoming`/`live`) vào DB sớm, rồi poll-live nhận hàng đó làm ứng viên ở lần chạy kế tiếp.
 
 ## Steam Store API
 
@@ -59,6 +63,6 @@ Tất cả được kích hoạt từ poll-live khi phát hiện chuyển sang `
 |---|---|---|
 | Telegram | Tạo bot với @BotFather, thêm bot làm admin một channel công khai, gọi `sendMessage` tới `@ten_channel` | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID` |
 | Discord | Webhook URL của một kênh trong server fan, POST JSON `{content, embeds}` | `DISCORD_WEBHOOK_URL` |
-| Web Push | Thư viện `web-push`, khóa VAPID, lưu subscription vào `push_subscriptions`, service worker trong PWA | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` |
 
-Nội dung mẫu: `🔴 Độ đang live: <tiêu đề>` + link `youtube.com/watch?v=…`. Không gắn tag/mention Độ.
+Nội dung mẫu: `🔴 Anh Độ đang live: <tiêu đề>` + link `youtube.com/watch?v=…`. Không gắn tag/mention anh Độ.
+

@@ -16,7 +16,6 @@ videos 1──< live_samples
 videos 1──< quotes (P2)
 profiles 1─┬─< suggestions 1──< suggestion_votes >──1 profiles
            ├─< quotes, fan_art (P2)
-           └─< push_subscriptions (P1)
 live_status (một dòng duy nhất)
 api_usage, notifications_log, admins
 ```
@@ -179,20 +178,12 @@ create table api_usage (
 
 create table notifications_log (
   video_id text not null,
-  channel text not null,                 -- 'telegram' | 'discord' | 'webpush'
+  channel text not null,                 -- 'telegram' | 'discord'
   sent_at timestamptz not null default now(),
   primary key (video_id, channel)        -- chống gửi trùng
 );
 
 -- ===== P1/P2 =====
-create table push_subscriptions (
-  endpoint text primary key,
-  user_id uuid references profiles on delete cascade,
-  p256dh text not null,
-  auth text not null,
-  created_at timestamptz not null default now()
-);
-
 create table quotes (
   id uuid primary key default gen_random_uuid(),
   video_id text not null references videos on delete cascade,
@@ -239,7 +230,6 @@ create table quiz_links (               -- quiz fan làm sẵn (Kahoot, Waygroun
 | banned_terms | admin | admin | admin | admin |
 | quotes | mọi người (`approved = true`), tác giả thấy của mình, admin thấy hết | đăng nhập, `author_id = auth.uid()`, `approved = false` | admin | admin (tác giả muốn gỡ thì báo admin) |
 | fan_songs, fan_art, quiz_links | `approved`, hoặc tác giả, hoặc admin | đăng nhập, không bị cấm, `author_id = auth.uid()`, `approved = false`, giới hạn ở trigger | admin | **chỉ admin** |
-| push_subscriptions | chủ sở hữu | đăng nhập | – | chủ sở hữu |
 | api_usage | admin | – (service role qua `add_api_usage`) | – | – |
 | admins | chính mình | – | – | – |
 | notifications_log, admin_alerts, account_logins, invites, auth_attempts | – (chỉ service role) | – | – | – |

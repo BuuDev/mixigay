@@ -52,3 +52,9 @@ next-env.d.ts
 
 # Supabase CLI cache (linked project ref, pooler URL)
 /supabase/.temp/
+
+# Playwright E2E output
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

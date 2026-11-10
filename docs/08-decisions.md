@@ -168,3 +168,11 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 - **Nhạc nền:** trình duyệt chặn âm thanh tự phát trước khi người xem tương tác, nên nhạc bật ở **lần chạm hoặc bấm phím đầu tiên**, âm lượng nhỏ (30/100), có nút tắt. Ai bấm “Tắt hẳn nhạc” thì lần sau không tự bật (lưu `localStorage` key `gbt:bgm`). Không tự bật ở `/admin` và `/moi`. Mở “Nghe trực tiếp” một bài khác thì nhạc nền tự dừng.
 
 **Hệ quả:** COMPONENTS §12 đổi bảng pose sang ảnh Cú Đêm. `npm run brand` không còn sinh mascot dùng trên trang (file `public/brand/mascot/*` cũ để lại cho tới khi dọn brand.html). Safari đôi khi vẫn chặn widget SoundCloud tự phát; khung phát có ghi chú bấm ▶.
+
+## ADR-015 – Không làm Web Push / nút chuông thông báo {#adr-015}
+
+**Bối cảnh:** Đã viết xong Web Push (bảng `push_subscriptions`, nút 🔔, gửi khi live). Chủ dự án quyết định bỏ.
+
+**Quyết định:** Không làm Web Push. Người xem muốn biết anh Độ lên sóng thì bấm chuông trên kênh YouTube, YouTube đã báo realtime. Trang không giữ thêm một kênh thông báo nữa.
+
+**Hệ quả:** Gỡ code, dependency `web-push`, khóa VAPID khỏi `.env.example`; bảng `push_subscriptions` đã xóa ở project dev và migration được đánh dấu reverted. Kênh Telegram/Discord thông báo live (đã có từ trước) và WebSub (phát hiện video mới) vẫn giữ.

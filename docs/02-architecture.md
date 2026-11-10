@@ -20,7 +20,7 @@
                                                  ├─ Server Actions (đề xuất, vote, admin)
                                                  └─ Trang (Server Components + "use cache")
                                                           │
-                                       khi live bắt đầu ──► Telegram / Discord / Web Push
+                                       khi live bắt đầu ──► Telegram / Discord
 ```
 
 Một codebase TypeScript duy nhất (Next.js). Supabase dùng cho **dữ liệu, auth, realtime và đồng hồ hẹn giờ** (pg_cron). Logic job nằm trong route handler của Next.js, không viết Edge Function Deno riêng. Lý do: [ADR-003](08-decisions.md#adr-003).
@@ -78,6 +78,7 @@ Trang `/admin/*`, bảo vệ 2 lớp:
 | poll-live (`videos.list`) | tối đa 1.440 lần (mỗi phút) | 1 | ≤ 1.440 |
 | sync-videos: `playlistItems.list` | 4 lần × ~1 trang | 1 | ~4 |
 | sync-videos: `videos.list` cập nhật lượt xem (~300 video gần đây) | 4 lần × 6 lô | 1 | ~24 |
+| WebSub ingest (`videos.list`) | mỗi thông báo video mới/cập nhật (~1–5/ngày) | 1 | ~5 |
 | playlist chính chủ | 1 lần/ngày × ~10 trang | 1 | ~10 |
 | Backfill toàn kênh (một lần, ~3.000 video) | 1 lần | ~120 | (một lần) |
 | **Tổng thường ngày** | | | **≈ 1.500 (15%)** |

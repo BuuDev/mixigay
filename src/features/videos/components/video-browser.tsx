@@ -1,57 +1,94 @@
-"use client";
-
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
 import { formatDate } from "@/shared/lib/format";
-import { youtubeUrl } from "@/shared/lib/links";
-import { Chip } from "@/shared/ui/chip";
-import { UNCLASSIFIED } from "../lib/classify";
-import type { GameCover, GameCoverRecord } from "../lib/game-cover";
+import { OFFICIAL_CHANNEL_URL, youtubeUrl } from "@/shared/lib/links";
+import { chipClass } from "@/shared/ui/chip";
+import type { GameCover } from "../lib/game-cover";
+import { PAGE, MAX_LIMIT, videoHref, type VideoQuery, type VideoTab } from "../lib/video-query";
 import type { ClassifiedVideo, Game } from "../types";
 import { VideoGrid } from "./video-grid";
 
-type Sort = "views" | "newest";
+const SORTS: { value: VideoQuery["sort"]; label: string }[] = [
+  { value: "views", label: "Nhiều lượt xem nhất" },
+  { value: "newest", label: "Mới nhất" },
+];
 
-/** `covers`: stream thumbnail per game slug (gameCoverRecord), shown as a banner when one game is selected. */
-export function VideoBrowser({ videos, games, covers }: { videos: ClassifiedVideo[]; games: Game[]; covers?: GameCoverRecord }) {
-  const [filter, setFilter] = useState<string>("all");
-  const [sort, setSort] = useState<Sort>("views");
-
-  const count = (slug: string) => videos.filter((v) => v.gameSlug === slug).length;
-  const tabs = [
-    { slug: "all", label: "Tất cả", count: videos.length },
-    ...games.map((g) => ({ slug: g.slug, label: g.name, count: count(g.slug) })),
-    { slug: UNCLASSIFIED, label: "Chưa phân loại", count: count(UNCLASSIFIED) },
-  ].filter((t) => t.slug === "all" || t.count > 0);
-
-  const shown = videos
-    .filter((v) => filter === "all" || v.gameSlug === filter)
-    .sort((a, b) => (sort === "views" ? b.viewCount - a.viewCount : Date.parse(b.publishedAt) - Date.parse(a.publishedAt)));
-
-  const selectedGame = games.find((g) => g.slug === filter);
-
+/**
+ * Server-rendered filter bar + one page of cards. Filters are plain links (?game=&sort=&n=),
+ * so they work without JavaScript and only the visible cards are sent to the browser.
+ */
+export function VideoBrowser({
+  query,
+  tabs,
+  items,
+  total,
+  cover,
+  games,
+}: {
+  query: VideoQuery;
+  tabs: VideoTab[];
+  items: ClassifiedVideo[];
+  total: number;
+  cover: GameCover | null;
+  games: Game[];
+}) {
+  const selected = tabs.find((t) => t.slug === query.game);
+  const canMore = items.length < total && query.limit < MAX_LIMIT;
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2">
+      <nav aria-label="Lọc video theo game" className="flex flex-wrap items-center gap-2">
         {tabs.map((t) => (
-          <Chip key={t.slug} active={filter === t.slug} onClick={() => setFilter(t.slug)}>
+          <Link
+            key={t.slug}
+            href={videoHref({ ...query, game: t.slug, limit: PAGE })}
+            scroll={false}
+            aria-current={query.game === t.slug ? "page" : undefined}
+            className={chipClass(query.game === t.slug)}
+          >
             {t.label} <span className="font-normal">{t.count}</span>
-          </Chip>
+          </Link>
         ))}
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as Sort)}
-          className="ml-auto rounded-md border border-border bg-surface px-2 py-1 text-sm"
-          aria-label="Sắp xếp"
-        >
-          <option value="views">Nhiều lượt xem nhất</option>
-          <option value="newest">Mới nhất</option>
-        </select>
-      </div>
-      {selectedGame && covers?.[selectedGame.slug] && <GameBanner name={selectedGame.name} count={shown.length} cover={covers[selectedGame.slug]} />}
+        <span className="ml-auto flex gap-1" role="group" aria-label="Sắp xếp">
+          {SORTS.map((s) => (
+            <Link
+              key={s.value}
+              href={videoHref({ ...query, sort: s.value, limit: PAGE })}
+              scroll={false}
+              aria-current={query.sort === s.value ? "true" : undefined}
+              className={chipClass(query.sort === s.value, "text-xs")}
+            >
+              {s.label}
+            </Link>
+          ))}
+        </span>
+      </nav>
+      {selected && cover && <GameBanner name={selected.label} count={total} cover={cover} />}
       <h2 className="sr-only">Danh sách video</h2>
       <div className="mt-4">
-        <VideoGrid videos={shown} games={games} animationKey={`${filter}-${sort}`} />
+        <VideoGrid videos={items} games={games} animationKey={`${query.game}-${query.sort}`} />
+      </div>
+      <div className="mt-6 flex flex-col items-center gap-2 text-sm text-muted">
+        <p>
+          Đang xem {items.length} / {total} video
+        </p>
+        {canMore && (
+          <Link
+            href={videoHref({ ...query, limit: query.limit + PAGE })}
+            scroll={false}
+            className={chipClass(false, "px-5 py-2 font-semibold text-foreground")}
+          >
+            Xem thêm {Math.min(PAGE, total - items.length)} video
+          </Link>
+        )}
+        {!canMore && items.length < total && (
+          <p>
+            Xem toàn bộ trên{" "}
+            <a href={`${OFFICIAL_CHANNEL_URL}/videos`} target="_blank" rel="noopener noreferrer" className="text-accent underline">
+              kênh YouTube
+            </a>
+            .
+          </p>
+        )}
       </div>
     </div>
   );

@@ -45,7 +45,7 @@ Trang đi theo hướng **chỉ dẫn link về kênh gốc**: lượt xem, ủn
 | F9 | Trang admin tối giản | P0 | Chưa | Không cần đẹp |
 | F10 | Thông báo khi lên sóng: bot Telegram / Discord | P1 | Chưa | Tính năng fan dùng nhiều nhất |
 | F11 | PWA + dark mode | P1 | Chưa | |
-| F12 | Web Push | P1 | Chưa | Sau PWA |
+| F12 | ~~Web Push~~ | – | Bỏ | YouTube đã báo live realtime ([ADR-015](08-decisions.md#adr-015)) |
 | F13 | Thống kê stream: người xem theo giờ, giờ lên sóng TB theo thứ, chuỗi ngày stream | P1 | Chưa | Dữ liệu có sẵn từ job poll |
 | F14 | Kho quote/meme theo timestamp (link `&t=…s`) | P2 | Chưa | Cần kiểm duyệt |
 | F15 | Fan art gallery, duyệt trước | P2 | Chưa | Cần storage + kiểm duyệt |

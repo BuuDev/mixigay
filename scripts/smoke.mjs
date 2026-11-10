@@ -149,8 +149,9 @@ const run = (cmd, args) =>
 const get = (path, init) => fetch(APP + path, { redirect: "manual", ...init });
 async function expectStatus(label, path, status, init) {
   const res = await get(path, init);
-  if (res.status === status) ok(`${label} → ${status}`);
-  else bad(`${label}: got ${res.status}, want ${status}`);
+  const want = [status].flat();
+  if (want.includes(res.status)) ok(`${label} → ${res.status}`);
+  else bad(`${label}: got ${res.status}, want ${want.join("/")}`);
   return res;
 }
 async function expectBody(label, path, { has = [], lacks = [] }) {
@@ -280,6 +281,9 @@ try {
   console.log("Machine routes");
   await expectStatus("cron without secret", "/api/cron/poll-live", 401, { method: "POST" });
   await expectStatus("moderation alert cron without secret", "/api/cron/moderation-alert", 401, { method: "POST" });
+  await expectStatus("websub renew cron without secret", "/api/cron/websub-renew", 401, { method: "POST" });
+  await expectStatus("websub callback with no challenge", "/api/webhooks/youtube", [404, 503]);
+  await expectStatus("websub callback unsigned POST is not processed", "/api/webhooks/youtube", [202, 503], { method: "POST", body: "<feed/>" });
   await expectStatus("cron with wrong secret", "/api/cron/sync-videos", 401, { method: "POST", headers: { Authorization: "Bearer nope" } });
   await expectStatus("cron with secret, YouTube not configured", "/api/cron/poll-live", 503, {
     method: "POST",

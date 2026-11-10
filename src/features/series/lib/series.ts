@@ -33,7 +33,12 @@ export interface Series {
   totalViews: number;
 }
 
-/** Groups videos into series, newest activity first; episodes newest first. */
+/**
+ * Groups videos into series, newest activity first; episodes newest first.
+ * A lone "(Tên #1)" or "(Tên)" is noise, not a series: keep a group only when it has two
+ * videos or an episode number of 2+ (earlier parts may be unlisted). With the real channel
+ * this took /series from 474 cards to the ones that are actually series.
+ */
 export function groupSeries(videos: ClassifiedVideo[]): Series[] {
   const map = new Map<string, Series>();
   for (const v of videos) {
@@ -48,5 +53,7 @@ export function groupSeries(videos: ClassifiedVideo[]): Series[] {
   for (const s of map.values()) {
     s.episodes.sort((a, b) => (b.episode ?? 0) - (a.episode ?? 0) || Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
   }
-  return [...map.values()].sort((a, b) => Date.parse(b.latestAt) - Date.parse(a.latestAt));
+  return [...map.values()]
+    .filter((s) => s.episodes.length >= 2 || s.episodes.some((e) => (e.episode ?? 0) >= 2))
+    .sort((a, b) => Date.parse(b.latestAt) - Date.parse(a.latestAt));
 }

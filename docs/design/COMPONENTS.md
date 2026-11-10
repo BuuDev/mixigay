@@ -60,7 +60,7 @@ Lưới 2 cột mobile / 4 cột desktop; chạm → lightbox (`expand`, `close`
 `components/Embers.tsx` + `embers.css`. 12–18 hạt, chỉ ở trang chủ, `live=true` đổi sang đỏ. Ẩn hoàn toàn khi reduced-motion hoặc khi pin yếu (`navigator.getBattery` nếu có).
 
 ## 11. Thông báo lên sóng
-Nút `bell`: web push (VAPID) hoặc link bot Telegram/Discord. Chỉ hỏi quyền sau khi người dùng chạm, không hỏi lúc tải trang.
+**Bỏ** ([ADR-015](../08-decisions.md#adr-015)): YouTube đã báo live realtime cho người bấm chuông trên kênh, nên trang không làm Web Push. Kênh Telegram/Discord thông báo live vẫn giữ.
 
 ## 12. Mascot Cú Đêm — khi nào dùng pose nào
 

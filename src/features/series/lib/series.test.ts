@@ -45,6 +45,11 @@ describe("groupSeries", () => {
     expect(series.map((s) => s.slug)).toEqual(["delta-force", "ramen"]);
   });
 
+  it("drops one-off titles that only look like a series", () => {
+    const only = groupSeries([v("x", "(Thử nghiệm #1) một lần", "2026-11-02T00:00:00Z", 1), v("y", "(Chuyện lạ) một lần", "2026-11-03T00:00:00Z", 1)]);
+    expect(only).toEqual([]);
+  });
+
   it("orders episodes newest first and sums views", () => {
     const ramen = series[1];
     expect(ramen.episodes.map((e) => e.episode)).toEqual([2, 1]);

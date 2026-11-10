@@ -30,6 +30,9 @@ select cron.schedule('poll-live', '* * * * *', $$ select public.call_cron_route(
 select cron.schedule('sync-videos', '17 */6 * * *', $$ select public.call_cron_route('/api/cron/sync-videos') $$);
 -- Alerts admins (ADMIN_ALERT_* env) when the moderation queue spikes; no-op without them.
 select cron.schedule('moderation-alert', '*/5 * * * *', $$ select public.call_cron_route('/api/cron/moderation-alert') $$);
+-- Re-subscribes YouTube WebSub daily (10-day lease, so a missed day or two is harmless).
+-- No YouTube quota; skipped while WEBSUB_SECRET is empty or the site URL is localhost.
+select cron.schedule('websub-renew', '23 3 * * *', $$ select public.call_cron_route('/api/cron/websub-renew') $$);
 
 -- Keep pg_net's response log small.
 select cron.schedule('purge-net-responses', '0 4 * * *', $$ delete from net._http_response where created < now() - interval '1 day' $$);

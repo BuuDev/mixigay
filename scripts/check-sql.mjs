@@ -796,5 +796,6 @@ await allowed("song cover from SoundCloud CDN accepted", () => coverSong("https:
 await denied("song cover from another host rejected", () => coverSong("https://evil.example/pixel.gif"));
 await denied("song cover look-alike host rejected", () => coverSong("https://i1.sndcdn.com.evil.example/x.jpg"));
 
+
 console.log(failures ? `\nDB_CHECK=fail (${failures})` : "\nDB_CHECK=pass");
 process.exit(failures ? 1 : 0);

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ChapterTimeline } from "@/features/videos/components/chapter-timeline";
 import { ShortsRail } from "@/features/videos/components/shorts-rail";
 import { VideoBrowser } from "@/features/videos/components/video-browser";
 import { latestStreamWithChapters } from "@/features/videos/lib/chapters";
-import { gameCoverRecord } from "@/features/videos/lib/game-cover";
-import { getGames, getShorts, getVideos } from "@/features/videos/server/queries";
+import { PAGE, parseVideoQuery } from "@/features/videos/lib/video-query";
+import { getGames, getShorts, getVideoPage, getVideos } from "@/features/videos/server/queries";
 import { isSupabaseConfigured } from "@/shared/lib/env";
 import { formatDate } from "@/shared/lib/format";
 import { youtubeUrl } from "@/shared/lib/links";
@@ -14,8 +15,10 @@ import { PageHeader } from "@/shared/ui/page-header";
 
 export const metadata: Metadata = { title: "Video theo game – Góc Bộ Tộc" };
 
-export default async function VideosPage() {
-  const [videos, games, shorts] = await Promise.all([getVideos(), getGames(), getShorts()]);
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function VideosPage({ searchParams }: { searchParams: SearchParams }) {
+  const [videos, shorts] = await Promise.all([getVideos(), getShorts()]);
   const stream = latestStreamWithChapters(videos);
   return (
     <div className="space-y-8">
@@ -56,7 +59,30 @@ export default async function VideosPage() {
         </section>
       )}
 
-      <VideoBrowser videos={videos} games={games} covers={gameCoverRecord(videos, games)} />
+      {/* Only this part reads the URL; everything above stays in the static shell. */}
+      <Suspense fallback={<GridSkeleton />}>
+        <FilteredVideos searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function FilteredVideos({ searchParams }: { searchParams: SearchParams }) {
+  const [params, games] = await Promise.all([searchParams, getGames()]);
+  const query = parseVideoQuery(
+    params,
+    games.map((g) => g.slug),
+  );
+  const data = await getVideoPage(query.game, query.sort, query.limit);
+  return <VideoBrowser query={query} {...data} />;
+}
+
+function GridSkeleton() {
+  return (
+    <div aria-hidden className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: Math.min(PAGE, 6) }, (_, i) => (
+        <div key={i} className="aspect-video animate-pulse rounded-lg bg-surface" />
+      ))}
     </div>
   );
 }

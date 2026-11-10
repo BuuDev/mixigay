@@ -133,7 +133,7 @@ Nguồn: skill `frontend-design` (Anthropic), `web-quality-audit`/`accessibility
 
 ## Supabase: những điều chỉ lộ ra khi chạy với project thật
 
-Các lỗi dưới đây smoke (dùng Supabase giả) không bắt được; chúng lộ ra khi chạy với project thật (2026-11-10, `node_modules/.cache/ui-audit/e2e.mjs`).
+Các lỗi dưới đây smoke (dùng Supabase giả) không bắt được; chúng lộ ra khi chạy với project thật (2026-11-10, `e2e/community.spec.ts`).
 
 - **Embed `profiles` phải chỉ rõ khóa:** viết `profiles!author_id(...)`, không viết `profiles(...)`. Bảng có bảng vote nối tới `profiles` (`suggestions` ↔ `suggestion_votes`) cho PostgREST hai đường đi, và nó báo "more than one relationship".
 - **`publicClient()` không có Auth** (`accessToken: async () => null`). Nếu có, supabase-js nạp phiên ở chế độ nền, gọi `Date.now()` sau khi phạm vi `"use cache"` đã trả về, và Cache Components báo lỗi.
@@ -171,3 +171,13 @@ npm run build
 - Nhánh: `feat/…`, `fix/…`, `docs/…`, `chore/…`. Không commit thẳng vào `main`.
 - Commit message theo Conventional Commits (`feat: …`, `fix: …`, `docs: …`).
 - Không commit `.env*` (trừ `.env.example`).
+
+## Danh sách lớn: không gửi cả kênh xuống trình duyệt
+
+Với dữ liệu thật (2026-11-10: hơn 3.000 video), `/video` từng nặng 8,9 MB vì truyền toàn bộ `getVideos()` vào một client component để lọc tại chỗ, và `/series` 2,8 MB vì 474 "series" một tập. Quy tắc:
+
+- Lọc, sắp xếp, phân trang trên server qua `searchParams` (`?game=&sort=&n=`, xem `src/features/videos/lib/video-query.ts`), phần đọc URL nằm trong `<Suspense>`, dữ liệu lấy qua hàm `"use cache"` nhận tham số (`getVideoPage`). Bộ lọc là `<Link>` (dùng `chipClass`), không cần JavaScript.
+- Mỗi trang tối đa 48 thẻ, nút "Xem thêm" tăng `n`; giới hạn trên (`MAX_LIMIT`) rồi dẫn ra kênh YouTube.
+- `generateStaticParams` chỉ dựng sẵn phần nổi bật (ví dụ 24 series), phần còn lại render lần đầu khi có người mở.
+- Kiểm tra bằng dữ liệu thật trước khi kết luận: smoke và mock chỉ có vài chục video nên không lộ lỗi này.
+

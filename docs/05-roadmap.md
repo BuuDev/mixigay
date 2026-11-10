@@ -62,7 +62,7 @@ Giai đoạn 7  Góc Bộ Tộc v2 (docs/design)        nền xong – các kh�
 - [x] `SuggestionBoard` bỏ localStorage, đọc/ghi Supabase. Hiển thị "đã vote" theo user.
 - [x] `/admin`: sửa lịch tuần, gán game cho video "Chưa phân loại", quản lý từ khóa, đổi trạng thái đề xuất (+ liên kết `linked_game_slug`), cập nhật "Đã chơi", ẩn đề xuất spam
 - [x] Trang `/da-choi` liên kết với đề xuất đã `played`
-- [ ] Playwright E2E: xem lịch, lọc video theo game, đăng nhập giả lập → gửi đề xuất → vote
+- [x] Playwright E2E (`e2e/`, `npm run e2e`): xem lịch, lọc video theo game, đăng ký qua dialog → gửi đề xuất → duyệt → vote, đài nhạc nền, header admin
 - [x] Trang "Giới thiệu" ghi rõ không chính thức, cách liên hệ để gỡ nội dung
 - [x] `sitemap.ts`, `robots.ts`, `metadataBase`
 - [x] OG image
@@ -75,11 +75,10 @@ Giai đoạn 7  Góc Bộ Tộc v2 (docs/design)        nền xong – các kh�
 - [x] Bot Telegram channel + Discord webhook, chống gửi trùng bằng `notifications_log`
 - [x] PWA: `app/manifest.ts`, icon riêng 192/512/apple (lửa trại, không dùng logo MixiGaming)
 - [x] PWA: service worker cho trang offline (`public/sw.js`, `/offline`)
-- [ ] Web Push dùng chung service worker: **(cần bạn)** khóa VAPID
 - [x] ~~Dark mode~~ — bỏ: brand chỉ có nền tối ([ADR-009](08-decisions.md#adr-009))
-- [ ] Web Push: đăng ký/hủy, gửi khi live
+- [x] ~~Web Push~~ — bỏ: YouTube đã báo live realtime cho người bấm chuông ([ADR-015](08-decisions.md#adr-015))
 - [x] `schedule_overrides` (nghỉ / đổi giờ một ngày) + UI admin
-- [ ] WebSub cho phát hiện video mới nhanh hơn
+- [x] WebSub cho phát hiện video mới nhanh hơn (`/api/webhooks/youtube` + cron `websub-renew`). (cần bạn) domain public + `WEBSUB_SECRET`
 
 ## Giai đoạn 5 – Thống kê stream (P1) — **bỏ** (2026-11-10: chủ dự án quyết định, YouTube đã có số liệu)
 
@@ -124,7 +123,7 @@ Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mas
 - [x] §7 Timeline buổi stream (chapters đọc từ mô tả video lúc sync, không tốn thêm quota) — `/video`, từng tập trong series
 - [x] §8 Gallery fan art + lightbox (chuyển cảnh ViewTransition như album)
 - [x] §9 Skin theo dịp: admin bật theo khoảng ngày → `data-theme` trên `<html>` (`/admin/skin`)
-- [ ] §11 Nút chuông thông báo (gộp với GĐ4 Web Push)
+- [x] ~~§11 Nút chuông thông báo~~ — bỏ cùng Web Push ([ADR-015](08-decisions.md#adr-015))
 - [x] OG image theo brand (dòng "không liên kết chính thức")
 
 ## Giai đoạn 8 – Content theo trend (khảo sát: `docs/research/2026-11-09-trends.md`)

@@ -23,7 +23,7 @@ export function BottomNav() {
 
   return (
     <nav
-      aria-label="Điều hướng chính"
+      aria-label="Thanh tab"
       className="td-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
       <ul className="mx-auto grid max-w-md grid-cols-5 px-safe">

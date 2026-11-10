@@ -6,6 +6,8 @@ import { TAGS } from "@/shared/lib/cache-tags";
 import { isSupabaseConfigured } from "@/shared/lib/env";
 import { thumbnailFor } from "@/shared/lib/links";
 import { classifyVideo, UNCLASSIFIED } from "../lib/classify";
+import { gameCovers } from "../lib/game-cover";
+import { selectVideos, videoTabs, type VideoSort } from "../lib/video-query";
 import { mapGame, mapVideo, type GameRow, type VideoRow } from "../lib/mapper";
 import * as mock from "../mock";
 import type { ClassifiedVideo, Game } from "../types";
@@ -78,4 +80,18 @@ export async function getShorts(limit = 24): Promise<ClassifiedVideo[]> {
   );
   // Filter again on the flag itself so a backend that ignores the filter cannot leak long videos into the rail.
   return rows.filter((r) => r.is_short === true).map(toClassified);
+}
+
+/**
+ * One screen of /video: tabs with counts, the cards for the query and the selected game's
+ * cover. Cached per (game, sort, limit), so the full channel never leaves the server.
+ */
+export async function getVideoPage(game: string, sort: VideoSort, limit: number) {
+  "use cache";
+  cacheTag(TAGS.videos, TAGS.games);
+  cacheLife("hours");
+  const [videos, games] = await Promise.all([getVideos(), getGames()]);
+  const { items, total } = selectVideos(videos, { game, sort, limit });
+  const cover = game !== "all" ? (gameCovers(videos, games).get(game) ?? null) : null;
+  return { tabs: videoTabs(videos, games), items, total, cover, games };
 }

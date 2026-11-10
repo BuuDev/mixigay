@@ -34,7 +34,38 @@ Tài khoản là **tên Bộ Tộc + mã khóa**, không email, không Google ([
 3. Đẩy cài đặt Auth từ `config.toml`: chạy `npx supabase@2 config diff` để xem trước, rồi `config push`.
 4. Điền file env local theo `.env.example`. Key mới có dạng `sb_publishable_…` / `sb_secret_…`.
 5. **Dữ liệu mẫu thật** (chỉ dùng cho project dev): `npm run seed:sample` nạp video thật của kênh, game Steam thật làm đề xuất, bài nhạc nịnh thật, lời nhắn và điểm danh của 6 tài khoản "Fan mẫu". Script không bịa quote, kết quả giải đấu hay phát ngôn của ai. Script chỉ chạy khi project được nêu rõ: `SEED_SAMPLE_ALLOW=<ref> npm run seed:sample` (localhost thì không cần), và chỉ đụng đúng 6 tài khoản `mau01…mau06` còn mang tên "Fan mẫu". Xóa bằng `SEED_SAMPLE_ALLOW=<ref> npm run seed:sample -- --remove`.
-6. Kiểm tra toàn luồng bằng `node node_modules/.cache/ui-audit/e2e.mjs <thư-mục-ảnh>` với `next start` ở cổng 3311. Kịch bản tạo các tài khoản `e2e…` và tự xóa khi xong.
+6. Kiểm tra toàn luồng bằng bộ Playwright E2E trong `e2e/` (xem mục [E2E (Playwright)](#e2e-playwright) bên dưới): `npm run build` rồi `npm run e2e`. Kịch bản `community.spec.ts` tạo các tài khoản `e2e…` qua giao diện và tự xóa khi xong.
+
+## E2E (Playwright)
+
+Bộ test nằm trong `e2e/`, cấu hình ở `playwright.config.ts`. Chạy bằng **Google Chrome có sẵn trên máy** (`channel: "chrome"`), không cần `npx playwright install`. Hai project: `desktop` (1366×900) và `phone` (390×844, cảm ứng).
+
+| Spec | Chế độ | Nội dung |
+|---|---|---|
+| `public.spec.ts` | mock + dev | lịch tuần và thẻ trạng thái live không trống, lọc video theo game, menu "Thêm ▾", thanh tab điện thoại, `/thong-ke` 404, không lỗi console/hydration trên các trang chính |
+| `radio.spec.ts` | mock + dev, desktop | đài nhạc nền im lặng tới cú chạm đầu tiên, phát ở âm lượng 0.3, "Tắt hẳn nhạc" được nhớ, không phát trên `/gui-anh-do` |
+| `community.spec.ts` | chỉ dev, desktop | đăng ký qua dialog → gửi đề xuất (chỉ tác giả thấy) → admin duyệt → fan thứ hai upvote, sai mã khóa, header admin không chồng chéo ở 1024/1366 px |
+
+Test chạy trên **bản build production** ở cổng 3311. `webServer` tự chạy `npm run start -- -p 3311` nếu cổng còn trống, hoặc dùng lại server đang chạy. Vì vậy luôn build trước:
+
+```bash
+# Chế độ dev project (đọc file env local như Next.js): chạy cả 3 spec
+npm run build
+npm run e2e
+
+# Chế độ mock: để trống URL Supabase cho CẢ lúc build lẫn lúc test (community.spec.ts tự bỏ qua)
+NEXT_PUBLIC_SUPABASE_URL= npm run build
+NEXT_PUBLIC_SUPABASE_URL= npm run e2e
+
+# Chạy với một server khác (không tự khởi động server)
+E2E_BASE_URL=http://localhost:3000 npm run e2e
+npm run e2e -- --project=desktop e2e/public.spec.ts   # chỉ một project / một file
+```
+
+- Biến rỗng (`NEXT_PUBLIC_SUPABASE_URL=`) thắng file env local, nên bản build và bộ test cùng ở chế độ mock. Build và test phải cùng chế độ: bản build mock chạy với env dev sẽ làm `community.spec.ts` hỏng.
+- `community.spec.ts` chỉ chạy khi có `NEXT_PUBLIC_SUPABASE_URL` và `SUPABASE_SERVICE_ROLE_KEY`, và **chỉ dùng với project dev**. Nó tạo tài khoản qua giao diện, dùng service role để tạo link mời admin (`issue_invite`) và làm "già" hồ sơ fan thứ hai (tài khoản dưới 24 giờ không vote được). `globalSetup`/`globalTeardown` xóa mọi tài khoản và lời mời có tên bắt đầu bằng `e2e`, cùng bộ đếm giới hạn đăng ký/đăng nhập của chính máy này (giới hạn 3 tài khoản/giờ/IP).
+- Fixture `e2e/fixtures.ts` đặt `localStorage["gbt:bgm"] = "off"` trước mọi trang (đài nhạc nền phát mãi sẽ làm `networkidle` không bao giờ tới), trừ `radio.spec.ts`. Trang chủ có màn "Nhóm lửa": dùng `dismissIntro(page)`.
+- Kết quả lỗi (ảnh chụp, trace) nằm ở `test-results/`, đã có trong `.gitignore`. Xem trace: `npx playwright show-trace test-results/<tên>/trace.zip`.
 
 **Chế độ mock:** khi `NEXT_PUBLIC_SUPABASE_URL` trống, mọi trang dùng `src/features/*/mock.ts`, đề xuất chỉ lưu trên trình duyệt, admin trả 404. CI build theo chế độ này.
 
@@ -66,7 +97,6 @@ Copy `.env.example` → `.env.local` rồi điền. **Không commit `.env.local`
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID` | server | @BotFather | 4 |
 | `DISCORD_WEBHOOK_URL` | server | Discord → Kênh → Integrations → Webhooks | 4 |
 | `ADMIN_ALERT_TELEGRAM_CHAT_ID`, `ADMIN_ALERT_DISCORD_WEBHOOK_URL` | server | Nhóm/kênh **riêng của admin** (không phải kênh thông báo live cho fan). Cron `moderation-alert` 5 phút/lần báo khi ≥ 20 nội dung chờ duyệt hoặc ≥ 10 báo cáo trong 1 giờ, tối đa 1 tin/giờ mỗi loại; để trống thì không gửi | 8 |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | server (public key cả client) | `npx web-push generate-vapid-keys` | 4 |
 
 ## Google Cloud (một project dùng chung)
 
