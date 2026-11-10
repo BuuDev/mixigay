@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { getViewer } from "@/features/auth/server/viewer";
 import { serverClient } from "@/server/supabase/server";
+import { getBlockedTerms } from "@/features/admin/terms/server";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { quizLinkInsertError } from "./lib/errors";
 import { QUIZ_DESCRIPTION_MAX, QUIZ_PLATFORM_LIST, QUIZ_TITLE_MAX, QUIZ_TITLE_MIN, QUIZ_URL_MAX, quizPlatform } from "./lib/quiz-url";
@@ -48,7 +49,7 @@ export async function submitQuizLink(_prev: QuizLinkFormResult, formData: FormDa
   const { title, url, description } = parsed.data;
 
   // Generic on purpose: never tell a spammer which word tripped the filter.
-  if (screenText([title, description]).verdict === "block") return { ok: false, message: REJECTED };
+  if (screenText([title, description], await getBlockedTerms()).verdict === "block") return { ok: false, message: REJECTED };
 
   // Fans may only write (title, url, description) (column grant + RLS + rate-limit trigger); author_id defaults to auth.uid().
   const supabase = await serverClient();

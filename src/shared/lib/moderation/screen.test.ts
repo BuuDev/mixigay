@@ -50,3 +50,49 @@ describe("screenText — normal Vietnamese stays ok", () => {
     "R.E.P.O. – chơi nhóm",
   ])("%s", (text) => expect(screenText([text]).verdict).toBe("ok"));
 });
+
+describe("screenText — admin-managed extra terms", () => {
+  const extra = [
+    { term: "cá độ", category: "gambling" },
+    { term: "kèo thơm", category: "spam" },
+    { term: "xoilac", category: "spam" },
+    { term: "đĩ", category: "profanity" },
+    { term: "ngu học", category: "profanity" },
+  ] as const;
+
+  it("keeps the old signature working", () => {
+    expect(screenText(["Các bạn buổi tối vui vẻ"]).verdict).toBe("ok");
+    expect(screenText(["Các bạn buổi tối vui vẻ"], []).verdict).toBe("ok");
+  });
+
+  it.each([
+    "Vào đây cá độ nha",
+    "CÁ ĐỘ uy tín",
+    "ca do bong da", // diacritics dropped
+    "c4 d0 bóng đá", // teencode
+    "c.a d.o", // spread out
+    "kèo thơm mỗi ngày",
+    "keo thom", // spam terms match without marks too
+    "xem trên x0ilac", // leet
+    "xem trên x.o.i.l.a.c",
+    "đồ con đĩ",
+    "đồ ngu học",
+  ])("blocks %s", (text) => expect(screenText([text], extra).verdict).toBe("block"));
+
+  it.each([
+    "Đi chơi game thôi", // "đĩ" plain is "di": profanity with marks matches marked only
+    "Di chuyển nhanh lên",
+    "Cà độc dược", // "ca do" only as a whole word
+  ])("leaves %s alone", (text) => expect(screenText([text], extra).verdict).toBe("ok"));
+
+  it("flags the category of the matched term, spam included (reviewers see a badge)", () => {
+    expect(screenText(["cá độ"], extra).flags).toContain("gambling");
+    expect(screenText(["đĩ"], extra).flags).toContain("profanity");
+    expect(screenText(["xoilac"], extra)).toEqual({ verdict: "block", flags: ["spam"] });
+  });
+
+  it("normalises the stored term too and ignores too-short ones", () => {
+    expect(screenText(["vào CASINOX ngay"], [{ term: " CasinoX ", category: "spam" }]).verdict).toBe("block");
+    expect(screenText(["a b c"], [{ term: "a", category: "spam" }]).verdict).toBe("ok");
+  });
+});

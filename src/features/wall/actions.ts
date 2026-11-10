@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { getViewer } from "@/features/auth/server/viewer";
 import { serverClient } from "@/server/supabase/server";
+import { getBlockedTerms } from "@/features/admin/terms/server";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { WALL_MAX, WALL_MIN, wallLength } from "./lib/limits";
 
@@ -27,7 +28,7 @@ export async function postWallMessage(_prev: WallFormResult, formData: FormData)
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ" };
   const { body } = parsed.data;
   // Generic on purpose: never tell a spammer which word tripped the filter.
-  if (screenText([body]).verdict === "block") return { ok: false, message: REJECTED };
+  if (screenText([body], await getBlockedTerms()).verdict === "block") return { ok: false, message: REJECTED };
 
   // Fans may only write `body` (column grant + RLS + rate-limit trigger); author_id defaults to auth.uid().
   const supabase = await serverClient();

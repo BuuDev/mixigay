@@ -1,5 +1,6 @@
 import type { Browser, BrowserContextOptions, Page } from "@playwright/test";
 import { expect, hasSupabase, signUpThroughDialog, test } from "./fixtures";
+import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { createAdminClient, E2E_PREFIX, uniqueTag, userIdForHandle } from "./supabase";
 
@@ -223,6 +224,112 @@ test("fan uploads a game thumbnail → sanitised into Storage → shown after ap
   expect((await supabaseAdmin.from("suggestions").select("id").eq("name", again)).data).toEqual([]);
 
   for (const p of [anon, admin]) await p.context().close();
+});
+
+test("moderation center: reject with a reason, approve, the author sees why, admin blocked terms stop a post", async ({ page, browser, supabaseAdmin }) => {
+  expect(adminState, "admin session from the invite test").toBeDefined();
+  // A fan created with the service role (the sign-up form allows 3 accounts per IP per hour,
+  // and earlier tests in this file already use them), aged so no new-account limits apply.
+  const handle = `${E2E_PREFIX}mod${tag}`;
+  const passphrase = `e2e-kiem-duyet-ma-khoa-${tag}`;
+  const email = `u-${randomUUID()}@id.gocbotoc.invalid`;
+  const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password: passphrase,
+    email_confirm: true,
+    user_metadata: { full_name: `E2E Mod Fan ${tag}` },
+  });
+  expect(createErr).toBeNull();
+  const fanId = created.user!.id;
+  const { data: key } = await supabaseAdmin.rpc("name_key", { t: handle });
+  expect((await supabaseAdmin.from("account_logins").insert({ handle_key: key, user_id: fanId, auth_email: email })).error).toBeNull();
+  await supabaseAdmin
+    .from("profiles")
+    .update({ created_at: new Date(Date.now() - 3 * 864e5).toISOString() })
+    .eq("id", fanId);
+  const rejectBody = `E2E lời nhắn sẽ bị từ chối ${tag}`;
+  const approveBody = `E2E lời nhắn sẽ được duyệt ${tag}`;
+  const { data: rows, error: insErr } = await supabaseAdmin
+    .from("wall_messages")
+    .insert([
+      { author_id: fanId, body: rejectBody },
+      { author_id: fanId, body: approveBody },
+    ])
+    .select("id, body");
+  expect(insErr).toBeNull();
+  const idOf = (b: string) => rows!.find((r) => r.body === b)!.id as string;
+
+  // 1. Both wait in the shared inbox, filtered to wall messages.
+  const admin = await newPage(browser, { storageState: adminState });
+  await admin.goto("/admin/duyet?kind=wall_message");
+  const card = (b: string) => admin.locator("li", { hasText: b });
+  await expect(card(rejectBody)).toBeVisible();
+  await expect(card(approveBody)).toBeVisible();
+
+  // 2. Reject one with a preset + note.
+  await card(rejectBody).getByText("Từ chối…").click();
+  await card(rejectBody).getByLabel("Lý do từ chối").selectOption("Spam / quảng cáo");
+  await card(rejectBody).getByLabel("Ghi thêm lý do").fill("thử nghiệm tự động");
+  await card(rejectBody).getByRole("button", { name: "Từ chối", exact: true }).click();
+  await expect
+    .poll(async () => (await supabaseAdmin.from("wall_messages").select("approved, rejected_at, rejected_reason").eq("id", idOf(rejectBody)).single()).data, {
+      timeout: 15_000,
+    })
+    .toMatchObject({ approved: false, rejected_reason: "Spam / quảng cáo: thử nghiệm tự động" });
+  // Kept, not deleted (deleting would refund the spammer's daily quota).
+  expect((await supabaseAdmin.from("wall_messages").select("id").eq("id", idOf(rejectBody))).data).toHaveLength(1);
+
+  // 3. Approve the other; it goes public and leaves the inbox.
+  await admin.reload();
+  await card(approveBody).getByRole("button", { name: "Duyệt", exact: true }).click();
+  await expect
+    .poll(async () => (await supabaseAdmin.from("wall_messages").select("approved").eq("id", idOf(approveBody)).single()).data?.approved, { timeout: 15_000 })
+    .toBe(true);
+  await admin.reload();
+  await expect(card(approveBody)).toHaveCount(0);
+  await expect(card(rejectBody)).toHaveCount(0);
+
+  // 4. The audit log has both decisions, with the actor and the reason.
+  const { data: log } = await supabaseAdmin
+    .from("moderation_log")
+    .select("action, reason, actor_id, target_id")
+    .in("target_id", [idOf(rejectBody), idOf(approveBody)]);
+  expect(log?.map((l) => l.action).sort()).toEqual(["approve", "reject"]);
+  expect(log?.find((l) => l.action === "reject")?.reason).toBe("Spam / quảng cáo: thử nghiệm tự động");
+  expect(log?.every((l) => l.actor_id)).toBe(true);
+  await admin.goto("/admin/nhat-ky?kind=wall_message");
+  await expect(admin.getByText("Spam / quảng cáo: thử nghiệm tự động").first()).toBeVisible();
+
+  // 5. The author signs in and sees the status and the reason on /tai-khoan (not who decided).
+  // Signed out, /tai-khoan redirects home (intro overlay): sign in from a plain page instead.
+  await page.goto("/gioi-thieu");
+  await page.getByRole("button", { name: "Vào Bộ Tộc" }).first().click();
+  await page.locator("dialog input[name=handle]").fill(handle);
+  await page.locator("dialog input[name=passphrase]").fill(passphrase);
+  await page.getByRole("button", { name: "Đăng nhập" }).last().click();
+  await expect(page.getByRole("link", { name: new RegExp(`E2E Mod Fan ${tag}`) })).toBeVisible({ timeout: 15_000 });
+  await page.goto("/tai-khoan");
+  const mine = page.locator("section, div", { has: page.getByText("Nội dung của bạn", { exact: true }) }).last();
+  await expect(mine).toContainText(rejectBody.slice(0, 30));
+  await expect(mine).toContainText("Lý do: Spam / quảng cáo: thử nghiệm tự động");
+
+  // 6. An admin-added blocked term stops a post that the built-in lexicon would let through.
+  const term = `kèo${tag}`;
+  await admin.goto("/admin/tu-khoa");
+  await admin.locator("#term").fill(term);
+  await admin.locator("#category").selectOption("spam");
+  await admin.getByRole("button", { name: "Thêm", exact: true }).click();
+  await expect.poll(async () => (await supabaseAdmin.from("blocked_terms").select("term").eq("term", term)).data?.length, { timeout: 15_000 }).toBe(1);
+  await page.goto("/bo-toc");
+  const wall = page.locator("section", { has: page.getByRole("heading", { name: /Bức tường Bộ Tộc/ }) }).first();
+  const blocked = `Anh em vào xem ${term} nhé`;
+  await wall.locator("textarea").fill(blocked);
+  await wall.locator("button[type=submit]").click();
+  await expect(wall.getByText(/không phù hợp/i)).toBeVisible({ timeout: 15_000 });
+  expect((await supabaseAdmin.from("wall_messages").select("id").eq("body", blocked)).data).toEqual([]);
+
+  await supabaseAdmin.from("blocked_terms").delete().eq("term", term);
+  await admin.context().close();
 });
 
 // Belt and braces when a single spec is run without the global teardown.

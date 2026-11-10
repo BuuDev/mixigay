@@ -4,6 +4,7 @@ import { ScreenFlags, UserModeration } from "@/features/admin/components/user-mo
 import { formatDate } from "@/shared/lib/format";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { serverClient } from "@/server/supabase/server";
+import { PENDING_FIRST, RejectedBadge, REJECTED_COLUMNS, type RejectedFields } from "@/features/moderation/components/rejected-badge";
 import { deleteSuggestion, mirrorSuggestionArt, removeSuggestionArt, updateSuggestion } from "./actions";
 import { thumbnailUrlFor } from "../lib/mapper";
 import { parseThumbnailReview } from "../lib/image-policy";
@@ -15,15 +16,16 @@ export async function SuggestionAdmin() {
     supabase
       .from("suggestions")
       .select(
-        "id,author_id,name,url,source,status,upvotes,hidden,approved,reason,linked_game_slug,steam_app_id,steam_data,thumbnail_path,created_at,profiles!author_id(display_name),suggestion_art_reviews(review)",
+        `id,author_id,name,url,source,status,upvotes,hidden,approved,reason,linked_game_slug,steam_app_id,steam_data,thumbnail_path,created_at,${REJECTED_COLUMNS},profiles!author_id(display_name),suggestion_art_reviews(review)`,
       )
       .order("approved")
       .order("hidden")
+      .order("rejected_at", PENDING_FIRST)
       .order("created_at", { ascending: false })
       .limit(300),
     getGames(),
   ]);
-  const rows = (data ?? []) as unknown as {
+  const rows = (data ?? []) as unknown as (RejectedFields & {
     id: string;
     author_id: string;
     name: string;
@@ -41,7 +43,7 @@ export async function SuggestionAdmin() {
     suggestion_art_reviews: { review: unknown } | null;
     created_at: string;
     profiles: { display_name: string } | null;
-  }[];
+  })[];
   return (
     <Section title="Đề xuất – duyệt trước khi hiện">
       <p className="text-xs text-muted">
@@ -52,7 +54,8 @@ export async function SuggestionAdmin() {
         {rows.map((s) => (
           <li key={s.id} className={`space-y-1 py-2 ${s.hidden ? "opacity-50" : ""}`}>
             <div>
-              {!s.approved && !s.hidden && <span className="mr-1 rounded bg-accent/20 px-1.5 text-xs font-semibold">chờ duyệt</span>}
+              <RejectedBadge row={s} />
+              {!s.approved && !s.hidden && !s.rejected_at && <span className="mr-1 rounded bg-accent/20 px-1.5 text-xs font-semibold">chờ duyệt</span>}
               <strong>{s.name}</strong> · {s.upvotes} vote · {s.profiles?.display_name} · {formatDate(s.created_at)}
               <ScreenFlags flags={screenText([s.name, s.reason, s.url]).flags} />
             </div>

@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { getViewer } from "@/features/auth/server/viewer";
 import { serverClient } from "@/server/supabase/server";
+import { getBlockedTerms } from "@/features/admin/terms/server";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { canonicalDriveUrl, extractDriveFileId } from "./lib/drive";
 
@@ -32,7 +33,7 @@ export async function submitFanArt(_prev: FanArtResult, formData: FormData): Pro
     };
   }
 
-  if (screenText([title, artist, note]).verdict === "block") {
+  if (screenText([title, artist, note], await getBlockedTerms()).verdict === "block") {
     return { ok: false, message: "Nội dung không phù hợp với Góc Bộ Tộc. Viết lại lịch sự, không kèm quảng cáo nhé." };
   }
 
@@ -57,4 +58,3 @@ export async function submitFanArt(_prev: FanArtResult, formData: FormData): Pro
 
   return { ok: true, message: `Đã gửi tranh “${title}”. Admin sẽ xem trước ảnh từ link Drive và duyệt lên phòng tranh!` };
 }
-

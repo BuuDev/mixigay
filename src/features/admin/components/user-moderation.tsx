@@ -25,7 +25,7 @@ export function UserModeration({ userId }: { userId: string }) {
   );
 }
 
-const FLAG_LABEL = { gambling: "cờ bạc", profanity: "tục tĩu", domain: "tên miền", shortener: "link rút gọn" } as const;
+const FLAG_LABEL = { gambling: "cờ bạc", profanity: "tục tĩu", domain: "tên miền", shortener: "link rút gọn", spam: "spam (từ khóa admin)" } as const;
 
 /** Badges for what the text screen found, so reviewers look twice. */
 export function ScreenFlags({ flags }: { flags: (keyof typeof FLAG_LABEL)[] }) {

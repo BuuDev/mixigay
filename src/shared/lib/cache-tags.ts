@@ -18,4 +18,5 @@ export const TAGS = {
   glossary: "glossary",
   tournaments: "tournaments",
   themes: "themes",
+  blockedTerms: "blocked-terms",
 } as const;

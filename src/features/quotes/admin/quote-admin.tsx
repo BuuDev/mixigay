@@ -3,6 +3,7 @@ import { ScreenFlags, UserModeration } from "@/features/admin/components/user-mo
 import { formatDate } from "@/shared/lib/format";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { serverClient } from "@/server/supabase/server";
+import { PENDING_FIRST, RejectedBadge, REJECTED_COLUMNS, type RejectedFields } from "@/features/moderation/components/rejected-badge";
 import { mapQuotes, QUOTE_SELECT, type QuoteRow } from "../lib/mapper";
 import { formatClock, quoteMomentUrl } from "../lib/moment";
 import { deleteQuote, setQuoteApproved } from "./actions";
@@ -10,8 +11,16 @@ import { deleteQuote, setQuoteApproved } from "./actions";
 /** Moderation queue for the quote archive: pending first, newest first. */
 export async function QuoteAdmin() {
   const supabase = await serverClient();
-  const { data } = await supabase.from("quotes").select(QUOTE_SELECT).order("approved").order("created_at", { ascending: false }).limit(300);
-  const quotes = mapQuotes((data ?? []) as unknown as QuoteRow[]);
+  const { data } = await supabase
+    .from("quotes")
+    .select(`${QUOTE_SELECT},${REJECTED_COLUMNS}`)
+    .order("approved")
+    .order("rejected_at", PENDING_FIRST)
+    .order("created_at", { ascending: false })
+    .limit(300);
+  const raw = (data ?? []) as unknown as (QuoteRow & RejectedFields)[];
+  const rejected = new Map(raw.filter((r) => r.rejected_at).map((r) => [r.id, r]));
+  const quotes = mapQuotes(raw);
   return (
     <Section title="Kho quote – duyệt quote">
       <p className="text-xs text-muted">
@@ -24,10 +33,11 @@ export async function QuoteAdmin() {
           <li key={q.id} className="flex flex-wrap items-center gap-3 py-2">
             <span className="min-w-0 flex-1 space-y-1">
               <span className="block">
-                {!q.approved && <span className="mr-1 rounded bg-accent/20 px-1.5 text-xs font-semibold">chờ duyệt</span>}
+                <RejectedBadge row={rejected.get(q.id) ?? {}} />
+                {!q.approved && !rejected.has(q.id) && <span className="mr-1 rounded bg-accent/20 px-1.5 text-xs font-semibold">chờ duyệt</span>}
                 <span className="text-muted">
                   {q.author}
-                  {q.authorVerified && " ✓ Chính chủ"} · {formatDate(q.createdAt)} · {q.approved ? "đã duyệt" : "chờ duyệt"}
+                  {q.authorVerified && " ✓ Chính chủ"} · {formatDate(q.createdAt)} · {q.approved ? "đã duyệt" : rejected.has(q.id) ? "đã từ chối" : "chờ duyệt"}
                 </span>
                 <ScreenFlags flags={screenText([q.body]).flags} />
               </span>

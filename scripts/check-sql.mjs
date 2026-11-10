@@ -842,5 +842,156 @@ await allowed("admin lifts a ban", async () => {
   if (rows.length !== 1) throw new Error("not deleted");
 });
 
+console.log("Moderation center (20261110200000)");
+const modFan = await serverCreateUser("modfan1", "Mod Fan");
+await q(`update public.profiles set created_at = now() - interval '3 days' where id = $1`, [modFan.id]);
+const logOf = (id) => q(`select kind, action, reason, snapshot, actor_id, author_id from public.moderation_log where target_id = $1 order by id`, [id]);
+await denied("fan sets rejected_at on insert", () =>
+  as(modFan.id, () => q(`insert into public.quotes (video_id, at_seconds, body, rejected_at) values ('fxVid2', 11, 'Tự từ chối nè', now())`)),
+);
+await denied("fan sets rejected_reason on insert", () =>
+  as(modFan.id, () => q(`insert into public.wall_messages (body, rejected_reason) values ('Xin chào', 'x')`)),
+);
+const [modQuote] = await as(modFan.id, () =>
+  q(`insert into public.quotes (video_id, at_seconds, body) values ('fxVid2', 12, 'Câu chờ kiểm duyệt nè') returning id`),
+);
+await denied("author sets rejected_at on own row", () =>
+  as(modFan.id, () => q(`update public.quotes set rejected_at = now() where id = $1 returning id`, [modQuote.id])),
+);
+await denied("author clears rejected_reason on own row", () =>
+  as(modFan.id, () => q(`update public.quotes set rejected_reason = null where id = $1 returning id`, [modQuote.id])),
+);
+await allowed("admin rejects a pending quote with a reason", async () => {
+  const rows = await as(adm.id, () => q(`update public.quotes set rejected_at = now(), rejected_reason = 'Spam' where id = $1 returning id`, [modQuote.id]));
+  if (rows.length !== 1) throw new Error("0 rows");
+});
+eq("rejected row stays, unpublished", (await q(`select approved, rejected_reason from public.quotes where id = $1`, [modQuote.id]))[0], {
+  approved: false,
+  rejected_reason: "Spam",
+});
+eq("author still sees the rejected row", (await as(modFan.id, () => q(`select id from public.quotes where id = $1`, [modQuote.id]))).length, 1);
+eq("anon cannot see the rejected row", await as(null, () => q(`select id from public.quotes where id = $1`, [modQuote.id])), []);
+eq("reject is logged with reason, snapshot and actor", await logOf(modQuote.id), [
+  { kind: "quote", action: "reject", reason: "Spam", snapshot: "Câu chờ kiểm duyệt nè", actor_id: adm.id, author_id: modFan.id },
+]);
+await as(adm.id, () => q(`update public.quotes set approved = true where id = $1`, [modQuote.id]));
+eq(
+  "approving a rejected row clears the rejection",
+  (await q(`select approved, rejected_at, rejected_reason from public.quotes where id = $1`, [modQuote.id]))[0],
+  {
+    approved: true,
+    rejected_at: null,
+    rejected_reason: null,
+  },
+);
+eq(
+  "approve is logged",
+  (await logOf(modQuote.id)).map((r) => r.action),
+  ["reject", "approve"],
+);
+await as(adm.id, () => q(`update public.quotes set rejected_at = now() where id = $1`, [modQuote.id]));
+eq("rejecting an approved row forces approved = false", (await q(`select approved from public.quotes where id = $1`, [modQuote.id]))[0].approved, false);
+eq(
+  "…logged as a reject, not an unapprove",
+  (await logOf(modQuote.id)).map((r) => r.action),
+  ["reject", "approve", "reject"],
+);
+await denied("approved and rejected at once is impossible", () =>
+  q(`insert into public.quotes (author_id, video_id, at_seconds, body, approved, rejected_at) values ($1, 'fxVid2', 13, 'Không hợp lệ đâu', true, now())`, [
+    modFan.id,
+  ]),
+);
+const [modWall] = await q(`insert into public.wall_messages (author_id, body, approved) values ($1, 'Tin sẽ bị gỡ', true) returning id`, [modFan.id]);
+await as(adm.id, () => q(`update public.wall_messages set approved = false where id = $1`, [modWall.id]));
+await as(adm.id, () => q(`delete from public.wall_messages where id = $1`, [modWall.id]));
+eq("unapprove and delete are logged", await logOf(modWall.id), [
+  { kind: "wall_message", action: "unapprove", reason: null, snapshot: "Tin sẽ bị gỡ", actor_id: adm.id, author_id: modFan.id },
+  { kind: "wall_message", action: "delete", reason: null, snapshot: "Tin sẽ bị gỡ", actor_id: adm.id, author_id: modFan.id },
+]);
+const [modSug] = await q(
+  `insert into public.suggestions (author_id, name, source, reason) values ($1, 'Game Bị Từ Chối', 'viewer-made', 'abcdef') returning id`,
+  [modFan.id],
+);
+await as(adm.id, () => q(`update public.suggestions set rejected_at = now(), rejected_reason = 'Trùng' where id = $1`, [modSug.id]));
+eq(
+  "suggestion rejection snapshots the name",
+  (await logOf(modSug.id)).map((r) => [r.kind, r.action, r.snapshot]),
+  [["suggestion", "reject", "Game Bị Từ Chối"]],
+);
+eq("fan cannot read moderation_log", await as(fan.id, () => q(`select id from public.moderation_log`).catch(() => [])), []);
+await denied("anon reads moderation_log", () => as(null, () => q(`select id from public.moderation_log`)));
+await denied("fan writes moderation_log", () =>
+  as(fan.id, () => q(`insert into public.moderation_log (kind, target_id, action) values ('profile', $1, 'ban')`, [fan.id])),
+);
+await denied("admin cannot write moderation_log directly", () =>
+  as(adm.id, () => q(`insert into public.moderation_log (kind, target_id, action) values ('profile', $1, 'ban')`, [fan.id])),
+);
+await denied("admin cannot erase moderation_log", () => as(adm.id, () => q(`delete from public.moderation_log returning id`)));
+const bulkFan = await serverCreateUser("bulkfan1", "Bulk Fan");
+const [bulkSong] = await q(
+  `insert into public.fan_songs (author_id, title, artist, url, approved) values ($1, 'Bài sẽ bị gỡ', 'X', 'https://soundcloud.com/bulk/song', true) returning id`,
+  [bulkFan.id],
+);
+const [bulkQuote] = await q(
+  `insert into public.quotes (author_id, video_id, at_seconds, body, approved) values ($1, 'fxVid3', 14, 'Câu sẽ bị gỡ', true) returning id`,
+  [bulkFan.id],
+);
+await as(adm.id, () => q(`select public.moderate_user($1, 'ban')`, [bulkFan.id]));
+eq("ban writes exactly one profile log row", await logOf(bulkFan.id), [
+  { kind: "profile", action: "ban", reason: null, snapshot: null, actor_id: adm.id, author_id: bulkFan.id },
+]);
+eq(
+  "…and no per-content rows",
+  (await q(`select count(*)::int n from public.moderation_log where target_id = any($1::uuid[])`, [[bulkSong.id, bulkQuote.id]]))[0].n,
+  0,
+);
+eq("ban still withdraws content", (await q(`select approved from public.fan_songs where id = $1`, [bulkSong.id]))[0].approved, false);
+await as(adm.id, () => q(`update public.fan_songs set rejected_at = now() where id = $1`, [bulkSong.id]));
+eq(
+  "logging resumes after moderate_user",
+  (await logOf(bulkSong.id)).map((r) => r.action),
+  ["reject"],
+);
+await as(adm.id, () => q(`select public.moderate_user($1, 'unban')`, [bulkFan.id]));
+eq(
+  "unban is logged too",
+  (await logOf(bulkFan.id)).map((r) => r.action),
+  ["ban", "unban"],
+);
+
+const goneFan = await serverCreateUser("gonefan1", "Gone Fan");
+await q(`insert into public.wall_messages (author_id, body, approved) values ($1, 'Tin của tài khoản bị xóa', true)`, [goneFan.id]);
+await allowed("deleting an account with content still works (cascade is not logged)", () => q(`delete from auth.users where id = $1`, [goneFan.id]));
+
+console.log("Blocked terms");
+await denied("anon reads blocked_terms", () => as(null, () => q(`select term from public.blocked_terms`)));
+eq("fan cannot read blocked_terms", await as(fan.id, () => q(`select term from public.blocked_terms`).catch(() => [])), []);
+await denied("fan inserts a blocked term", () => as(fan.id, () => q(`insert into public.blocked_terms (term, category) values ('cá cược', 'gambling')`)));
+await denied("anon inserts a blocked term", () => as(null, () => q(`insert into public.blocked_terms (term, category) values ('cá cược', 'gambling')`)));
+await allowed("admin adds a blocked term", () => as(adm.id, () => q(`insert into public.blocked_terms (term, category) values ('cá cược', 'gambling')`)));
+eq("blocked term records the admin", (await q(`select created_by from public.blocked_terms where term = 'cá cược'`))[0]?.created_by, adm.id);
+eq("admin reads blocked_terms", (await as(adm.id, () => q(`select term from public.blocked_terms`))).length, 1);
+await denied("uppercase term rejected", () => as(adm.id, () => q(`insert into public.blocked_terms (term, category) values ('Nạp Tiền', 'spam')`)));
+await denied("unknown category rejected", () => as(adm.id, () => q(`insert into public.blocked_terms (term, category) values ('abc', 'other')`)));
+await denied("fan deletes a blocked term", () => as(fan.id, () => q(`delete from public.blocked_terms where term = 'cá cược' returning term`)));
+await allowed("admin removes a blocked term", async () => {
+  const rows = await as(adm.id, () => q(`delete from public.blocked_terms where term = 'cá cược' returning term`));
+  if (rows.length !== 1) throw new Error("not deleted");
+});
+
+console.log("Admin profiles (20261110210000)");
+await denied("anon calls admin_profiles", () => as(null, () => q(`select * from public.admin_profiles()`)));
+await denied("fan calls admin_profiles", () => as(fan.id, () => q(`select * from public.admin_profiles()`)));
+{
+  const shadowed = await serverCreateUser("adminprof1", "Người Bị Ẩn_%");
+  await q(`update public.profiles set trust = -2 where id = $1`, [shadowed.id]);
+  const byId = await as(adm.id, () => q(`select id, trust from public.admin_profiles(p_ids => $1::uuid[])`, [[shadowed.id]]));
+  eq("admin reads trust through admin_profiles", byId.map((r) => r.trust), [-2]);
+  const byTrust = await as(adm.id, () => q(`select id from public.admin_profiles(p_trust => -2::smallint, p_limit => 200)`));
+  eq("admin filters by trust", byTrust.some((r) => r.id === shadowed.id), true);
+  const literal = await as(adm.id, () => q(`select id from public.admin_profiles(p_q => '_%')`));
+  eq("search treats % and _ literally", literal.map((r) => r.id), [shadowed.id]);
+}
+
 console.log(failures ? `\nDB_CHECK=fail (${failures})` : "\nDB_CHECK=pass");
 process.exit(failures ? 1 : 0);
