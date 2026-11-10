@@ -3,17 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import {
-  BGM_DEFAULT_VOLUME,
-  BGM_PAUSE_EVENT,
-  BGM_PREF_KEY,
-  BGM_VOLUME_KEY,
-  isQuietPath,
-  parseBgmPref,
-  parseVolume,
-  shouldAutoStart,
-  type BgmPref,
-} from "../lib/bgm";
+import { BGM_DEFAULT_VOLUME, BGM_PAUSE_EVENT, BGM_PREF_KEY, BGM_VOLUME_KEY, isQuietPath, parseBgmPref, parseVolume, type BgmPref } from "../lib/bgm";
 import { BGM_ARTIST, BGM_LICENSE, BGM_SOURCE_URL, BGM_TRACKS, defaultTrackIndex, nextIndex, playlistMinutes, trackSrc } from "../lib/bgm-tracks";
 
 function read(key: string): string | null {
@@ -37,9 +27,9 @@ const readPref = (): BgmPref => parseBgmPref(read(BGM_PREF_KEY));
 /**
  * "Đài phát thanh Bộ Tộc": a long, looping playlist of chill instrumentals played by a
  * native <audio> element (same-origin files, real volume control, no third-party widget).
- * It opens with Airport Lounge and tries to play as soon as the page loads. Most browsers
- * block audible autoplay on a first visit, so the first tap or keypress is the fallback —
- * play() is called inside that gesture, which Safari requires — unless they turned it off.
+ * It opens with Airport Lounge and plays only when the visitor opens the radio or presses
+ * play: no autoplay and no "first tap anywhere" start, so the audio file (1–2 MB) is only
+ * downloaded by those who want it (ADR-019). play() runs inside that tap, as Safari requires.
  */
 export function BgMusicPlayer() {
   const pathname = usePathname();
@@ -48,11 +38,6 @@ export function BgMusicPlayer() {
   const [playing, setPlaying] = useState(false);
   const [idx, setIdx] = useState(defaultTrackIndex);
   const [volume, setVolume] = useState(BGM_DEFAULT_VOLUME);
-  const latest = useRef({ playing, pathname });
-  useEffect(() => {
-    latest.current = { playing, pathname };
-  }, [playing, pathname]);
-
   const track = BGM_TRACKS[idx % BGM_TRACKS.length];
 
   function start(i = idx) {
@@ -63,30 +48,8 @@ export function BgMusicPlayer() {
     const v = parseVolume(read(BGM_VOLUME_KEY));
     el.volume = v;
     setVolume(v);
-    el.play().catch(() => setPlaying(false)); // blocked (first visit, iOS low-power): the first gesture or the button starts it
+    el.play().catch(() => setPlaying(false)); // blocked (iOS low-power): the play button tries again
   }
-
-  // Play on load where the browser allows it (returning visitors, installed app); otherwise
-  // the first interaction anywhere on the page starts the music.
-  useEffect(() => {
-    const canStart = () => shouldAutoStart({ pref: readPref(), pathname: latest.current.pathname, alreadyActive: latest.current.playing });
-    if (canStart()) start();
-    function onFirstGesture(e: Event) {
-      const target = e.target instanceof Element ? e.target : null;
-      if (target?.closest("[data-bgm-ignore]")) return; // the player itself or another player
-      remove();
-      if (canStart()) start();
-    }
-    function remove() {
-      window.removeEventListener("pointerdown", onFirstGesture, true);
-      window.removeEventListener("keydown", onFirstGesture, true);
-    }
-    window.addEventListener("pointerdown", onFirstGesture, true);
-    window.addEventListener("keydown", onFirstGesture, true);
-    return remove;
-    // start() only touches the ref; run once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Walking into a quiet page (/gui-anh-do read on stream, admin, invites) pauses the radio.
   useEffect(() => {

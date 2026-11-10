@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AttendanceBlock } from "@/features/attendance/components/attendance-block";
 import { LiveHero } from "@/features/live/components/live-hero";
 import { getLiveStatus } from "@/features/live/server/queries";
 import { EventRadar } from "@/features/events/components/event-radar";
@@ -18,7 +17,6 @@ export default async function SchedulePage() {
     <div className="space-y-6">
       <PageHeader title="Lịch stream tuần này" icon={<IconSchedule size={26} className="text-accent" />} art={<SceneArt scene="06-lich-live" size={128} />} />
       <LiveHero status={status} schedule={schedule} overrides={overrides} />
-      <AttendanceBlock schedule={schedule} overrides={overrides} />
       <WeekSchedule schedule={schedule} games={games} overrides={overrides} />
       <section className="space-y-3 pt-6">
         <h2 className="text-xl font-extrabold">Radar sự kiện Bộ Tộc</h2>

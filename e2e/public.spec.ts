@@ -24,6 +24,9 @@ test.describe("public pages", () => {
     const total = Number((await all.innerText()).match(/\d+/)?.[0]);
     // Only one page of cards is sent (48), never the whole channel.
     await expect(grid).toHaveCount(Math.min(total, 48));
+    // YouTube thumbnails come straight from YouTube's CDN, not through Vercel's optimizer (ADR-019).
+    const thumb = grid.first().locator("img").first();
+    await expect(thumb).toHaveAttribute("src", /^https:\/\/i\.ytimg\.com\/vi\/[\w-]+\/hqdefault\.jpg$/);
 
     const chips = filters.getByRole("link");
     const labels = await chips.allInnerTexts();
@@ -93,8 +96,8 @@ test.describe("public pages", () => {
     await page.goto("/");
     await dismissIntro(page);
     const shortcuts = page.getByRole("navigation", { name: "Góc tương tác" });
-    // Thả cảm xúc · Bình chọn · Điểm danh → #tuong-tac, Góp sức → #gop-suc.
-    await expect(shortcuts.getByRole("link")).toHaveCount(4);
+    // Bình chọn → #tuong-tac, Góp sức → #gop-suc (the reaction room and the RSVP are gone, ADR-019).
+    await expect(shortcuts.getByRole("link")).toHaveCount(2);
     await expect(shortcuts.getByRole("link", { name: /Góp sức/ })).toHaveAttribute("href", "#gop-suc");
     await expect(shortcuts.getByRole("link").first()).toHaveAttribute("href", "#tuong-tac");
     // The first section after the cover is the community corner.
@@ -103,8 +106,9 @@ test.describe("public pages", () => {
     );
     expect(order.indexOf("tuong-tac")).toBe(1);
     await shortcuts.getByRole("link").first().click();
-    await expect(page.getByRole("group", { name: "Thả cảm xúc" })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole("group", { name: "Thả cảm xúc" }).getByRole("button")).toHaveCount(4);
+    await expect(page.locator("#tuong-tac")).toBeInViewport({ timeout: 10_000 });
+    await expect(page.getByRole("group", { name: "Thả cảm xúc" })).toHaveCount(0);
+    await expect(page.getByText("Tối nay tôi có mặt")).toHaveCount(0);
   });
 
   test("/thong-ke is gone (404)", async ({ page }) => {

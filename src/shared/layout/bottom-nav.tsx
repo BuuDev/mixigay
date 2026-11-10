@@ -34,6 +34,7 @@ export function BottomNav() {
           return (
             <li key={n.href}>
               <Link
+                prefetch={false}
                 href={n.href}
                 aria-current={active ? "page" : undefined}
                 className={cn("flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium", active ? "text-accent" : "text-muted")}
@@ -69,6 +70,7 @@ export function BottomNav() {
           {rest.map((n) => (
             <li key={n.href}>
               <Link
+                prefetch={false}
                 href={n.href}
                 aria-current={isActive(n.href, pathname) ? "page" : undefined}
                 onClick={() => more.current?.hidePopover()}

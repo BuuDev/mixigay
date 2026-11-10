@@ -181,3 +181,10 @@ Với dữ liệu thật (2026-11-10: hơn 3.000 video), `/video` từng nặng 
 - `generateStaticParams` chỉ dựng sẵn phần nổi bật (ví dụ 24 series), phần còn lại render lần đầu khi có người mở.
 - Kiểm tra bằng dữ liệu thật trước khi kết luận: smoke và mock chỉ có vài chục video nên không lộ lỗi này.
 
+## Chi phí mỗi lượt xem (ADR-019)
+
+- Ảnh có thể là thumbnail YouTube dùng `SmartImage` (`src/shared/ui/smart-image.tsx`) thay cho `next/image`: `i.ytimg.com` tải thẳng (không qua Vercel Image), ảnh khác vẫn tối ưu như cũ. Ô nhỏ dùng `ytSize="mq"`.
+- Không thêm Supabase Realtime. Dữ liệu cần "tự cập nhật" đi qua route tĩnh có `cacheTag` (mẫu: `/api/live` + `useLiveStatus`), đọc lại theo lịch server biết trước, không theo chu kỳ cố định.
+- Link trong layout (header, thanh dưới, footer) để `prefetch={false}`.
+- Không thêm độ đậm font mới; dùng 400 / 700 / 900.
+

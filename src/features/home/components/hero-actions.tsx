@@ -10,7 +10,7 @@ import { IconSchedule } from "@/shared/ui/icons";
 /**
  * The two links under the status card. Brand rule: ember marks exactly one primary action
  * per view. While the card shows "đang live" (its own ember button), the schedule link
- * steps back to secondary. Follows the same Realtime status as the card, so a stream that
+ * steps back to secondary. Follows the same live status as the card (useLiveStatus), so a stream that
  * starts or ends after the page loaded never leaves two ember buttons, or none.
  */
 export function HeroActions({ status: initial }: { status: LiveStatus }) {

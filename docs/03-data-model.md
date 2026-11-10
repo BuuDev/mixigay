@@ -100,8 +100,8 @@ create table live_status (
   concurrent_viewers int,
   checked_at timestamptz   -- lần cuối live_status ĐỔI (không phải lần cuối kiểm tra)
 );
--- Bảng này nằm trong publication Realtime: mỗi lần ghi là một tin tới mọi tab đang mở,
--- nên poll-live chỉ ghi khi trạng thái / video / tiêu đề / giờ bắt đầu / số người xem đổi.
+-- poll-live chỉ ghi khi trạng thái / video / tiêu đề / giờ bắt đầu đổi. concurrent_viewers luôn null
+-- từ ADR-019 (trang không hiện số người xem). Không còn trong publication Realtime (20261111160000).
 
 create table live_poll_state (             -- hẹn giờ của poll-live (ADR-018), KHÔNG phát Realtime
   id boolean primary key default true check (id),
@@ -255,7 +255,13 @@ Job cron dùng service role nên bỏ qua RLS. Vì vậy mọi kiểm tra quyề
 
 ## Realtime
 
-Bật Realtime cho `live_status` và `poll_options` (số phiếu của thẻ bình chọn, client nghe `UPDATE` lọc theo `poll_id`), bằng `alter publication supabase_realtime add table …`. Các bảng khác không cần realtime, vì cache + revalidate là đủ.
+Không dùng (ADR-019, migration `20261111160000_live_without_realtime.sql` gỡ `live_status` và `poll_options` khỏi publication). Trạng thái live đi qua `/api/live` trên CDN theo hẹn giờ của poll-live (`live_next_check_at()`, công khai, chỉ trả thời điểm); số phiếu bình chọn lấy lúc tải trang cộng phiếu của chính mình.
+
+## Lọc video trong DB (`20261111140000_video_filter_in_db.sql`)
+
+- `videos.game_slug` (generated, stored) = `coalesce(manual_game_slug, auto_game_slug, 'unclassified')`; không ai ghi trực tiếp được.
+- Index một phần `(game_slug, view_count desc, published_at desc)` và `(game_slug, published_at desc)` với `where not is_short and live_state <> 'upcoming'`, đúng hai cách sắp xếp của `/video`.
+- `video_game_counts()`: số video mỗi `game_slug` (bỏ Shorts và chỗ chờ), anon gọi được (dữ liệu công khai).
 
 ## Trigger
 
@@ -384,16 +390,16 @@ Migration `supabase/migrations/20261110120000_admin_access_official.sql`, [ADR-0
   - không phải mã phổ biến, không toàn số, không chứa tên đăng nhập;
   - đổi mã khóa phải nhập mã hiện tại.
 
-## Bức tường Bộ Tộc, "Tối nay tôi có mặt", gộp `live_samples`
+## Bức tường Bộ Tộc, gộp `live_samples`
 
 Migration `supabase/migrations/20261110130000_wall_attendance_stats.sql`. Có assert trong `npm run db:check` (các mục "Wall messages", "Attendance", "live_samples compaction").
 
 | Bảng / hàm | Quy tắc |
 |---|---|
 | `wall_messages(body ≤ 140, approved)` | **Duyệt trước** (COMPONENTS.md §5). Fan chỉ ghi `body`. Giới hạn: 3 tin/ngày, tài khoản < 24 giờ 1 tin/ngày, toàn site 60 tin/giờ. Ký tự ẩn bị xóa trước khi đếm độ dài. Chỉ admin xóa được (tác giả xóa được thì sẽ lách giới hạn/ngày). Không duyệt được tin của người bị cấm hoặc cấm ngầm (`block_banned_approval`). |
-| `attendance(date_vn, user_id)` | Mỗi fan bấm 1 lần cho **hôm nay theo giờ VN** (`today_vn()`), bấm lại để bỏ. Fan chỉ thấy lượt của mình; tổng công khai qua `attendance_count(date)`. Lượt của người bị cấm ngầm "thành công" nhưng không được lưu. Khách chưa đăng nhập chỉ lưu trên thiết bị (localStorage), không tính vào tổng. |
-| `compact_live_samples()` | Mẫu cũ hơn 30 ngày: giữ 1 mẫu mỗi 5 phút cho mỗi video. Chạy hằng ngày bằng pg_cron (`supabase/cron.sql`), chỉ là SQL, không tốn quota YouTube. API không gọi được. |
-| `moderate_user` | Cấm / cấm ngầm còn gỡ duyệt mọi tin trên tường và xóa lượt điểm danh. |
+| ~~`attendance(date_vn, user_id)`~~ | **Đã xóa** (ADR-019, `20261111150000_drop_room_and_rsvp.sql`) cùng `attendance_count()` và trigger. |
+| `compact_live_samples()` | (Từ ADR-019 poll-live không ghi mẫu mới; hàm giữ lại cho dữ liệu cũ.) Mẫu cũ hơn 30 ngày: giữ 1 mẫu mỗi 5 phút cho mỗi video. Chạy hằng ngày bằng pg_cron (`supabase/cron.sql`), chỉ là SQL, không tốn quota YouTube. API không gọi được. |
+| `moderate_user` | Cấm / cấm ngầm còn gỡ duyệt mọi tin trên tường. |
 
 Chấp nhận theo thiết kế (đã qua review):
 - Người bị cấm ngầm có thể nhận ra mình bị cấm, vì lượt điểm danh "thành công" nhưng tải lại trang thì mất. Phiếu vote bị cấm ngầm cũng có hành vi tương tự.

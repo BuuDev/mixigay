@@ -35,8 +35,8 @@ Trang đi theo hướng **chỉ dẫn link về kênh gốc**: lượt xem, ủn
 | # | Tính năng | Ưu tiên | Trạng thái | Ghi chú |
 |---|---|---|---|---|
 | F1 | Lịch stream tuần (giờ VN + giờ địa phương người xem) | P0 | UI xong (mock) | Admin nhập lịch |
-| F2 | Trạng thái live / sắp live realtime + đếm ngược | P0 | UI xong (mock) | Poll YouTube + Supabase Realtime |
-| F3 | Card live: tiêu đề, thumbnail, số người xem, mở YouTube | P0 | UI xong (mock) | |
+| F2 | Trạng thái live / sắp live + đếm ngược | P0 | Xong | Poll YouTube theo hẹn giờ, tab đọc `/api/live` (ADR-019) |
+| F3 | Card live: tiêu đề, thumbnail, mở YouTube | P0 | Xong | Không hiện số người xem (ADR-019) |
 | F4 | Video theo game, sắp xếp theo lượt xem / mới nhất, mục "Chưa phân loại" | P0 | UI xong (mock) | Phân loại: nhãn tay → playlist → từ khóa |
 | F5 | Vlog (một "game" đặc biệt `isVlog`) | P0 | UI xong (mock) | |
 | F6 | Đề xuất game: đăng nhập (tên + mã khóa), upvote, trạng thái, gợi ý trùng | P0 | UI xong (lưu tạm trình duyệt) | |
@@ -46,7 +46,7 @@ Trang đi theo hướng **chỉ dẫn link về kênh gốc**: lượt xem, ủn
 | F10 | Thông báo khi lên sóng: bot Telegram / Discord | P1 | Chưa | Tính năng fan dùng nhiều nhất |
 | F11 | PWA + dark mode | P1 | Chưa | |
 | F12 | ~~Web Push~~ | – | Bỏ | YouTube đã báo live realtime ([ADR-015](08-decisions.md#adr-015)) |
-| F13 | Thống kê stream: người xem theo giờ, giờ lên sóng TB theo thứ, chuỗi ngày stream | P1 | Chưa | Dữ liệu có sẵn từ job poll |
+| F13 | ~~Thống kê người xem theo giờ~~ | – | Bỏ | Chỉ kiểm tra đầu ca và kết ca nên không có dữ liệu ([ADR-019](08-decisions.md#adr-019)) |
 | F14 | Kho quote/meme theo timestamp (link `&t=…s`) | P2 | Chưa | Cần kiểm duyệt |
 | F15 | Fan art gallery, duyệt trước | P2 | Chưa | Cần storage + kiểm duyệt |
 

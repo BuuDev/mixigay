@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import { useRef } from "react";
 import { cn } from "@/shared/ui/cn";
 import { m, useReducedMotion, useScroll, useTransform } from "@/shared/motion";

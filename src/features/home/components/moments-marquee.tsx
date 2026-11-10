@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import { formatViews } from "@/shared/lib/format";
 import { youtubeUrl } from "@/shared/lib/links";
 import { MIN_ROW, type Moment, type MomentRows } from "../lib/moments";

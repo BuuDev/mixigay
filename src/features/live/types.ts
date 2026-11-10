@@ -6,8 +6,9 @@ export interface LiveStatus {
   title?: string;
   /** ISO time; for "upcoming" it is the scheduled start, for "live" the actual start. */
   startTime?: string;
-  concurrentViewers?: number;
   thumbnailUrl?: string;
-  /** ISO time of the last poll against YouTube. */
+  /** ISO time live_status last changed. */
   checkedAt: string;
+  /** ISO time of poll-live's next check: browsers re-read the state only then (ADR-019). */
+  nextCheckAt?: string;
 }

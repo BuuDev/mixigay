@@ -25,10 +25,10 @@ export function Badge({ tone = "muted", icon, className, children }: { tone?: Ba
 }
 
 /** "ĐANG LIVE · 12.400" — the only place the live colour is used as a fill. */
-export function LiveBadge({ viewers }: { viewers?: string }) {
+export function LiveBadge() {
   return (
     <Badge tone="live" icon={<LiveDot className="text-white" />}>
-      ĐANG LIVE{viewers && ` · ${viewers}`}
+      ĐANG LIVE
     </Badge>
   );
 }

@@ -8,18 +8,23 @@ import { ServiceWorkerRegister } from "@/features/pwa/components/service-worker-
 import { SeasonalSkin } from "@/features/themes/components/seasonal-skin";
 import { BottomNav } from "@/shared/layout/bottom-nav";
 import { SiteFooter } from "@/shared/layout/site-footer";
+import { NavProgress } from "@/shared/layout/nav-progress";
 import { SiteHeader } from "@/shared/layout/site-header";
 import { SITE_URL } from "@/shared/lib/links";
 import { MotionProvider } from "@/shared/motion/motion-provider";
 import "./globals.css";
 
+// Three weights, not six: every static weight is one file per subset (it was ~20 font
+// requests a page view, ADR-019). font-medium/semibold/extrabold resolve to the nearest
+// loaded weight (400 / 700 / 900), so nothing is faux-bolded.
 const beVietnam = Be_Vietnam_Pro({
   variable: "--font-be-vietnam",
   subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "700", "900"],
 });
 // Handwritten lines of an invitation (section eyebrows, polaroid captions) — never body text.
-const script = Dancing_Script({ variable: "--font-dancing", subsets: ["latin", "vietnamese"], weight: ["600", "700"], display: "swap" });
+// Variable font: one file per subset covers 600 and 700.
+const script = Dancing_Script({ variable: "--font-dancing", subsets: ["latin", "vietnamese"], display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -33,6 +38,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="vi" className={`${beVietnam.variable} ${script.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
+        {/* Reads the URL, so it sits in its own Suspense and never makes the shell dynamic. */}
+        <Suspense fallback={null}>
+          <NavProgress />
+        </Suspense>
         <MotionProvider>
           <SiteHeader
             account={

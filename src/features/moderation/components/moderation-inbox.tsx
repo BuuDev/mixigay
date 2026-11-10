@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import Link from "next/link";
 import { ScreenFlags } from "@/features/admin/components/user-moderation";
 import { button, input, primary, Section } from "@/features/admin/ui";

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import { ArchPortrait } from "@/features/album/components/arch-portrait";
 import { HERO_PHOTO } from "@/features/album/lib/photos";
 import { LiveHero } from "@/features/live/components/live-hero";
@@ -10,9 +10,7 @@ import { formatViews } from "@/shared/lib/format";
 const count = new Intl.NumberFormat("vi-VN");
 
 const INTERACT = [
-  { emoji: "🔥", label: "Thả cảm xúc cùng anh em", href: "#tuong-tac" },
   { emoji: "🗳️", label: "Bình chọn", href: "#tuong-tac" },
-  { emoji: "✋", label: "Tối nay tôi có mặt", href: "#tuong-tac" },
   { emoji: "✍️", label: "Góp sức", href: "#gop-suc" },
 ] as const;
 
@@ -73,7 +71,10 @@ export function HeroCover({
                 href={c.href}
                 className="group inline-flex min-h-10 items-center gap-1.5 rounded-pill border border-border bg-surface/70 px-3.5 py-1.5 text-sm font-semibold text-foreground transition-[transform,background-color,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent hover:bg-surface-raised motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               >
-                <span aria-hidden className="transition-transform duration-200 group-hover:scale-125 motion-reduce:transition-none motion-reduce:group-hover:scale-100">
+                <span
+                  aria-hidden
+                  className="transition-transform duration-200 group-hover:scale-125 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                >
                   {c.emoji}
                 </span>
                 {c.label}

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import { formatDate, formatDuration, formatViews } from "@/shared/lib/format";
 import { youtubeUrl } from "@/shared/lib/links";
 import { Illustration } from "@/shared/ui/brand-art";

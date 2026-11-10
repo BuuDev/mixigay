@@ -13,7 +13,7 @@ import type { GlossaryEntry } from "../types";
 export async function getGlossaryEntries(): Promise<GlossaryEntry[]> {
   "use cache";
   cacheTag(TAGS.glossary);
-  cacheLife("minutes");
+  cacheLife("hours"); // invalidated by its tag on every write; "minutes" re-rendered pages every 60 s (ADR-019)
   if (!isSupabaseConfigured) return mock.glossaryEntries;
   const rows = check<GlossaryRow[]>(
     await publicClient().from("glossary_entries").select(GLOSSARY_SELECT).eq("approved", true).order("created_at", { ascending: true }).limit(200),

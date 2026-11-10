@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import { ViewTransition, type ReactNode } from "react";
 import type { Series } from "../lib/series";
 

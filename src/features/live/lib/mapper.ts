@@ -10,14 +10,14 @@ export interface LiveStatusRow {
   checked_at: string | null;
 }
 
-export function mapLiveStatus(r: LiveStatusRow): LiveStatus {
+export function mapLiveStatus(r: LiveStatusRow, nextCheckAt?: string | null): LiveStatus {
   return {
     state: r.state,
     videoId: r.video_id ?? undefined,
     title: r.title ?? undefined,
     startTime: r.start_time ?? undefined,
-    concurrentViewers: r.concurrent_viewers ?? undefined,
     thumbnailUrl: r.video_id ? thumbnailFor(r.video_id) : undefined,
     checkedAt: r.checked_at ?? new Date(0).toISOString(),
+    ...(nextCheckAt ? { nextCheckAt } : {}),
   };
 }

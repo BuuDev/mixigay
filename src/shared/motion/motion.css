@@ -34,6 +34,9 @@
   --animate-td-flicker: td-flicker 1.4s ease-in-out infinite;
   --animate-td-kenburns: td-kenburns 18s ease-in-out infinite alternate;
   --animate-td-sheen: td-sheen 5s ease-in-out infinite;
+  --animate-td-spin: td-spin 0.8s linear infinite;
+  --animate-td-shimmer: td-shimmer 1.4s ease-in-out infinite;
+  --animate-td-progress: td-progress 8s var(--td-ease-out) forwards;
 }
 
 /* Live badge pulse */
@@ -335,5 +338,32 @@ html[data-overlay] .td-bottom-nav {
   .td-marquee:hover .td-marquee-track,
   .td-marquee:focus-within .td-marquee-track {
     animation-play-state: paused;
+  }
+}
+
+/* Loading feedback (filters, navigation). Transform/opacity only; reduced motion keeps a static state. */
+@keyframes td-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes td-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+/* Top navigation bar: races to ~85 % and waits there until the page arrives. */
+@keyframes td-progress {
+  0% {
+    transform: scaleX(0);
+  }
+  20% {
+    transform: scaleX(0.45);
+  }
+  100% {
+    transform: scaleX(0.85);
   }
 }

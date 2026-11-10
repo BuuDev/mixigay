@@ -1,11 +1,11 @@
-import Image from "next/image";
-import Link from "next/link";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import { formatDate } from "@/shared/lib/format";
 import { OFFICIAL_CHANNEL_URL, youtubeUrl } from "@/shared/lib/links";
 import { chipClass } from "@/shared/ui/chip";
 import type { GameCover } from "../lib/game-cover";
 import { PAGE, MAX_LIMIT, videoHref, type VideoQuery, type VideoTab } from "../lib/video-query";
 import type { ClassifiedVideo, Game } from "../types";
+import { FilterLink, FilterResults, FilterTransition } from "./filter-transition";
 import { VideoGrid } from "./video-grid";
 
 const SORTS: { value: VideoQuery["sort"]; label: string }[] = [
@@ -15,7 +15,8 @@ const SORTS: { value: VideoQuery["sort"]; label: string }[] = [
 
 /**
  * Server-rendered filter bar + one page of cards. Filters are plain links (?game=&sort=&n=),
- * so they work without JavaScript and only the visible cards are sent to the browser.
+ * so they work without JavaScript and only the visible cards are sent to the browser; with
+ * JavaScript they load in place with a spinner and dimmed cards (FilterTransition).
  */
 export function VideoBrowser({
   query,
@@ -35,50 +36,46 @@ export function VideoBrowser({
   const selected = tabs.find((t) => t.slug === query.game);
   const canMore = items.length < total && query.limit < MAX_LIMIT;
   return (
-    <div>
+    <FilterTransition>
       <nav aria-label="Lọc video theo game" className="flex flex-wrap items-center gap-2">
         {tabs.map((t) => (
-          <Link
+          <FilterLink
             key={t.slug}
             href={videoHref({ ...query, game: t.slug, limit: PAGE })}
-            scroll={false}
             aria-current={query.game === t.slug ? "page" : undefined}
             className={chipClass(query.game === t.slug)}
           >
             {t.label} <span className="font-normal">{t.count}</span>
-          </Link>
+          </FilterLink>
         ))}
         <span className="ml-auto flex gap-1" role="group" aria-label="Sắp xếp">
           {SORTS.map((s) => (
-            <Link
+            <FilterLink
               key={s.value}
               href={videoHref({ ...query, sort: s.value, limit: PAGE })}
-              scroll={false}
               aria-current={query.sort === s.value ? "true" : undefined}
               className={chipClass(query.sort === s.value, "text-xs")}
             >
               {s.label}
-            </Link>
+            </FilterLink>
           ))}
         </span>
       </nav>
-      {selected && cover && <GameBanner name={selected.label} count={total} cover={cover} />}
-      <h2 className="sr-only">Danh sách video</h2>
-      <div className="mt-4">
-        <VideoGrid videos={items} games={games} animationKey={`${query.game}-${query.sort}`} />
-      </div>
+      <FilterResults>
+        {selected && cover && <GameBanner name={selected.label} count={total} cover={cover} />}
+        <h2 className="sr-only">Danh sách video</h2>
+        <div className="mt-4">
+          <VideoGrid videos={items} games={games} animationKey={`${query.game}-${query.sort}`} />
+        </div>
+      </FilterResults>
       <div className="mt-6 flex flex-col items-center gap-2 text-sm text-muted">
         <p>
           Đang xem {items.length} / {total} video
         </p>
         {canMore && (
-          <Link
-            href={videoHref({ ...query, limit: query.limit + PAGE })}
-            scroll={false}
-            className={chipClass(false, "px-5 py-2 font-semibold text-foreground")}
-          >
+          <FilterLink href={videoHref({ ...query, limit: query.limit + PAGE })} className={chipClass(false, "px-5 py-2 font-semibold text-foreground")}>
             Xem thêm {Math.min(PAGE, total - items.length)} video
-          </Link>
+          </FilterLink>
         )}
         {!canMore && items.length < total && (
           <p>
@@ -90,7 +87,7 @@ export function VideoBrowser({
           </p>
         )}
       </div>
-    </div>
+    </FilterTransition>
   );
 }
 

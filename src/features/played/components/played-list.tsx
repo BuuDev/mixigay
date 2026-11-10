@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import type { Suggestion } from "@/features/suggestions/types";
 import type { GameCover } from "@/features/videos/lib/game-cover";
 import type { Game } from "@/features/videos/types";

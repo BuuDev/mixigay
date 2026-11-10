@@ -13,11 +13,12 @@ export const TAGS = {
   fanArt: "fan-art",
   quiz: "quiz",
   wall: "wall",
-  attendance: "attendance",
   quotes: "quotes",
   glossary: "glossary",
   tournaments: "tournaments",
   themes: "themes",
   blockedTerms: "blocked-terms",
   polls: "polls",
+  /** Only /api/live: poll-live's next check time, refreshed after every check (ADR-019). */
+  liveTimer: "live-timer",
 } as const;

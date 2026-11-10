@@ -5,6 +5,5 @@ export const liveStatus: LiveStatus = {
   videoId: "demoLive001",
   title: "Live tối nay – Delta Force cùng anh em Refund (dữ liệu mẫu)",
   startTime: "2026-11-09T15:22:00Z",
-  concurrentViewers: 48213,
   checkedAt: "2026-11-09T14:58:00Z",
 };

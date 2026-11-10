@@ -25,8 +25,8 @@ function pickView(status: LiveStatus, schedule: ScheduleSlot[], now: Date | null
 
 /**
  * The status block: live now → upcoming premiere → countdown to the next
- * scheduled slot → day off. Starts from the server's status and follows Supabase
- * Realtime; each change cross-fades (AnimatePresence) instead of jumping.
+ * scheduled slot → day off. Starts from the server's status and re-reads it when the
+ * server's next check is due (useLiveStatus, ADR-019); each change cross-fades (AnimatePresence) instead of jumping.
  * `embers` adds the background particles (home page only, spec §10).
  */
 export function LiveHero({

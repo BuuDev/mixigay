@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { SmartImage as Image } from "@/shared/ui/smart-image";
 import { getGames } from "@/features/videos/server/queries";
 import { ScreenFlags, UserModeration } from "@/features/admin/components/user-moderation";
 import { formatDate } from "@/shared/lib/format";
