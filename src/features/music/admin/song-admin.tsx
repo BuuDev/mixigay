@@ -3,6 +3,7 @@ import { ScreenFlags, UserModeration } from "@/features/admin/components/user-mo
 import { formatDate } from "@/shared/lib/format";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { serverClient } from "@/server/supabase/server";
+import { PENDING_FIRST, RejectedBadge, REJECTED_COLUMNS, type RejectedFields } from "@/features/moderation/components/rejected-badge";
 import { PLATFORM_LABEL, songPlatform } from "../lib/song-url";
 import { deleteSong, refetchSongCover, setSongApproved } from "./actions";
 
@@ -11,11 +12,12 @@ export async function SongAdmin() {
   const supabase = await serverClient();
   const { data } = await supabase
     .from("fan_songs")
-    .select("id,author_id,title,artist,url,note,approved,created_at,thumbnail_url")
+    .select(`id,author_id,title,artist,url,note,approved,created_at,thumbnail_url,${REJECTED_COLUMNS}`)
     .order("approved")
+    .order("rejected_at", PENDING_FIRST)
     .order("created_at", { ascending: false })
     .limit(300);
-  const rows = (data ?? []) as {
+  const rows = (data ?? []) as unknown as (RejectedFields & {
     id: string;
     author_id: string;
     title: string;
@@ -25,7 +27,7 @@ export async function SongAdmin() {
     approved: boolean;
     created_at: string;
     thumbnail_url: string | null;
-  }[];
+  })[];
   return (
     <Section title="Nhạc nịnh – duyệt bài">
       <p className="text-xs text-muted">
@@ -37,12 +39,13 @@ export async function SongAdmin() {
           return (
             <li key={s.id} className="flex flex-wrap items-center gap-3 py-2">
               <span className="min-w-0 flex-1">
+                <RejectedBadge row={s} />
                 <a href={s.url} target="_blank" rel="noopener noreferrer nofollow ugc" className="font-semibold hover:underline">
                   {s.title}
                 </a>{" "}
                 <span className="text-muted">
-                  — {s.artist} · {platform ? PLATFORM_LABEL[platform] : "link lạ"} · {formatDate(s.created_at)} · {s.approved ? "đã duyệt" : "chờ duyệt"} ·{" "}
-                  {s.thumbnail_url ? "có ảnh bìa" : "chưa có ảnh bìa"}
+                  — {s.artist} · {platform ? PLATFORM_LABEL[platform] : "link lạ"} · {formatDate(s.created_at)} ·{" "}
+                  {s.approved ? "đã duyệt" : s.rejected_at ? "đã từ chối" : "chờ duyệt"} · {s.thumbnail_url ? "có ảnh bìa" : "chưa có ảnh bìa"}
                 </span>
                 <ScreenFlags flags={screenText([s.title, s.artist, s.note]).flags} />
                 {s.note && <span className="block text-xs text-muted">{s.note}</span>}

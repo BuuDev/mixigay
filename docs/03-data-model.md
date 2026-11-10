@@ -231,6 +231,8 @@ create table quiz_links (               -- quiz fan làm sẵn (Kahoot, Waygroun
 | quotes | mọi người (`approved = true`), tác giả thấy của mình, admin thấy hết | đăng nhập, `author_id = auth.uid()`, `approved = false` | admin | admin (tác giả muốn gỡ thì báo admin) |
 | fan_songs, fan_art, quiz_links | `approved`, hoặc tác giả, hoặc admin | đăng nhập, không bị cấm, `author_id = auth.uid()`, `approved = false`, giới hạn ở trigger | admin | **chỉ admin** |
 | banned_image_hashes | admin | admin | – | admin |
+| moderation_log | admin | – (chỉ trigger `log_content_moderation` và `moderate_user`, security definer) | – | – |
+| blocked_terms | admin | admin | – | admin (server đọc bằng service role) |
 | api_usage | admin | – (service role qua `add_api_usage`) | – | – |
 | admins | chính mình | – | – | – |
 | notifications_log, admin_alerts, account_logins, invites, auth_attempts | – (chỉ service role) | – | – | – |
@@ -383,3 +385,18 @@ Chấp nhận theo thiết kế (đã qua review):
 - Người bị cấm ngầm có thể nhận ra mình bị cấm, vì lượt điểm danh "thành công" nhưng tải lại trang thì mất. Phiếu vote bị cấm ngầm cũng có hành vi tương tự.
 - Một nhóm tài khoản có thể làm đầy giới hạn 60 tin/giờ toàn site của Bức tường. Cấm hoặc cấm ngầm các tài khoản đó sẽ trả lại hạn mức, vì giới hạn chỉ đếm tác giả có `trust ≥ 0`.
 
+## Trung tâm kiểm duyệt (20261110200000)
+
+Migration `supabase/migrations/20261110200000_moderation_center.sql`. Có assert trong `npm run db:check` (mục "Moderation center (20261110200000)" và "Blocked terms").
+
+**Từ chối thay vì xóa.** Giới hạn/ngày đếm các dòng đang có, nên xóa bài rác là trả lại hạn mức cho người spam. Bài bị từ chối vẫn nằm trong bảng, vẫn bị đếm, chỉ tác giả và admin thấy.
+
+| Thành phần | Quy tắc |
+|---|---|
+| `rejected_at timestamptz`, `rejected_reason text (≤ 300)` | Có trên 7 bảng: `suggestions`, `fan_songs`, `fan_art`, `quiz_links`, `quotes`, `glossary_entries`, `wall_messages`. **Không** có trong column grant insert của fan; admin đặt qua policy `*_admin_update` sẵn có (cả 7 bảng đều grant update toàn bảng cho `authenticated`, policy giới hạn admin). Check `<bảng>_rejected_not_approved`: `rejected_at is null or not approved`. |
+| Trigger `clear_rejection_on_approve()` | BEFORE UPDATE (`<bảng>_clear_rejection`). Đặt `rejected_at` mới → ép `approved = false`. Duyệt (`approved` false→true) một bài đã bị từ chối → xóa `rejected_at`, `rejected_reason`. |
+| "Chờ duyệt" | `approved = false and rejected_at is null` (riêng `suggestions`: thêm `and not hidden`). Partial index `<bảng>_pending_idx (created_at desc)` cho hàng đợi. |
+| `moderation_log(id, kind, target_id, author_id, actor_id, action, reason, snapshot, created_at)` | `kind`: `suggestion`, `fan_song`, `fan_art`, `quiz_link`, `quote`, `glossary_entry`, `wall_message`, `profile`. `action`: `approve`, `unapprove`, `reject`, `delete`, `ban`, `shadow`, `unban`. `reason` ≤ 300, `snapshot` ≤ 200 (cắt từ cột nội dung lúc ghi). `actor_id = auth.uid()` (null nếu là job service role). RLS: chỉ admin đọc; không ai insert/update/delete trực tiếp, kể cả admin. Index `(created_at desc)`, `(author_id, created_at desc)`, `(target_id)`. |
+| Trigger `log_content_moderation(kind, cột snapshot)` | AFTER UPDATE OF `approved, rejected_at` OR DELETE trên 7 bảng (`<bảng>_log_moderation`). Cột snapshot: suggestions→`name`, fan_songs/fan_art/quiz_links→`title`, quotes/wall_messages→`body`, glossary_entries→`term`. DELETE→`delete`; `rejected_at` null→có→`reject` (`reason = rejected_reason`); `approved` false→true→`approve`; true→false không kèm từ chối mới→`unapprove`. Bỏ qua khi `app.moderation_bulk = 'on'` và khi bài bị xóa dây chuyền do tài khoản tác giả bị xóa. |
+| `moderate_user(uid, mode)` | Giữ nguyên hành vi, thêm đúng **một** dòng log `kind = 'profile'`, `target_id = author_id = uid`, `action = mode`. Đặt `app.moderation_bulk = 'on'` (local trong transaction) trước các lệnh gỡ hàng loạt, nên cấm một người không sinh hàng trăm dòng log. |
+| `blocked_terms(term, category, created_by, created_at)` | `term` viết thường, 2–60 ký tự (PK); `category`: `gambling`, `profanity`, `spam`. RLS: chỉ admin đọc/thêm/xóa. Server app đọc bằng service role; **không công khai**, để người spam không đọc được danh sách mà lách. |

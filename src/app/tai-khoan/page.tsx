@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { MySubmissions } from "@/features/account/components/my-submissions";
 import { signOut } from "@/features/auth/actions";
 import { PassphraseForm } from "@/features/auth/components/passphrase-form";
 import { getViewer } from "@/features/auth/server/viewer";
@@ -37,6 +38,9 @@ async function Account() {
       <Card className="p-5">
         <h2 className="mb-3 font-semibold">Đổi mã khóa</h2>
         <PassphraseForm />
+      </Card>
+      <Card className="p-5">
+        <MySubmissions userId={viewer.id} />
       </Card>
       <form action={signOut}>
         <Button variant="secondary">Thoát tài khoản</Button>

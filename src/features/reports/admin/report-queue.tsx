@@ -28,11 +28,13 @@ interface Group {
  */
 export async function ReportQueue() {
   const supabase = await serverClient();
-  const [reports, pendingSuggestions, pendingSongs] = await Promise.all([
-    supabase.from("reports").select("target_kind,target_id,reason,created_at").eq("resolved", false).order("created_at", { ascending: false }).limit(500),
-    supabase.from("suggestions").select("id", { count: "exact", head: true }).eq("approved", false).eq("hidden", false),
-    supabase.from("fan_songs").select("id", { count: "exact", head: true }).eq("approved", false),
-  ]);
+  // Pending counts per kind live in the "Hàng chờ" grid and /admin/duyet; this card is reports only.
+  const reports = await supabase
+    .from("reports")
+    .select("target_kind,target_id,reason,created_at")
+    .eq("resolved", false)
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   const groups = new Map<string, Group>();
   for (const r of (reports.data ?? []) as Row[]) {
@@ -70,16 +72,11 @@ export async function ReportQueue() {
   ]);
 
   return (
-    <Section title="Hàng đợi duyệt">
+    <Section title="Báo cáo của fan">
       <ul className="flex flex-wrap gap-2 text-sm">
         <li>
-          <Link href="/admin/de-xuat" className={button}>
-            {pendingSuggestions.count ?? 0} đề xuất chờ duyệt
-          </Link>
-        </li>
-        <li>
-          <Link href="/admin/nhac" className={button}>
-            {pendingSongs.count ?? 0} bài nhạc chờ duyệt
+          <Link href="/admin/duyet" className={button}>
+            Mở hộp duyệt
           </Link>
         </li>
         <li className="self-center text-muted">{groups.size} mục bị báo cáo</li>

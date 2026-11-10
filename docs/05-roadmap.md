@@ -147,6 +147,7 @@ Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mas
 - [x] Ảnh nền game lấy từ thumbnail buổi stream mới nhất của game đó (`gameCovers`, không tốn quota) ở `/da-choi`, đề xuất game, `/video`
 - [x] Ảnh bìa bài nhạc nịnh (`fan_songs.thumbnail_url`, lấy từ oEmbed SoundCloud/Spotify hoặc thumbnail YouTube lúc gửi)
 - [x] Ảnh game đề xuất lưu ở Supabase Storage của mình (bucket `game-art`): ảnh Steam tải về một lần, fan tải thumbnail cho game không có trên Steam (sharp làm sạch, chặn theo mã băm, quét Google Vision tùy chọn, admin xem/gỡ/chặn ở `/admin/de-xuat`); **(cần bạn, tùy chọn)** bật Cloud Vision API và điền `GOOGLE_VISION_API_KEY`
+- [x] Trung tâm kiểm duyệt: hộp duyệt chung `/admin/duyet` (7 loại nội dung, từ chối kèm lý do thay vì xóa, duyệt/từ chối hàng loạt, cấm tác giả), số chờ duyệt trên menu admin, nhật ký `/admin/nhat-ky`, người dùng `/admin/nguoi-dung`, từ khóa chặn `/admin/tu-khoa` (áp dụng ngay cho mọi form), "Nội dung của bạn" ở `/tai-khoan` (migration 20261110200000, 20261110210000)
 
 ---
 

@@ -4,6 +4,7 @@ import { LORE } from "@/features/tribe/lib/lore";
 import { formatDate } from "@/shared/lib/format";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { serverClient } from "@/server/supabase/server";
+import { PENDING_FIRST, RejectedBadge, REJECTED_COLUMNS, type RejectedFields } from "@/features/moderation/components/rejected-badge";
 import { GLOSSARY_SELECT, type GlossaryRow } from "../lib/mapper";
 import { checkSourceUrl } from "../lib/source";
 import { withoutCuratedTerms } from "../lib/terms";
@@ -14,8 +15,14 @@ const CURATED_TERMS = LORE.map((e) => e.term);
 /** Moderation queue for fan-contributed glossary entries: pending first, newest first. */
 export async function GlossaryAdmin() {
   const supabase = await serverClient();
-  const { data } = await supabase.from("glossary_entries").select(GLOSSARY_SELECT).order("approved").order("created_at", { ascending: false }).limit(300);
-  const rows = (data ?? []) as unknown as (GlossaryRow & { author_id: string })[];
+  const { data } = await supabase
+    .from("glossary_entries")
+    .select(`${GLOSSARY_SELECT},${REJECTED_COLUMNS}`)
+    .order("approved")
+    .order("rejected_at", PENDING_FIRST)
+    .order("created_at", { ascending: false })
+    .limit(300);
+  const rows = (data ?? []) as unknown as (GlossaryRow & RejectedFields & { author_id: string })[];
   return (
     <Section title="Từ điển – duyệt từ fan góp">
       <p className="text-xs text-muted">
@@ -30,10 +37,12 @@ export async function GlossaryAdmin() {
             <li key={g.id} className="flex flex-wrap items-center gap-3 py-2">
               <span className="min-w-0 flex-1 space-y-1">
                 <span className="block">
-                  {!g.approved && <span className="mr-1 rounded bg-accent/20 px-1.5 text-xs font-semibold">chờ duyệt</span>}
+                  <RejectedBadge row={g} />
+                  {!g.approved && !g.rejected_at && <span className="mr-1 rounded bg-accent/20 px-1.5 text-xs font-semibold">chờ duyệt</span>}
                   <span className="text-muted">
                     {g.profiles?.display_name ?? "Fan"}
-                    {g.profiles?.verified && " ✓ Chính chủ"} · {formatDate(g.created_at)} · {g.approved ? "đã duyệt" : "chờ duyệt"}
+                    {g.profiles?.verified && " ✓ Chính chủ"} · {formatDate(g.created_at)} ·{" "}
+                    {g.approved ? "đã duyệt" : g.rejected_at ? "đã từ chối" : "chờ duyệt"}
                   </span>
                   <ScreenFlags flags={screenText([g.term, g.meaning]).flags} />
                   {clashes && <span className="ml-1 rounded bg-live/15 px-1.5 text-xs font-semibold text-live-text">⚠ trùng mục có sẵn</span>}

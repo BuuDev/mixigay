@@ -2,6 +2,7 @@ import { ScreenFlags, UserModeration } from "@/features/admin/components/user-mo
 import { button, input, primary, Section } from "@/features/admin/ui";
 import { formatClock } from "@/features/quotes/lib/moment";
 import { serverClient } from "@/server/supabase/server";
+import { PENDING_FIRST, RejectedBadge, REJECTED_COLUMNS, type RejectedFields } from "@/features/moderation/components/rejected-badge";
 import { formatDate } from "@/shared/lib/format";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { mapQuizLinks, QUIZ_LINK_SELECT, type QuizLinkRow } from "../lib/mapper";
@@ -32,9 +33,18 @@ function LinkSummary({ link: l }: { link: QuizLink }) {
 /** Moderation for the quiz-link board: pending queue, then approved links with the "anh Độ đã chơi" moment. */
 export async function QuizAdmin() {
   const supabase = await serverClient();
-  const { data } = await supabase.from("quiz_links").select(QUIZ_LINK_SELECT).order("approved").order("created_at", { ascending: false }).limit(300);
-  const links = mapQuizLinks((data ?? []) as unknown as QuizLinkRow[]);
-  const pending = links.filter((l) => !l.approved);
+  const { data } = await supabase
+    .from("quiz_links")
+    .select(`${QUIZ_LINK_SELECT},${REJECTED_COLUMNS}`)
+    .order("approved")
+    .order("rejected_at", PENDING_FIRST)
+    .order("created_at", { ascending: false })
+    .limit(300);
+  const raw = (data ?? []) as unknown as (QuizLinkRow & RejectedFields)[];
+  const rejectedRows = new Map(raw.filter((r) => r.rejected_at).map((r) => [r.id, r]));
+  const links = mapQuizLinks(raw);
+  const pending = links.filter((l) => !l.approved && !rejectedRows.has(l.id));
+  const rejected = links.filter((l) => !l.approved && rejectedRows.has(l.id));
   const approved = links.filter((l) => l.approved);
 
   return (
@@ -61,6 +71,22 @@ export async function QuizAdmin() {
           {!pending.length && <li className="py-2 text-muted">Không có link nào chờ duyệt.</li>}
         </ul>
       </Section>
+
+      {rejected.length > 0 && (
+        <Section title="Link đã từ chối">
+          <ul className="divide-y divide-border text-sm">
+            {rejected.map((l) => (
+              <li key={l.id} className="flex flex-wrap items-center gap-2 py-1">
+                <RejectedBadge row={rejectedRows.get(l.id) ?? {}} />
+                <span className="min-w-0 flex-1 truncate">{l.title}</span>
+                <form action={setQuizLinkApproved.bind(null, l.id, true)}>
+                  <button className={button}>Duyệt lại</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
 
       <Section title="Quiz đã duyệt – đánh dấu anh Độ đã chơi">
         <p className="text-xs text-muted">

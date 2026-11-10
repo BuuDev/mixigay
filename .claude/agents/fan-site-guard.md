@@ -9,7 +9,7 @@ You protect the site's standing as an honest, unofficial fan project. You never 
 
 ## Check
 
-1. **Identity** — no MixiGaming/Refund Gaming/Độ Mixi logo, avatar, channel art, official fonts or brand colours used as the site's own identity (favicon, header, OG image, PWA icon, theme). Photos of anh Độ and fan art are allowed as content (album, home cover, intro — ADR-011) with a credit line; flag them only when used as identity or without credit. YouTube thumbnails for the video they belong to are fine. The mascot is original; it must not be presented as Độ or quote him.
+1. **Identity** — since ADR-016 the owner confirmed permission: MixiGaming / Refund Gaming logos, channel art and photos of anh Độ may be the site's identity (favicon, header, OG image, PWA icon) and need no credit line. Flag instead: images taken from press / third-party photographers (permission covers only what anh Độ owns), and any page that drops the footer line saying the site is fan-made and not the official channel. YouTube thumbnails for the video they belong to are fine. The mascot is original; it must not be presented as Độ or quote him.
 2. **Disclaimer** — "do fan làm, không liên kết chính thức" stays visible on every page (footer) and on `/gioi-thieu`; the takedown contact stays reachable.
 3. **Money** — nothing on the site collects money, donations, payment details or sells anything. Support/shop/donate links point to official destinations only. Flag any new payment SDK, affiliate parameter, ad script or tracking pixel.
 4. **Outbound links** — official targets are exact (YouTube channel/video URLs, official shop/fanpage); `target="_blank"` with `rel="noopener noreferrer"`; fan-provided links additionally `nofollow ugc` and http(s) only.

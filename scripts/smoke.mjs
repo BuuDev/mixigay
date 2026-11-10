@@ -258,6 +258,10 @@ try {
     "Từ điển – duyệt từ fan góp",
     "Giải đấu – quản lý",
     "Skin theo dịp – lịch bật",
+    "Hộp duyệt – mọi nội dung fan gửi đang chờ",
+    "Nhật ký kiểm duyệt",
+    "Tìm theo tên hiển thị",
+    "Thêm từ khóa chặn",
   ];
   for (const path of [
     "/admin",
@@ -275,6 +279,10 @@ try {
     "/admin/tu-dien",
     "/admin/giai-dau",
     "/admin/skin",
+    "/admin/duyet",
+    "/admin/nhat-ky",
+    "/admin/nguoi-dung",
+    "/admin/tu-khoa",
   ]) {
     await expectBody(path, path, { has: ["Không tìm thấy trang này"], lacks: adminMarkers });
   }

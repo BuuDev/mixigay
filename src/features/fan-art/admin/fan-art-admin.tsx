@@ -1,6 +1,7 @@
 import { ScreenFlags, UserModeration } from "@/features/admin/components/user-moderation";
 import { button, primary, Section } from "@/features/admin/ui";
 import { serverClient } from "@/server/supabase/server";
+import { PENDING_FIRST, RejectedBadge, REJECTED_COLUMNS, type RejectedFields } from "@/features/moderation/components/rejected-badge";
 import { formatDate } from "@/shared/lib/format";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { driveImageUrl } from "../lib/drive";
@@ -11,12 +12,13 @@ export async function FanArtAdmin() {
   const supabase = await serverClient();
   const { data } = await supabase
     .from("fan_art")
-    .select("id,author_id,title,artist,drive_url,drive_file_id,note,approved,created_at")
+    .select(`id,author_id,title,artist,drive_url,drive_file_id,note,approved,created_at,${REJECTED_COLUMNS}`)
     .order("approved")
+    .order("rejected_at", PENDING_FIRST)
     .order("created_at", { ascending: false })
     .limit(200);
 
-  const rows = (data ?? []) as {
+  const rows = (data ?? []) as unknown as (RejectedFields & {
     id: string;
     author_id: string;
     title: string;
@@ -26,7 +28,7 @@ export async function FanArtAdmin() {
     note: string | null;
     approved: boolean;
     created_at: string;
-  }[];
+  })[];
 
   return (
     <Section title="Tranh Fan Art (Google Drive) – duyệt bài">
@@ -44,20 +46,15 @@ export async function FanArtAdmin() {
               title="Mở link Google Drive gốc"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={driveImageUrl(a.drive_file_id, 400)}
-                alt={a.title}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                className="size-full object-cover"
-              />
+              <img src={driveImageUrl(a.drive_file_id, 400)} alt={a.title} loading="lazy" referrerPolicy="no-referrer" className="size-full object-cover" />
             </a>
             <span className="min-w-0 flex-1">
+              <RejectedBadge row={a} />
               <a href={a.drive_url} target="_blank" rel="noopener noreferrer nofollow ugc" className="font-semibold hover:underline">
                 {a.title}
               </a>{" "}
               <span className="text-muted">
-                — {a.artist} · {formatDate(a.created_at)} · {a.approved ? "đã duyệt" : "chờ duyệt"}
+                — {a.artist} · {formatDate(a.created_at)} · {a.approved ? "đã duyệt" : a.rejected_at ? "đã từ chối" : "chờ duyệt"}
               </span>
               <ScreenFlags flags={screenText([a.title, a.artist, a.note]).flags} />
               {a.note && <span className="block text-xs text-muted">{a.note}</span>}
@@ -78,4 +75,3 @@ export async function FanArtAdmin() {
     </Section>
   );
 }
-

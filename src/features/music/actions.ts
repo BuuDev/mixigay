@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getViewer } from "@/features/auth/server/viewer";
 import { serverClient } from "@/server/supabase/server";
 import { TAGS } from "@/shared/lib/cache-tags";
+import { getBlockedTerms } from "@/features/admin/terms/server";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { songPlatform } from "./lib/song-url";
 import { fetchSongCover } from "./server/song-cover";
@@ -28,7 +29,7 @@ export async function submitSong(_prev: SongResult, formData: FormData): Promise
   const platform = songPlatform(url);
   if (!platform) return { ok: false, message: "Chỉ nhận link https từ YouTube, SoundCloud, TikTok, Spotify, Zing MP3, NhacCuaTui." };
   // Generic on purpose: never tell a spammer which word tripped the filter.
-  if (screenText([title, artist, note]).verdict === "block") {
+  if (screenText([title, artist, note], await getBlockedTerms()).verdict === "block") {
     return { ok: false, message: "Nội dung không phù hợp với Góc Bộ Tộc. Viết lại lịch sự, không kèm quảng cáo nhé." };
   }
 

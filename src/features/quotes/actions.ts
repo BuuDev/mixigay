@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { getViewer } from "@/features/auth/server/viewer";
 import { serverClient } from "@/server/supabase/server";
+import { getBlockedTerms } from "@/features/admin/terms/server";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { quoteInsertError } from "./lib/errors";
 import { QUOTE_MAX, QUOTE_MIN, quoteLength } from "./lib/limits";
@@ -48,7 +49,7 @@ export async function submitQuote(_prev: QuoteFormResult, formData: FormData): P
   const moment = resolveMoment(where, await quoteMaxSecondsLookup());
   if (!moment.ok) return moment;
   // Generic on purpose: never tell a spammer which word tripped the filter.
-  if (screenText([body]).verdict === "block") return { ok: false, message: REJECTED };
+  if (screenText([body], await getBlockedTerms()).verdict === "block") return { ok: false, message: REJECTED };
 
   // Fans may only write (video_id, at_seconds, body) (column grant + RLS + rate-limit trigger); author_id defaults to auth.uid().
   const supabase = await serverClient();

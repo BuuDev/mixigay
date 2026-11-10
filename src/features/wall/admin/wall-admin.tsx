@@ -3,6 +3,7 @@ import { ScreenFlags, UserModeration } from "@/features/admin/components/user-mo
 import { formatDate } from "@/shared/lib/format";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { serverClient } from "@/server/supabase/server";
+import { PENDING_FIRST, RejectedBadge, REJECTED_COLUMNS, type RejectedFields } from "@/features/moderation/components/rejected-badge";
 import { deleteWallMessage, setWallApproved } from "./actions";
 
 /** Moderation queue for the fan message wall: pending first, newest first. */
@@ -10,18 +11,19 @@ export async function WallAdmin() {
   const supabase = await serverClient();
   const { data } = await supabase
     .from("wall_messages")
-    .select("id,author_id,body,approved,created_at,profiles!author_id(display_name,verified)")
+    .select(`id,author_id,body,approved,created_at,${REJECTED_COLUMNS},profiles!author_id(display_name,verified)`)
     .order("approved")
+    .order("rejected_at", PENDING_FIRST)
     .order("created_at", { ascending: false })
     .limit(300);
-  const rows = (data ?? []) as unknown as {
+  const rows = (data ?? []) as unknown as (RejectedFields & {
     id: string;
     author_id: string;
     body: string;
     approved: boolean;
     created_at: string;
     profiles: { display_name: string | null; verified: boolean | null } | null;
-  }[];
+  })[];
   return (
     <Section title="Bức tường Bộ Tộc – duyệt lời nhắn">
       <p className="text-xs text-muted">
@@ -33,10 +35,11 @@ export async function WallAdmin() {
           <li key={w.id} className="flex flex-wrap items-center gap-3 py-2">
             <span className="min-w-0 flex-1 space-y-1">
               <span className="block">
-                {!w.approved && <span className="mr-1 rounded bg-accent/20 px-1.5 text-xs font-semibold">chờ duyệt</span>}
+                <RejectedBadge row={w} />
+                {!w.approved && !w.rejected_at && <span className="mr-1 rounded bg-accent/20 px-1.5 text-xs font-semibold">chờ duyệt</span>}
                 <span className="text-muted">
                   {w.profiles?.display_name ?? "Fan"}
-                  {w.profiles?.verified && " ✓ Chính chủ"} · {formatDate(w.created_at)} · {w.approved ? "đã duyệt" : "chờ duyệt"}
+                  {w.profiles?.verified && " ✓ Chính chủ"} · {formatDate(w.created_at)} · {w.approved ? "đã duyệt" : w.rejected_at ? "đã từ chối" : "chờ duyệt"}
                 </span>
                 <ScreenFlags flags={screenText([w.body]).flags} />
               </span>

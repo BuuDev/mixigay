@@ -1,20 +1,61 @@
+import Link from "next/link";
+import { KIND_LIST } from "@/features/moderation/lib/kinds";
+import { inboxHref } from "@/features/moderation/lib/review";
+import { getPendingCounts, totalPending } from "@/features/moderation/server/inbox";
 import { QUOTA_STOP } from "@/server/jobs/context";
 import { serverClient } from "@/server/supabase/server";
 import { Section } from "../ui";
 
+/** Per-request cutoff (the overview is dynamic admin data, never cached). */
+const hoursAgo = (h: number) => new Date(Date.now() - h * 3600 * 1000).toISOString();
+
 export async function AdminOverview() {
   const supabase = await serverClient();
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
-  const [usage, live, unclassified, pending] = await Promise.all([
+  const dayAgo = hoursAgo(24);
+  const [usage, live, unclassified, pending, queue, newAccounts, rejected] = await Promise.all([
     supabase.from("api_usage").select("endpoint, units").eq("day", today),
     supabase.from("live_status").select("*").single(),
     supabase.from("videos").select("video_id", { count: "exact", head: true }).is("manual_game_slug", null).is("auto_game_slug", null),
     supabase.from("suggestions").select("id", { count: "exact", head: true }).eq("status", "pending").eq("approved", true).eq("hidden", false),
+    getPendingCounts(),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", dayAgo),
+    // moderation_log rows are written by DB triggers (20261110200000_moderation_center.sql).
+    supabase.from("moderation_log").select("id", { count: "exact", head: true }).eq("action", "reject").gte("created_at", dayAgo),
   ]);
   const units = (usage.data ?? []).reduce((sum, r) => sum + (r.units as number), 0);
 
+  const cell = "block rounded-md border border-border p-2 hover:border-accent";
   return (
     <div className="grid gap-4 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <Section title={`Hàng chờ (${totalPending(queue)} mục chờ duyệt)`}>
+          <ul className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 lg:grid-cols-5">
+            {KIND_LIST.map((k) => (
+              <li key={k.kind}>
+                <Link href={inboxHref(k.kind)} className={cell}>
+                  <span className="block text-xl font-bold tabular-nums">{queue[k.kind]}</span>
+                  {k.label}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link href="/admin" className={cell}>
+                <span className="block text-xl font-bold tabular-nums">{queue.reports}</span>
+                Báo cáo mở
+              </Link>
+            </li>
+            <li className="rounded-md border border-border p-2">
+              <span className="block text-xl font-bold tabular-nums">{newAccounts.count ?? 0}</span>
+              Tài khoản mới (24 giờ)
+            </li>
+            <li className="rounded-md border border-border p-2">
+              <span className="block text-xl font-bold tabular-nums">{rejected.count ?? 0}</span>
+              Đã từ chối (24 giờ)
+            </li>
+          </ul>
+        </Section>
+      </div>
       <Section title="Quota YouTube hôm nay (giờ Thái Bình Dương)">
         <p className="text-2xl font-bold tabular-nums">
           {units} <span className="text-sm font-normal text-muted">/ 10.000 (job dừng ở {QUOTA_STOP})</span>

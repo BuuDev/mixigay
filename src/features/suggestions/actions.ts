@@ -12,6 +12,7 @@ import { steamAppIdFromUrl, steamStoreUrl } from "./lib/steam";
 import { adminClient } from "@/server/supabase/admin";
 import { publicClient } from "@/server/supabase/public";
 import { serverClient } from "@/server/supabase/server";
+import { getBlockedTerms } from "@/features/admin/terms/server";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { ALLOWED_SUGGESTION_HOSTS_LABEL, allowedSuggestionUrl } from "./lib/url-policy";
 
@@ -34,7 +35,7 @@ export async function createSuggestion(_prev: FormResult, formData: FormData): P
   const url = allowedSuggestionUrl(input.url);
   if (input.url && !url) return { ok: false, message: `Chỉ nhận link https tới ${ALLOWED_SUGGESTION_HOSTS_LABEL}.` };
   // Generic on purpose: never tell a spammer which word tripped the filter.
-  if (screenText([input.name, input.reason]).verdict === "block") return { ok: false, message: REJECTED };
+  if (screenText([input.name, input.reason], await getBlockedTerms()).verdict === "block") return { ok: false, message: REJECTED };
 
   // Optional thumbnail for fan-made / non-Steam games. Cheap local checks run before the
   // insert; the Vision call runs after it, so the DB rate limit also caps Vision usage.

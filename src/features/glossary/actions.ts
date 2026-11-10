@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { getViewer } from "@/features/auth/server/viewer";
 import { serverClient } from "@/server/supabase/server";
+import { getBlockedTerms } from "@/features/admin/terms/server";
 import { screenText } from "@/shared/lib/moderation/screen";
 import { MEANING_MAX, MEANING_MIN, TERM_MAX, TERM_MIN, textLength } from "./lib/limits";
 import { checkSourceUrl } from "./lib/source";
@@ -38,7 +39,7 @@ export async function submitGlossaryEntry(_prev: GlossaryFormResult, formData: F
   const source = checkSourceUrl(parsed.data.sourceUrl);
   if (!source.ok) return { ok: false, message: source.message };
   // Generic on purpose: never tell a spammer which word tripped the filter.
-  if (screenText([term, meaning]).verdict === "block") return { ok: false, message: REJECTED };
+  if (screenText([term, meaning], await getBlockedTerms()).verdict === "block") return { ok: false, message: REJECTED };
 
   // Fans may only write term/meaning/source_url (column grant + RLS + rate-limit trigger); author_id defaults to auth.uid().
   const supabase = await serverClient();

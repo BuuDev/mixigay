@@ -176,3 +176,15 @@ Mỗi quyết định ghi lại bối cảnh, lựa chọn và hệ quả. Khôn
 **Quyết định:** Không làm Web Push. Người xem muốn biết anh Độ lên sóng thì bấm chuông trên kênh YouTube, YouTube đã báo realtime. Trang không giữ thêm một kênh thông báo nữa.
 
 **Hệ quả:** Gỡ code, dependency `web-push`, khóa VAPID khỏi `.env.example`; bảng `push_subscriptions` đã xóa ở project dev và migration được đánh dấu reverted. Kênh Telegram/Discord thông báo live (đã có từ trước) và WebSub (phát hiện video mới) vẫn giữ.
+
+## ADR-016 – Được phép dùng logo MixiGaming và ảnh anh Độ làm nhận diện {#adr-016}
+
+**Bối cảnh:** Các ADR trước (ADR-011, ADR-014) cấm dùng logo MixiGaming / Refund Gaming và ảnh anh Độ làm nhận diện trang. Ngày 2026-11-10 chủ dự án xác nhận ảnh và logo của anh Độ đã được cho phép sử dụng, muốn dùng làm nhận diện luôn và không cần ghi nguồn.
+
+**Quyết định:**
+- Logo MixiGaming (ảnh đại diện kênh: gương mặt + chữ MIXIGAMING) là nhận diện: huy hiệu ở header, favicon, icon app/PWA, ảnh chia sẻ OG. File ở `public/brand/official/`, sinh bằng sharp từ ảnh đại diện và banner kênh lấy qua YouTube Data API (`channels.list`, nguồn chính chủ).
+- Ảnh anh Độ dùng tự do trong nội dung, không cần dòng ghi nguồn. Chỉ lấy từ nguồn anh Độ sở hữu: ảnh/banner kênh, thumbnail video của kênh, ảnh chủ dự án đưa vào repo. Không tải ảnh báo chí hay ảnh của người khác chụp: quyền anh Độ cho không phủ bản quyền của họ.
+- Footer vẫn ghi rõ trang do fan làm, không phải kênh chính thức, để fan không nhầm.
+- Thay ADR-011/ADR-014 ở phần nhận diện; Cú Đêm vẫn là linh vật của trang.
+
+**Hệ quả:** `AGENTS.md`, `docs/01-product.md` và agent `fan-site-guard` được cập nhật theo quy tắc mới. Nếu sau này anh Độ rút lại sự cho phép, chỉ cần đổi `Logo` trong `src/shared/ui/brand-art.tsx`, icon và ảnh OG về lửa trại.

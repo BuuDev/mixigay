@@ -5,6 +5,9 @@ import { ArrowFatUpIcon } from "@phosphor-icons/react/dist/ssr/ArrowFatUp";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/ssr/ArrowSquareOut";
 import { ArrowsOutIcon } from "@phosphor-icons/react/dist/ssr/ArrowsOut";
 import { BellIcon } from "@phosphor-icons/react/dist/ssr/Bell";
+import { DiscordLogoIcon } from "@phosphor-icons/react/dist/ssr/DiscordLogo";
+import { FacebookLogoIcon } from "@phosphor-icons/react/dist/ssr/FacebookLogo";
+import { YoutubeLogoIcon } from "@phosphor-icons/react/dist/ssr/YoutubeLogo";
 import { BroadcastIcon } from "@phosphor-icons/react/dist/ssr/Broadcast";
 import { CalendarDotsIcon } from "@phosphor-icons/react/dist/ssr/CalendarDots";
 import { CalendarPlusIcon } from "@phosphor-icons/react/dist/ssr/CalendarPlus";
@@ -102,6 +105,12 @@ export const IconWall = icon("wall", ChatsCircleIcon);
 export const IconShop = icon("shop", StorefrontIcon);
 /** Thông báo */
 export const IconBell = icon("bell", BellIcon);
+/** Kênh YouTube chính chủ */
+export const IconYoutube = icon("youtube", YoutubeLogoIcon);
+/** Fanpage / group Facebook chính chủ */
+export const IconFacebook = icon("facebook", FacebookLogoIcon);
+/** Discord chính chủ */
+export const IconDiscord = icon("discord", DiscordLogoIcon);
 /** Skin theo dịp */
 export const IconSkin = icon("skin", PaletteIcon);
 /** Timeline buổi stream */
