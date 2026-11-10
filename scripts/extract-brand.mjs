@@ -3,7 +3,6 @@
 //   npm run brand
 // Outputs (all generated, do not edit by hand):
 //   public/brand/**.svg                 logos, mascot, illustrations (static files: zero JS cost)
-//   src/app/icon.svg                    favicon (Next metadata file convention)
 //   src/shared/design/themes.generated.css   seasonal skins as token overrides
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -55,7 +54,7 @@ const mark = svgsWithCaptions(section("Logo")).find((x) => x.svg.includes('viewB
 if (!mark) throw new Error("logomark not found");
 const markSvg = mark.svg.replace(/ width="\d+" height="\d+"/, "");
 write("public/brand/logomark.svg", withXmlHeader(markSvg));
-write("src/app/icon.svg", withXmlHeader(markSvg));
+// The favicon is the official MixiGaming face since ADR-016 (src/app/icon.png); no icon.svg here.
 
 console.log("Illustrations & mascot");
 for (const title of ["Illustration", "Linh vật", "Minh họa cho các khối"]) {

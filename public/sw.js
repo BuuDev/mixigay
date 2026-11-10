@@ -6,10 +6,12 @@
  *   /admin, /tai-khoan, /moi (one-time invite tokens). They go straight to the network.
  * - Bump VERSION to roll out a new precache; activate deletes every older cache.
  */
-const VERSION = "v2";
+const VERSION = "v4";
 const CACHE = `goc-bo-toc-offline-${VERSION}`;
 const OFFLINE_URL = "/offline";
-const ICONS = ["/icon-192", "/icon-512", "/icon.svg", "/brand/logomark.svg", "/art/cu-dem/20-dang-xuat-di-ngu.webp"];
+// /icon.png and /apple-icon.png are the metadata file conventions (src/app); the pages link them with a
+// "?<hash>" query, which the cache lookup below ignores (ignoreSearch).
+const ICONS = ["/icon.png", "/apple-icon.png", "/brand/official/face-192.png", "/brand/official/face-512.png", "/brand/official/mixigaming-badge-96.webp", "/art/cu-dem/20-dang-xuat-di-ngu.webp"];
 const BYPASS = /^\/(api|auth|admin|tai-khoan|moi)(\/|$)/;
 
 self.addEventListener("install", (event) => {

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArchPortrait } from "@/features/album/components/arch-portrait";
 import { PhotoAlbum } from "@/features/album/components/photo-album";
-import { ALBUM, HERO_PHOTO } from "@/features/album/lib/photos";
+import { ALBUM } from "@/features/album/lib/photos";
 import { AttendanceBlock } from "@/features/attendance/components/attendance-block";
 import { EventRadar } from "@/features/events/components/event-radar";
+import { HeroCover } from "@/features/home/components/hero-cover";
+import { MomentsMarquee } from "@/features/home/components/moments-marquee";
+import { channelStats, MIN_ROW, pickMoments } from "@/features/home/lib/moments";
 import { IntroRitual } from "@/features/intro/components/intro-ritual";
-import { LiveHero } from "@/features/live/components/live-hero";
 import { getLiveStatus } from "@/features/live/server/queries";
 import { CountdownRing } from "@/features/schedule/components/countdown-ring";
 import { MonthCalendar } from "@/features/schedule/components/month-calendar";
@@ -22,13 +23,20 @@ import { ShortsRail } from "@/features/videos/components/shorts-rail";
 import { VideoRail } from "@/features/videos/components/video-rail";
 import { getGames, getShorts, getVideos } from "@/features/videos/server/queries";
 import { ScrollReveal } from "@/shared/motion/scroll-reveal";
-import { IconAlbum, IconCampfire, IconEvent, IconGameMisc, IconSchedule, IconTimeline, IconTribe, IconUpcoming, IconVlog } from "@/shared/ui/icons";
+import { SceneArt } from "@/shared/ui/brand-art";
+import { IconAlbum, IconCampfire, IconEvent, IconGameMisc, IconLive, IconSchedule, IconTimeline, IconTribe, IconUpcoming, IconVlog } from "@/shared/ui/icons";
+import { Ornament } from "@/shared/ui/ornament";
 import { SectionHeader } from "@/shared/ui/section-header";
 
-/** One block ≈ one phone screen, revealed as it scrolls in (e-invitation rhythm, spec "Nguyên tắc chung"). */
+/**
+ * One idea per block, revealed as it scrolls in (e-invitation rhythm, spec "Nguyên tắc
+ * chung"). Height follows the content: a fixed screen height left short blocks mostly empty.
+ * Each block after the cover opens with the flourish divider, like the pages of a thiệp cưới.
+ */
 function Block({ id, children }: { id?: string; children: ReactNode }) {
   return (
-    <section id={id} className="flex min-h-[85svh] scroll-mt-16 flex-col justify-center py-14 sm:min-h-[70vh]">
+    <section id={id} className="scroll-mt-16 pt-6 pb-10 sm:pt-8 sm:pb-14">
+      <Ornament className="mb-6 sm:mb-8" />
       <ScrollReveal>{children}</ScrollReveal>
     </section>
   );
@@ -41,23 +49,16 @@ export default async function Home() {
   const latest = [...videos].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt)).slice(0, 8);
   const hotSeries = groupSeries(videos).slice(0, 6);
   const topics = trendingTopics(videos, newestPublishedAt(videos)).slice(0, 4);
+  // Only the ~24 picked tiles reach the marquee (docs/07 "Danh sách lớn").
+  const moments = pickMoments(videos, 12);
+  const stats = channelStats(videos);
 
   return (
     <>
       <IntroRitual status={status} schedule={schedule} overrides={overrides} />
 
-      {/* Invitation cover: anh Độ in the arch, the evening's status beside him. */}
-      <section className="grid min-h-[80svh] items-center gap-8 py-8 lg:grid-cols-[18rem_1fr] lg:gap-12">
-        {/* No ScrollReveal here: the portrait is the LCP element and must paint before any JS. */}
-        <div>
-          <p className="mb-4 text-center font-script text-2xl font-semibold text-balance text-accent-glow">Góc Bộ Tộc · Tranh vẽ của fan</p>
-          <ArchPortrait photo={HERO_PHOTO} priority />
-        </div>
-        <div>
-          <h1 className="mb-4 text-center text-2xl font-black text-balance sm:text-3xl lg:text-left">Quây quần bên anh Độ Mixi</h1>
-          <LiveHero status={status} schedule={schedule} overrides={overrides} embers />
-        </div>
-      </section>
+      {/* Invitation cover: anh Độ in the arch over the banner band, the evening's status beside him. */}
+      <HeroCover status={status} schedule={schedule} overrides={overrides} stats={stats} />
 
       <Block id="dem-nguoc">
         <SectionHeader eyebrow="Buổi kế tiếp" title="Đếm ngược" icon={<IconUpcoming size={26} className="text-accent" />} />
@@ -69,6 +70,18 @@ export default async function Home() {
           <AttendanceBlock schedule={schedule} overrides={overrides} />
         </div>
       </Block>
+
+      {moments.popular.length >= MIN_ROW && (
+        <Block id="khoanh-khac">
+          <SectionHeader eyebrow="Xem lại cùng Bộ Tộc" title="Khoảnh khắc trên sóng" icon={<IconLive size={26} className="text-accent" />} />
+          <MomentsMarquee rows={moments} />
+          <p className="mt-4 text-center">
+            <Link href="/video" className="text-sm text-accent hover:underline">
+              Xem tất cả video
+            </Link>
+          </p>
+        </Block>
+      )}
 
       <Block id="album">
         <SectionHeader eyebrow="Kỷ niệm của Bộ Tộc" title="Album anh Độ" icon={<IconAlbum size={26} className="text-accent" />} />
@@ -87,12 +100,15 @@ export default async function Home() {
 
       <Block>
         <SectionHeader eyebrow="Giờ Việt Nam" title="Lịch tuần" icon={<IconSchedule size={26} className="text-accent" />} />
-        <WeekSchedule schedule={schedule} games={games} overrides={overrides} />
-        <p className="mt-4 text-center">
-          <Link href="/lich" className="text-sm text-accent hover:underline">
-            Xem trang lịch
-          </Link>
-        </p>
+        <div className="grid items-center gap-8 lg:grid-cols-[16rem_1fr] lg:gap-12">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <SceneArt scene="06-lich-live" size={224} sizes="(min-width: 1024px) 224px, 160px" className="size-40 lg:size-56" />
+            <Link href="/lich" className="text-sm text-accent hover:underline">
+              Xem trang lịch
+            </Link>
+          </div>
+          <WeekSchedule schedule={schedule} games={games} overrides={overrides} />
+        </div>
       </Block>
 
       <Block>

@@ -300,3 +300,40 @@ html[data-overlay] .td-bottom-nav {
     scroll-behavior: auto;
   }
 }
+
+/*
+ * Moments marquee (home): a row of thumbnails drifting sideways. The track holds the list
+ * twice and moves by half its width, so the loop is seamless. Without motion preference
+ * (or with reduced motion) it is a plain horizontally scrollable row and the copy is hidden.
+ */
+.td-marquee {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.td-marquee-copy {
+  display: none;
+}
+@keyframes td-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .td-marquee {
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  }
+  .td-marquee-copy {
+    display: flex;
+  }
+  .td-marquee-track {
+    animation: td-marquee var(--td-marquee-dur, 70s) linear infinite;
+  }
+  .td-marquee[data-reverse] .td-marquee-track {
+    animation-direction: reverse;
+  }
+  .td-marquee:hover .td-marquee-track,
+  .td-marquee:focus-within .td-marquee-track {
+    animation-play-state: paused;
+  }
+}

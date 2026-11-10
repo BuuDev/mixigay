@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Project context
 
-Read `docs/README.md` first. Before writing code read `docs/07-conventions.md`; before touching data or jobs read `docs/02-architecture.md` and `docs/03-data-model.md`. The current phase and its checklist are in `docs/05-roadmap.md` — tick items off there as they land. Hard rules: never call YouTube `search.list` from a scheduled job (quota), never use MixiGaming branding, link out to YouTube instead of embedding.
+Read `docs/README.md` first. Before writing code read `docs/07-conventions.md`; before touching data or jobs read `docs/02-architecture.md` and `docs/03-data-model.md`. The current phase and its checklist are in `docs/05-roadmap.md` — tick items off there as they land. Hard rules: never call YouTube `search.list` from a scheduled job (quota), link out to YouTube instead of embedding. MixiGaming / Refund Gaming logos and anh Độ's photos may be used, including as site identity (owner-confirmed permission, ADR-016), but the footer must keep saying the site is fan-made and not the official channel.
 
 Tooling (details in `docs/09-ai-tooling.md`):
 - Source layout is feature-first (`src/app` routing only → `src/features/<x>` → `src/shared`, `src/server`); ESLint enforces the layering. Design source: `docs/design/` (brand.html, COMPONENTS.md); regenerate assets with `npm run brand`.

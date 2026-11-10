@@ -1,12 +1,13 @@
 import Image from "next/image";
 
-// Logo and SVG illustrations live as static files in public/brand (generated from
+// SVG illustrations live as static files in public/brand (generated from
 // docs/design/brand.html by `npm run brand`); SVGs are served as-is (`unoptimized`)
 // because the image optimizer does not process SVG.
+// The logo is the official MixiGaming badge (ADR-016), public/brand/official, through the optimizer.
 // Character art lives in public/art as transparent 640×640 WebP and goes through the optimizer:
 //   public/art/cu-dem   — Cú Đêm, the site's own owl mascot (never a depiction of anh Độ).
 //   public/art/do-mixi  — fan-made drawings of anh Độ with Cú Đêm, used only as content.
-// Neither set is ever site identity (logo, favicon, app icons, manifest, OG image).
+// Neither set is site identity (logo, favicon, app icons, manifest, OG image): that is the official badge.
 
 export type MascotPose =
   | "hello"
@@ -181,7 +182,14 @@ export function Illustration({ name, width = 240, className, alt = "" }: { name:
   return <Image src={`/brand/illustrations/${name}.svg`} alt={alt} width={width} height={Math.round(width * ratio)} unoptimized className={className} />;
 }
 
-/** Campfire mark + "GÓC BỘ TỘC" set in the site font (header), or the mark alone (footer, small spaces). */
+// 96 px copy (3 KB) served as-is: the service worker precaches it, so /offline keeps its logo.
+const BADGE_SRC = "/brand/official/mixigaming-badge-96.webp";
+const LOGO_ALT = "Góc Bộ Tộc – MixiGaming";
+
+/**
+ * Official MixiGaming badge (ADR-016) + "GÓC BỘ TỘC" set in the site font (header), or the badge alone.
+ * The logo is black line art on its own white disc: never render it without the disc on the dark page.
+ */
 export function Logo({
   variant = "full",
   tone = "dark",
@@ -193,13 +201,25 @@ export function Logo({
   height?: number;
   className?: string;
 }) {
-  if (variant === "mark") {
-    return <Image src="/brand/logomark.svg" alt="Góc Bộ Tộc" width={height} height={height} unoptimized priority className={className} />;
-  }
+  const badge = (
+    <Image
+      src={BADGE_SRC}
+      alt={LOGO_ALT}
+      width={height}
+      height={height}
+      unoptimized
+      // The header badge is above the fold on every page; the mark (footer) can wait.
+      // `priority` is deprecated in Next 16 and `preload` is meant for the LCP image only.
+      loading={variant === "full" ? "eager" : "lazy"}
+      className={`shrink-0 rounded-full bg-white ${variant === "mark" ? (className ?? "") : ""}`}
+    />
+  );
+  if (variant === "mark") return badge;
   // `className` sets the display (e.g. "hidden sm:flex"); the gap/alignment are fixed here.
+  // The visible name follows the badge, so the badge alt only adds "MixiGaming" for screen readers.
   return (
     <span className={`items-center gap-2 ${className ?? "inline-flex"}`}>
-      <Image src="/brand/logomark.svg" alt="" width={height} height={height} unoptimized priority />
+      {badge}
       <span
         className={`leading-none font-black tracking-[0.12em] whitespace-nowrap ${tone === "mono-white" ? "text-white" : "text-foreground"}`}
         style={{ fontSize: Math.round(height * 0.55) }}
