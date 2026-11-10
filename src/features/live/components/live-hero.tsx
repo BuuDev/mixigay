@@ -1,6 +1,7 @@
 "use client";
 
 import { isOffDay, nextSlot } from "@/features/schedule/lib/schedule";
+import { isLiveView } from "../lib/view";
 import { overrideFor, vnDateKey } from "@/features/schedule/lib/overrides";
 import type { ScheduleOverride, ScheduleSlot } from "@/features/schedule/types";
 import { useNow } from "@/shared/hooks/use-now";
@@ -16,7 +17,7 @@ import { UpcomingStream } from "./upcoming-stream";
 type View = "live" | "upcoming" | "next" | "offday" | "loading";
 
 function pickView(status: LiveStatus, schedule: ScheduleSlot[], now: Date | null, overrides?: ScheduleOverride[]): View {
-  if (status.state === "live" && status.videoId) return "live";
+  if (isLiveView(status)) return "live";
   if (status.state === "upcoming" && status.videoId && status.startTime) return "upcoming";
   if (!now) return "loading";
   return isOffDay(schedule, now, overrides) ? "offday" : "next";
