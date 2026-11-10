@@ -98,8 +98,19 @@ create table live_status (
   title text,
   start_time timestamptz,
   concurrent_viewers int,
-  checked_at timestamptz not null default now()
+  checked_at timestamptz   -- lần cuối live_status ĐỔI (không phải lần cuối kiểm tra)
 );
+-- Bảng này nằm trong publication Realtime: mỗi lần ghi là một tin tới mọi tab đang mở,
+-- nên poll-live chỉ ghi khi trạng thái / video / tiêu đề / giờ bắt đầu / số người xem đổi.
+
+create table live_poll_state (             -- hẹn giờ của poll-live (ADR-018), KHÔNG phát Realtime
+  id boolean primary key default true check (id),
+  checked_at timestamptz,                  -- lần kiểm tra gần nhất
+  next_check_at timestamptz not null default now(),
+  reason text                              -- live | upcoming_soon | upcoming_wait | slot_window | next_slot | safety | schedule_changed | websub | retry
+);
+-- RLS: chỉ admin đọc (trang /admin), chỉ service role ghi. public.poll_live_due() (pg_cron dùng)
+-- không cấp cho anon/authenticated. Trigger trên schedule_slots / schedule_overrides đặt next_check_at = now().
 
 create table live_samples (                -- dữ liệu cho thống kê F13
   video_id text not null references videos on delete cascade,

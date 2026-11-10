@@ -51,6 +51,8 @@ Giai đoạn 7  Góc Bộ Tộc v2 (docs/design)        nền xong – các kh�
 - [x] `next/image` cho thumbnail `i.ytimg.com`
 - [x] Test: parse duration, chuyển trạng thái live, quyết định poll dày/thưa, map dữ liệu YouTube → hàng DB
 - [x] Chạy với Supabase thật: project dev trên cloud, 8 migration + seed, cài đặt Auth bằng `config push`, kiểm thử 16 bước qua giao diện (tài khoản, lời mời, bức tường, điểm danh)
+- [x] Kiểm tra live theo hẹn giờ, chỉ trong giờ live ([ADR-018](08-decisions.md#adr-018)): `nextCheckAt` + `live_poll_state` + `poll_live_due()` trong cron, WebSub đánh thức, `live_status` chỉ ghi khi đổi. Test `live.test.ts`, `poll-live.test.ts`, RLS trong `db:check`
+- [ ] **(cần bạn)** Chạy lại `supabase/cron.sql` trên production sau khi đẩy migration `20261111120000_live_poll_timer`
 - [ ] Test tích hợp các job cron (poll-live, sync-videos) với Supabase thật: cần `YOUTUBE_API_KEY` / `YOUTUBE_CHANNEL_ID`
 
 **Hoàn thành khi:** chạy 48 giờ trên production, `api_usage` < 3.000 đơn vị/ngày, banner tự chuyển trạng thái khi Độ lên sóng mà không cần reload.
@@ -161,6 +163,6 @@ Nền đã xong: kiến trúc chia theo tính năng, token + skin, icon/logo/mas
 | Hết quota YouTube                                                    | Mất trạng thái live      | Bảng `api_usage` + ngưỡng 8.000. Không dùng `search.list`. Poll thưa ngoài giờ stream.       |
 | RSS/`videos.list` không thấy buổi live mới (live không qua lịch hẹn) | Banner chậm              | WebSub (GĐ4). Nút "tìm live" thủ công trong admin (dùng `search.list` 1 lần).                |
 | Vercel Hobby chỉ cho cron 1 lần/ngày                                 | Không poll được mỗi phút | Dùng `pg_cron` + `pg_net` của Supabase làm đồng hồ ([ADR-003](08-decisions.md#adr-003))      |
-| Supabase free tạm dừng project sau 7 ngày không hoạt động            | DB ngủ                   | Cron poll-live chạy liên tục nên DB luôn có hoạt động                                        |
+| Supabase free tạm dừng project sau 7 ngày không hoạt động            | DB ngủ                   | pg_cron chạy mỗi phút và poll-live gọi DB ít nhất 2 giờ một lần nên DB luôn có hoạt động       |
 | Spam đề xuất, quảng cáo cá độ, chửi bậy                              | Bảng bẩn, mất uy tín     | Duyệt trước, giới hạn theo người + tuổi tài khoản + toàn site, lọc chữ tiếng Việt, cấm/cấm ngầm (P0 trong GĐ8, [03](03-data-model.md#chống-phá-hoại-p0)) |
 | Khiếu nại thương hiệu/bản quyền                                      | Phải gỡ trang            | Tuân thủ nguyên tắc ở [01-product.md](01-product.md), trang giới thiệu có kênh liên hệ để gỡ |

@@ -38,7 +38,7 @@ Viết client mỏng tự làm trong `src/server/youtube/` bằng `fetch` (khôn
 - `<at:deleted-entry>` (video bị xóa/ẩn): không xóa hàng (sync-videos cũng không xóa); chỉ đưa hàng đang `upcoming`/`live` về `live_state='none'` như poll-live làm với stream biến mất, và ghi log.
 - Gia hạn: `POST /api/cron/websub-renew` (bảo vệ bằng `CRON_SECRET`), pg_cron gọi **hằng ngày** lúc 03:23 UTC (`supabase/cron.sql`). Lease 10 ngày nên đăng ký lại mỗi ngày là đủ, không cần lưu thời hạn lease. Không tốn quota YouTube.
 - Env: `WEBSUB_SECRET`, `YOUTUBE_CHANNEL_ID`, `NEXT_PUBLIC_SITE_URL` (domain public; khi là localhost thì renew trả `{skipped:"localhost"}` vì hub không gọi tới được), cùng `YOUTUBE_API_KEY` + service role để ingest. Thiếu `WEBSUB_SECRET`/`YOUTUBE_CHANNEL_ID`: cả hai route trả 503.
-- Lưu ý: WebSub báo video mới/cập nhật, **không** báo "vừa bắt đầu live". WebSub **không bao giờ thay** poll-live: nó chỉ đưa hàng mới (`upcoming`/`live`) vào DB sớm, rồi poll-live nhận hàng đó làm ứng viên ở lần chạy kế tiếp.
+- Lưu ý: WebSub báo video mới/cập nhật, **không** báo "vừa bắt đầu live". WebSub **không** ghi `live_status`: khi video được báo đang `live`/`upcoming`, nó đặt `live_poll_state.next_check_at = now()` để poll-live chạy ngay phút sau ([ADR-018](08-decisions.md#adr-018)). Đây là cách bắt các buổi live ngoài lịch mà không phải poll liên tục; lưới an toàn 2 giờ của poll-live phòng khi hub không báo.
 
 ## Steam Store API
 

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { becameLive, deriveLiveStatus, shouldPoll } from "./live";
-import type { ScheduleSlot } from "@/features/schedule/types";
+import { becameLive, deriveLiveStatus, nextCheckAt } from "./live";
+import type { ScheduleOverride, ScheduleSlot } from "@/features/schedule/types";
+import type { DerivedLive } from "./live";
+import type { LiveState } from "../types";
 import type { YtVideo } from "@/server/youtube/client";
 
 const now = new Date("2026-11-09T12:00:00Z"); // Monday 19:00 VN
@@ -43,49 +45,102 @@ describe("deriveLiveStatus", () => {
   });
 });
 
-describe("shouldPoll", () => {
-  const slots: ScheduleSlot[] = [{ id: "mon", dayOfWeek: 1, time: "20:00", title: "Mon" }]; // 13:00Z
+describe("nextCheckAt", () => {
+  // Monday 20:00 VN = 13:00Z; `now` (12:00Z) is one hour before it.
+  const slots: ScheduleSlot[] = [{ id: "mon", dayOfWeek: 1, time: "20:00", title: "Mon" }];
+  const offline: DerivedLive = { state: "offline" };
+  const at = (iso: string) => new Date(iso);
+  const check = (
+    nowIso: string,
+    live: DerivedLive = offline,
+    previous: LiveState = "offline",
+    overrides?: ScheduleOverride[],
+    schedule = slots,
+    previousStart?: string,
+  ) => nextCheckAt({ now: at(nowIso), live, previous, previousStart, schedule, overrides });
 
-  it("always polls while live or upcoming", () => {
-    expect(shouldPoll({ now, state: "live", lastCheckedAt: now.toISOString(), schedule: [] })).toBe(true);
-    expect(shouldPoll({ now, state: "upcoming", lastCheckedAt: now.toISOString(), schedule: [] })).toBe(true);
+  it("sleeps until 10 minutes before the next slot when nothing is on", () => {
+    expect(check("2026-11-09T12:00:00Z")).toEqual({ at: at("2026-11-09T12:50:00Z"), reason: "next_slot" });
   });
 
-  it("polls every minute within 2 hours of a slot", () => {
-    expect(shouldPoll({ now, state: "offline", lastCheckedAt: "2026-11-09T11:59:00Z", schedule: slots })).toBe(true);
+  it("never sleeps longer than the 2-hour safety net", () => {
+    expect(check("2026-11-09T03:00:00Z")).toEqual({ at: at("2026-11-09T05:00:00Z"), reason: "safety" });
+    expect(check("2026-11-09T03:00:00Z", offline, "offline", undefined, [])).toEqual({ at: at("2026-11-09T05:00:00Z"), reason: "safety" });
   });
 
-  it("also polls just after a slot's start time", () => {
-    const after = new Date("2026-11-09T14:30:00Z");
-    expect(shouldPoll({ now: after, state: "offline", lastCheckedAt: "2026-11-09T14:29:00Z", schedule: slots })).toBe(true);
+  it("checks every minute from 10 minutes before to 60 minutes after a slot", () => {
+    expect(check("2026-11-09T12:50:00Z")).toEqual({ at: at("2026-11-09T12:51:00Z"), reason: "slot_window" });
+    expect(check("2026-11-09T13:30:00Z").reason).toBe("slot_window");
+    expect(check("2026-11-09T14:00:00Z").reason).toBe("slot_window");
+    // Window over without a stream: wait for next Monday's window, capped by the safety net.
+    expect(check("2026-11-09T14:01:00Z")).toEqual({ at: at("2026-11-09T16:01:00Z"), reason: "safety" });
   });
 
-  it("thins out to every 5 minutes far from any slot", () => {
-    const quiet = new Date("2026-11-09T03:00:00Z");
-    expect(shouldPoll({ now: quiet, state: "offline", lastCheckedAt: "2026-11-09T02:59:00Z", schedule: slots })).toBe(false);
-    expect(shouldPoll({ now: quiet, state: "offline", lastCheckedAt: "2026-11-09T02:55:00Z", schedule: slots })).toBe(true);
+  it("checks every 10 minutes while live", () => {
+    const live: DerivedLive = { state: "live", videoId: "v", startTime: "2026-11-09T13:02:00Z" };
+    expect(check("2026-11-09T13:05:00Z", live, "live")).toEqual({ at: at("2026-11-09T13:15:00Z"), reason: "live" });
+  });
+
+  it("stops checking once the stream ended, even inside its window", () => {
+    expect(check("2026-11-09T13:40:00Z", offline, "live")).toEqual({ at: at("2026-11-09T15:40:00Z"), reason: "safety" });
+  });
+
+  it("waits for a scheduled stream until 2 minutes before it, then every minute", () => {
+    // No weekly slot here, so only the scheduled stream drives the plan.
+    const upcoming: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-09T13:30:00Z" };
+    const c = (iso: string, l: DerivedLive) => check(iso, l, "offline", undefined, []);
+    expect(c("2026-11-09T12:00:00Z", upcoming)).toEqual({ at: at("2026-11-09T13:28:00Z"), reason: "upcoming_wait" });
+    expect(c("2026-11-09T13:28:00Z", upcoming)).toEqual({ at: at("2026-11-09T13:29:00Z"), reason: "upcoming_soon" });
+    // Late start: keep looking every minute.
+    expect(c("2026-11-09T13:45:00Z", upcoming).reason).toBe("upcoming_soon");
+    // Scheduled far ahead: the safety net still looks every 2 hours (it may be moved earlier).
+    const far: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-09T20:00:00Z" };
+    expect(c("2026-11-09T12:00:00Z", far)).toEqual({ at: at("2026-11-09T14:00:00Z"), reason: "safety" });
+  });
+
+  it("a scheduled special later tonight does not hide the regular slot window", () => {
+    const special: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-09T16:00:00Z" }; // 23:00 VN
+    expect(check("2026-11-09T12:00:00Z", special)).toEqual({ at: at("2026-11-09T12:50:00Z"), reason: "next_slot" });
+    expect(check("2026-11-09T12:55:00Z", special).reason).toBe("slot_window");
+    // Tonight's slot scheduled on YouTube and started early: the slot window already looks from 12:50Z.
+    const tonight: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-09T13:00:00Z" };
+    expect(check("2026-11-09T12:50:00Z", tonight).reason).toBe("slot_window");
+  });
+
+  it("gives up on a scheduled stream an hour after its start time", () => {
+    const stale: DerivedLive = { state: "upcoming", videoId: "u", startTime: "2026-11-09T09:00:00Z" };
+    expect(check("2026-11-09T09:30:00Z", stale).reason).toBe("upcoming_soon");
+    expect(check("2026-11-09T10:01:00Z", stale)).toEqual({ at: at("2026-11-09T12:01:00Z"), reason: "safety" });
+  });
+
+  it("a stream that started before the window does not close it when it ends", () => {
+    expect(check("2026-11-09T12:55:00Z", offline, "live", undefined, slots, "2026-11-09T09:00:00Z").reason).toBe("slot_window");
+    expect(check("2026-11-09T13:40:00Z", offline, "live", undefined, slots, "2026-11-09T13:01:00Z").reason).toBe("safety");
+  });
+
+  it("never schedules sooner than one minute ahead", () => {
+    expect(check("2026-11-09T12:59:30Z").at).toEqual(at("2026-11-09T13:00:30Z"));
   });
 
   it("follows one-day overrides: moved, cancelled and extra streams", () => {
-    const checked = "2026-11-09T11:59:00Z";
-    // Monday 20:00 VN moved to 23:00 VN (16:00Z): at 19:00 VN the stream is 4 h away.
+    // Monday 20:00 VN moved to 23:00 VN (16:00Z): its window opens at 15:50Z.
     const moved = [{ dateVn: "2026-11-09", cancelled: false, time: "23:00" }];
-    expect(shouldPoll({ now, state: "offline", lastCheckedAt: checked, schedule: slots, overrides: moved })).toBe(false);
-    expect(
-      shouldPoll({ now: new Date("2026-11-09T15:00:00Z"), state: "offline", lastCheckedAt: "2026-11-09T14:59:00Z", schedule: slots, overrides: moved }),
-    ).toBe(true);
-    // Monday cancelled: no dense window.
+    expect(check("2026-11-09T12:50:00Z", offline, "offline", moved).reason).not.toBe("slot_window");
+    expect(check("2026-11-09T14:00:00Z", offline, "offline", moved)).toEqual({ at: at("2026-11-09T15:50:00Z"), reason: "next_slot" });
+    expect(check("2026-11-09T15:55:00Z", offline, "offline", moved).reason).toBe("slot_window");
+    // Monday cancelled: no window at all.
     const cancelled = [{ dateVn: "2026-11-09", cancelled: true }];
-    expect(shouldPoll({ now, state: "offline", lastCheckedAt: checked, schedule: slots, overrides: cancelled })).toBe(false);
+    expect(check("2026-11-09T13:00:00Z", offline, "offline", cancelled).reason).toBe("safety");
     // Extra stream on Tuesday 10:00 VN (03:00Z), a day with no weekly slot.
     const extra = [{ dateVn: "2026-11-10", cancelled: false, time: "10:00", title: "Live thêm" }];
-    expect(
-      shouldPoll({ now: new Date("2026-11-10T02:00:00Z"), state: "offline", lastCheckedAt: "2026-11-10T01:59:00Z", schedule: slots, overrides: extra }),
-    ).toBe(true);
+    expect(check("2026-11-10T02:55:00Z", offline, "offline", extra).reason).toBe("slot_window");
   });
 
-  it("polls when there is no previous check", () => {
-    expect(shouldPoll({ now, state: "offline", schedule: [] })).toBe(true);
+  it("handles a slot just after midnight Vietnam time", () => {
+    // Saturday 00:30 VN = Friday 17:30Z.
+    const late: ScheduleSlot[] = [{ id: "sat", dayOfWeek: 6, time: "00:30", title: "Khuya" }];
+    expect(check("2026-11-13T17:00:00Z", offline, "offline", undefined, late)).toEqual({ at: at("2026-11-13T17:20:00Z"), reason: "next_slot" });
+    expect(check("2026-11-13T18:00:00Z", offline, "offline", undefined, late).reason).toBe("slot_window");
   });
 });
 

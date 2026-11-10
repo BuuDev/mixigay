@@ -2,12 +2,10 @@ import Image from "next/image";
 import { ArchPortrait } from "@/features/album/components/arch-portrait";
 import { HERO_PHOTO } from "@/features/album/lib/photos";
 import { LiveHero } from "@/features/live/components/live-hero";
+import { HeroActions } from "./hero-actions";
 import type { LiveStatus } from "@/features/live/types";
 import type { ScheduleOverride, ScheduleSlot } from "@/features/schedule/types";
 import { formatViews } from "@/shared/lib/format";
-import { OFFICIAL_CHANNEL_URL } from "@/shared/lib/links";
-import { ButtonLink } from "@/shared/ui/button";
-import { IconSchedule } from "@/shared/ui/icons";
 
 const count = new Intl.NumberFormat("vi-VN");
 
@@ -66,32 +64,25 @@ export function HeroCover({
           <div className="w-full">
             <LiveHero status={status} schedule={schedule} overrides={overrides} embers />
           </div>
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <ButtonLink href="/lich" size="lg" className="min-h-11">
-              <IconSchedule size={22} />
-              Lịch stream
-            </ButtonLink>
-            <ButtonLink href={OFFICIAL_CHANNEL_URL} external variant="secondary" size="lg" className="min-h-11">
-              Xem kênh YouTube
-            </ButtonLink>
-          </div>
+          <HeroActions status={status} />
           {/* Shortcut to what YouTube doesn't have: the live room, the poll, tonight's RSVP, fan contributions. */}
           <nav aria-label="Góc tương tác" className="flex w-full flex-wrap justify-center gap-2 lg:justify-start">
             {INTERACT.map((c) => (
               <a
                 key={c.label}
                 href={c.href}
-                className="group inline-flex min-h-10 items-center gap-1.5 rounded-pill border border-accent/40 bg-accent/10 px-3.5 py-1.5 text-sm font-semibold text-foreground transition-[transform,background-color,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent hover:bg-accent/20 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                className="group inline-flex min-h-10 items-center gap-1.5 rounded-pill border border-border bg-surface/70 px-3.5 py-1.5 text-sm font-semibold text-foreground transition-[transform,background-color,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent hover:bg-surface-raised motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               >
-                <span aria-hidden className="transition-transform duration-200 group-hover:scale-125 motion-reduce:transition-none">
+                <span aria-hidden className="transition-transform duration-200 group-hover:scale-125 motion-reduce:transition-none motion-reduce:group-hover:scale-100">
                   {c.emoji}
                 </span>
                 {c.label}
               </a>
             ))}
           </nav>
+          {/* One quiet line of real numbers, not a row of dashboard tiles under the card. */}
           {stats.videos > 0 && (
-            <dl className="grid w-full grid-cols-3 gap-3 text-center lg:max-w-lg lg:text-left">
+            <dl className="flex w-full flex-wrap justify-center gap-x-5 gap-y-1 text-sm text-muted lg:justify-start">
               <Stat value={count.format(stats.videos)} label="video Góc Bộ Tộc đã lưu" />
               <Stat value={count.format(stats.streams)} label="buổi live xem lại được" />
               <Stat value={formatViews(stats.views)} label="lượt xem cộng lại" />
@@ -105,9 +96,9 @@ export function HeroCover({
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex flex-col-reverse rounded-md border border-border bg-surface/80 px-3 py-2">
-      <dt className="text-xs text-muted">{label}</dt>
-      <dd className="font-mono text-xl font-black tabular-nums sm:text-2xl">{value}</dd>
+    <div className="flex items-baseline gap-1.5">
+      <dt>{label}</dt>
+      <dd className="order-first font-mono font-bold text-foreground tabular-nums">{value}</dd>
     </div>
   );
 }

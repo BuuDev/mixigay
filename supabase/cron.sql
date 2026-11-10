@@ -25,8 +25,10 @@ end;
 $$;
 revoke execute on function public.call_cron_route(text) from public, anon, authenticated;
 
--- The route decides between 1- and 5-minute polling (src/features/live/lib/live.ts shouldPoll).
-select cron.schedule('poll-live', '* * * * *', $$ select public.call_cron_route('/api/cron/poll-live') $$);
+-- Ticks every minute but calls the app only when poll-live's own timer is due
+-- (public.poll_live_due, migration 20261111120000; plan in src/features/live/lib/live.ts nextCheckAt).
+-- Off-hours this is one SQL read per minute: no Vercel call, no YouTube unit, no Realtime message.
+select cron.schedule('poll-live', '* * * * *', $$ select public.call_cron_route('/api/cron/poll-live') where public.poll_live_due() $$);
 select cron.schedule('sync-videos', '17 */6 * * *', $$ select public.call_cron_route('/api/cron/sync-videos') $$);
 -- Alerts admins (ADMIN_ALERT_* env) when the moderation queue spikes; no-op without them.
 select cron.schedule('moderation-alert', '*/5 * * * *', $$ select public.call_cron_route('/api/cron/moderation-alert') $$);
